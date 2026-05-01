@@ -61,7 +61,10 @@ export default function Scan() {
       amount: value,
       paymentType: 'qr',
     });
-    savePayment(value, 'qr').catch(() => {});
+    savePayment(value, 'qr', undefined, {
+      bus: params.bus,
+      route: params.trajet,
+    }).catch(() => {});
     Speech.speak('Paiement accepté');
     setAcceptedAmount(value);
 

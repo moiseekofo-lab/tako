@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { findClientById } from '../services/api';
 import { useStore } from './store';
 
 export default function Admin() {
@@ -23,8 +24,24 @@ export default function Admin() {
     alert("✅ Chauffeur validé !");
   };
 
-  const findClient = () => {
-    if (clientId.trim().toUpperCase() !== currentUser.id.toUpperCase()) {
+  const findClient = async () => {
+    const cleanClientId = clientId.trim().toUpperCase();
+    if (!cleanClientId) {
+      Alert.alert('ID obligatoire', 'Entrez l’ID du client.');
+      return;
+    }
+
+    try {
+      const result = await findClientById(cleanClientId);
+      if (result?.client) {
+        setSelectedClient(result.client);
+        return;
+      }
+    } catch {
+      // Le mode local reste disponible si le backend n’est pas joignable.
+    }
+
+    if (cleanClientId !== currentUser.id.toUpperCase()) {
       setSelectedClient(null);
       Alert.alert('Client introuvable', 'Aucun compte client trouvé avec cet ID.');
       return;

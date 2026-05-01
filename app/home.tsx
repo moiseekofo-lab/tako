@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -69,6 +70,7 @@ export default function Home() {
     const nextBlocked = !nfcCardBlocked;
     setNfcCardBlocked(nextBlocked);
     await AsyncStorage.setItem(NFC_CARD_BLOCKED_KEY, String(nextBlocked));
+    setRemoteNfcCardBlocked(currentUser.id, nextBlocked).catch(() => {});
     Alert.alert(
       text.physicalCard,
       nextBlocked
@@ -110,7 +112,7 @@ export default function Home() {
     }).catch(() => {});
   }, [driverTripInfo.amount, driverTripInfo.bus, driverTripInfo.route, setDriverTripInfo]);
 
-  const saveDriverTripInfo = () => {
+  const saveDriverTripInfo = async () => {
     const info = {
       amount: paymentAmount,
       route: tripRoute.trim(),
@@ -123,6 +125,13 @@ export default function Home() {
       DRIVER_TRIP_INFO_KEY,
       JSON.stringify(info)
     ).catch(() => {});
+
+    await saveDriverTripSettings({
+      driverId: currentUser.id || 'driver-demo',
+      busPlate: info.bus,
+      route: info.route,
+      amount: Number.parseInt(info.amount, 10),
+    }).catch(() => null);
   };
 
   const validateDriverTripInfo = () => {
@@ -151,7 +160,7 @@ export default function Home() {
       return;
     }
 
-    saveDriverTripInfo();
+    await saveDriverTripInfo();
     Alert.alert(text.tripInfoSaved, text.tripInfoSavedText);
   };
 
@@ -160,7 +169,7 @@ export default function Home() {
       return;
     }
 
-    saveDriverTripInfo();
+    await saveDriverTripInfo();
     router.push({
       pathname,
       params: { montant: paymentAmount, trajet: tripRoute.trim(), bus: busPlate.trim() },

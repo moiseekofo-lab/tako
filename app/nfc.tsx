@@ -99,7 +99,11 @@ export default function NfcPayment() {
       amount: value,
       paymentType: 'nfc',
     });
-    savePayment(value, 'nfc', tagLabel).catch(() => {});
+    savePayment(value, 'nfc', undefined, {
+      cardId: tagLabel,
+      bus: params.bus,
+      route: params.trajet,
+    }).catch(() => {});
     setLastTag(tagLabel);
     setAcceptedAmount(value);
     setAmount('');

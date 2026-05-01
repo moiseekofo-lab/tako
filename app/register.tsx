@@ -14,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { registerAccount, requestVerificationCode } from '../services/api';
 import { useStore } from './store';
 
 export default function Register() {
@@ -39,19 +40,24 @@ export default function Register() {
     return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
   };
 
-  const handleSendCode = () => {
+  const handleSendCode = async () => {
     const cleanContact = contact.trim();
     if (!isValidContact(cleanContact)) {
       Alert.alert('Information manquante', 'Entrez un email ou un numéro valide pour recevoir le code.');
       return;
     }
 
-    const nextCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentCode(nextCode);
-    setVerifiedContact(cleanContact);
-    setVerificationCode('');
-    setStep('code');
-    Alert.alert('Code envoyé', `Votre code de confirmation est ${nextCode}`);
+    try {
+      const result = await requestVerificationCode(cleanContact, 'register');
+      const nextCode = result?.code || Math.floor(100000 + Math.random() * 900000).toString();
+      setSentCode(nextCode);
+      setVerifiedContact(cleanContact);
+      setVerificationCode('');
+      setStep('code');
+      Alert.alert('Code envoyé', `Votre code de confirmation est ${nextCode}`);
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
+    }
   };
 
   const handleConfirmCode = () => {
@@ -63,7 +69,7 @@ export default function Register() {
     setStep('profile');
   };
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     if (!fullName.trim() || !birthDate.trim() || !password.trim()) {
       Alert.alert('Informations manquantes', 'Ajoutez le nom complet, la date de naissance et le mot de passe.');
       return;
@@ -76,28 +82,41 @@ export default function Register() {
 
     const email = isEmail(verifiedContact) ? verifiedContact : '';
     const phone = isEmail(verifiedContact) ? '' : verifiedContact;
-    const user = {
-      id: generateClientId(),
-      fullName: fullName.trim() || 'Client TaKo',
-      email: email || 'client@tako.app',
-      phone,
-      birthDate: birthDate.trim(),
-      role,
-      status: role === 'chauffeur' ? 'pending' : 'active',
-    };
+    try {
+      const result = await registerAccount({
+        contact: verifiedContact,
+        code: verificationCode.trim() || sentCode,
+        fullName: fullName.trim(),
+        birthDate: birthDate.trim(),
+        password,
+        role,
+      });
 
-    setCurrentUser({
-      id: user.id,
-      fullName: user.fullName,
-      email: user.email,
-      phone: user.phone,
-      birthDate: user.birthDate,
-    });
+      const user = result?.user || {
+        id: generateClientId(),
+        fullName: fullName.trim() || 'Client TaKo',
+        email: email || 'client@tako.app',
+        phone,
+        birthDate: birthDate.trim(),
+        role,
+        status: role === 'chauffeur' ? 'pending' : 'active',
+      };
 
-    console.log('USER CREATED:', user);
+      setCurrentUser({
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        phone: user.phone,
+        birthDate: user.birthDate,
+      });
 
-    Alert.alert('Compte créé !', `Votre ID client est ${user.id}. Vous pouvez l’utiliser avec votre mot de passe.`);
-    router.replace('/login' as any);
+      console.log('USER CREATED:', user);
+
+      Alert.alert('Compte créé !', `Votre ID client est ${user.id}. Vous pouvez l’utiliser avec votre mot de passe.`);
+      router.replace('/login' as any);
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible de créer le compte.');
+    }
   };
 
   return (

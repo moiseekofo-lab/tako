@@ -17,6 +17,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { loginAccount, requestVerificationCode, resetPassword } from '../services/api';
 import { languageOptions, translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -24,6 +25,7 @@ const CLIENT_NAME_KEY = 'tako:lastClientName';
 const LANGUAGE_KEY = 'tako:language';
 const SHEET_DISMISS_Y = 560;
 const SHEET_DISMISS_THRESHOLD = 120;
+const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Login() {
   const router = useRouter();
@@ -35,6 +37,7 @@ export default function Login() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [rememberAccess, setRememberAccess] = useState(true);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [resetContact, setResetContact] = useState('');
   const [resetCode, setResetCode] = useState('');
   const [sentResetCode, setSentResetCode] = useState('');
@@ -141,18 +144,23 @@ export default function Login() {
     setAuthMode('forgotContact');
   };
 
-  const sendResetCode = () => {
+  const sendResetCode = async () => {
     const cleanContact = resetContact.trim();
     if (!isValidResetContact(cleanContact)) {
       Alert.alert('Information manquante', 'Entrez le numéro ou l’email enregistré sur votre compte.');
       return;
     }
 
-    const nextCode = Math.floor(100000 + Math.random() * 900000).toString();
-    setSentResetCode(nextCode);
-    setResetCode('');
-    setAuthMode('forgotCode');
-    Alert.alert('Code envoyé', `Votre code de récupération est ${nextCode}`);
+    try {
+      const result = await requestVerificationCode(cleanContact, 'reset');
+      const nextCode = result?.code || Math.floor(100000 + Math.random() * 900000).toString();
+      setSentResetCode(nextCode);
+      setResetCode('');
+      setAuthMode('forgotCode');
+      Alert.alert('Code envoyé', `Votre code de récupération est ${nextCode}`);
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
+    }
   };
 
   const confirmResetCode = () => {
@@ -164,7 +172,7 @@ export default function Login() {
     setAuthMode('newPassword');
   };
 
-  const saveNewPassword = () => {
+  const saveNewPassword = async () => {
     if (newPassword.trim().length < 4) {
       Alert.alert('Mot de passe trop court', 'Créez un mot de passe de 4 caractères minimum.');
       return;
@@ -175,12 +183,18 @@ export default function Login() {
       return;
     }
 
-    Alert.alert('Mot de passe modifié', 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.');
-    setEmail(resetContact.trim());
-    setAuthMode('login');
-    setNewPassword('');
-    setConfirmNewPassword('');
-    setResetCode('');
+    try {
+      await resetPassword(resetContact.trim(), resetCode.trim() || sentResetCode, newPassword);
+      Alert.alert('Mot de passe modifié', 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.');
+      setEmail(resetContact.trim());
+      setPassword('');
+      setAuthMode('login');
+      setNewPassword('');
+      setConfirmNewPassword('');
+      setResetCode('');
+    } catch (error: any) {
+      Alert.alert('Erreur', error?.message || 'Impossible de modifier le mot de passe.');
+    }
   };
 
   const sheetPanResponder = useRef(
@@ -210,7 +224,48 @@ export default function Login() {
   ).current;
 
   const handleLogin = async () => {
-    const guessedName = getNameFromEmail(email);
+    const cleanLogin = email.trim();
+    const guessedName = getNameFromEmail(cleanLogin);
+
+    if (!cleanLogin || !password.trim()) {
+      Alert.alert('Informations manquantes', 'Entrez votre email, numéro ou ID puis votre mot de passe.');
+      return;
+    }
+
+    try {
+      const result = await loginAccount(cleanLogin, password);
+      if (result?.user) {
+        setCurrentUser({
+          id: result.user.id,
+          fullName: result.user.fullName,
+          email: result.user.email,
+          phone: result.user.phone,
+          birthDate: result.user.birthDate,
+        });
+
+        if (rememberAccess) {
+          await AsyncStorage.setItem(CLIENT_NAME_KEY, result.user.fullName.split(' ')[0] || result.user.fullName);
+          setClientName(result.user.fullName.split(' ')[0] || result.user.fullName);
+        }
+
+        if (role === 'admin') {
+          router.replace('/admin' as any);
+          return;
+        }
+
+        router.replace({
+          pathname: '/home',
+          params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : role },
+        } as any);
+        return;
+      }
+    } catch (error: any) {
+      if (API_URL) {
+        Alert.alert('Erreur', error?.message || 'Connexion impossible.');
+        return;
+      }
+    }
+
     if (rememberAccess && guessedName) {
       await AsyncStorage.setItem(CLIENT_NAME_KEY, guessedName);
       setClientName(guessedName);
@@ -304,6 +359,8 @@ export default function Login() {
                       placeholder={text.password}
                       placeholderTextColor="#9B9B9B"
                       secureTextEntry={!showPassword}
+                      value={password}
+                      onChangeText={setPassword}
                       maxLength={15}
                       style={styles.passwordField}
                     />
@@ -311,7 +368,7 @@ export default function Login() {
                       <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={28} color="#8D8D8D" />
                     </Pressable>
                   </View>
-                  <Text style={styles.counter}>0/15</Text>
+                  <Text style={styles.counter}>{password.length}/15</Text>
                 </View>
 
                 <View style={styles.optionsRow}>
