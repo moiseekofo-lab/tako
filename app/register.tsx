@@ -2,6 +2,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,22 +14,89 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { useStore } from './store';
 
 export default function Register() {
   const router = useRouter();
+  const [step, setStep] = useState<'contact' | 'code' | 'profile'>('contact');
   const [role, setRole] = useState<'passager' | 'chauffeur'>('passager');
+  const [fullName, setFullName] = useState('');
+  const [contact, setContact] = useState('');
+  const [verifiedContact, setVerifiedContact] = useState('');
+  const [sentCode, setSentCode] = useState('');
+  const [verificationCode, setVerificationCode] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const setCurrentUser = useStore((state: any) => state.setCurrentUser);
+
+  const generateClientId = () => `TAKO-${Date.now().toString().slice(-6)}`;
+  const isEmail = (value: string) => value.includes('@');
+  const isValidContact = (value: string) => {
+    const cleanValue = value.trim();
+    return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
+  };
+
+  const handleSendCode = () => {
+    const cleanContact = contact.trim();
+    if (!isValidContact(cleanContact)) {
+      Alert.alert('Information manquante', 'Entrez un email ou un numéro valide pour recevoir le code.');
+      return;
+    }
+
+    const nextCode = Math.floor(100000 + Math.random() * 900000).toString();
+    setSentCode(nextCode);
+    setVerifiedContact(cleanContact);
+    setVerificationCode('');
+    setStep('code');
+    Alert.alert('Code envoyé', `Votre code de confirmation est ${nextCode}`);
+  };
+
+  const handleConfirmCode = () => {
+    if (verificationCode.trim() !== sentCode) {
+      Alert.alert('Code incorrect', 'Vérifiez le code reçu puis réessayez.');
+      return;
+    }
+
+    setStep('profile');
+  };
 
   const handleRegister = () => {
+    if (!fullName.trim() || !birthDate.trim() || !password.trim()) {
+      Alert.alert('Informations manquantes', 'Ajoutez le nom complet, la date de naissance et le mot de passe.');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Mot de passe différent', 'La confirmation du mot de passe ne correspond pas.');
+      return;
+    }
+
+    const email = isEmail(verifiedContact) ? verifiedContact : '';
+    const phone = isEmail(verifiedContact) ? '' : verifiedContact;
     const user = {
+      id: generateClientId(),
+      fullName: fullName.trim() || 'Client TaKo',
+      email: email || 'client@tako.app',
+      phone,
+      birthDate: birthDate.trim(),
       role,
       status: role === 'chauffeur' ? 'pending' : 'active',
     };
 
+    setCurrentUser({
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      phone: user.phone,
+      birthDate: user.birthDate,
+    });
+
     console.log('USER CREATED:', user);
 
-    alert('Compte créé !');
+    Alert.alert('Compte créé !', `Votre ID client est ${user.id}. Vous pouvez l’utiliser avec votre mot de passe.`);
     router.replace('/login' as any);
   };
 
@@ -41,77 +109,160 @@ export default function Register() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.logoWrap}>
-          <TakoLogo size="large" />
-          <View style={styles.glowLine} />
+          <TakoLogo size="login" />
         </View>
 
         <Text style={styles.title}>Créer un compte</Text>
+        <View style={styles.formPanel}>
+          <View style={styles.stepRow}>
+            <View style={[styles.stepDot, styles.stepActive]} />
+            <View style={[styles.stepLine, step !== 'contact' && styles.stepActive]} />
+            <View style={[styles.stepDot, step !== 'contact' && styles.stepActive]} />
+            <View style={[styles.stepLine, step === 'profile' && styles.stepActive]} />
+            <View style={[styles.stepDot, step === 'profile' && styles.stepActive]} />
+          </View>
 
-        <View style={styles.inputBox}>
-          <Ionicons name="person" size={26} color="#87909F" style={styles.inputIcon} />
-          <TextInput placeholder="Nom complet" placeholderTextColor="#87909F" style={styles.input} />
+          {step === 'contact' ? (
+            <>
+              <Text style={styles.stepTitle}>Vérification du compte</Text>
+              <Text style={styles.helperText}>
+                Ajoutez d’abord votre email ou votre numéro. Il servira à récupérer votre compte plus facilement.
+              </Text>
+
+              <View style={styles.inputBox}>
+                <Ionicons name="mail" size={26} color="#87909F" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Email ou numéro"
+                  placeholderTextColor="#87909F"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  value={contact}
+                  onChangeText={setContact}
+                  style={styles.input}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleSendCode}>
+                <Text style={styles.btnText}>Recevoir le code</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+
+          {step === 'code' ? (
+            <>
+              <Text style={styles.stepTitle}>Confirmer le code</Text>
+              <Text style={styles.helperText}>
+                Entrez le code reçu sur {verifiedContact}. Après confirmation, vous pourrez compléter le compte.
+              </Text>
+
+              <View style={styles.inputBox}>
+                <Ionicons name="keypad" size={26} color="#87909F" style={styles.inputIcon} />
+                <TextInput
+                  placeholder="Code de confirmation"
+                  placeholderTextColor="#87909F"
+                  keyboardType="number-pad"
+                  value={verificationCode}
+                  onChangeText={setVerificationCode}
+                  maxLength={6}
+                  style={styles.input}
+                />
+              </View>
+
+              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleConfirmCode}>
+                <Text style={styles.btnText}>Confirmer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.textButton} activeOpacity={0.85} onPress={handleSendCode}>
+                <Text style={styles.textButtonLabel}>Renvoyer le code</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
+
+          {step === 'profile' ? (
+            <>
+              <Text style={styles.stepTitle}>Compléter le profil</Text>
+              <Text style={styles.verifiedText}>
+                {verifiedContact} vérifié
+              </Text>
+
+            <View style={styles.inputBox}>
+              <Ionicons name="person" size={26} color="#87909F" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Nom complet"
+                placeholderTextColor="#87909F"
+                value={fullName}
+                onChangeText={setFullName}
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputBox}>
+              <Ionicons name="calendar" size={26} color="#87909F" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Date de naissance"
+                placeholderTextColor="#87909F"
+                value={birthDate}
+                onChangeText={setBirthDate}
+                style={styles.input}
+              />
+            </View>
+
+            <View style={styles.inputBox}>
+              <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Mot de passe"
+                placeholderTextColor="#87909F"
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                style={styles.input}
+              />
+              <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
+              </Pressable>
+            </View>
+
+            <View style={styles.inputBox}>
+              <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
+              <TextInput
+                placeholder="Confirmer mot de passe"
+                placeholderTextColor="#87909F"
+                secureTextEntry={!showConfirmPassword}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                style={styles.input}
+              />
+              <Pressable onPress={() => setShowConfirmPassword((value) => !value)} hitSlop={10}>
+                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
+              </Pressable>
+            </View>
+
+            <Text style={styles.label}>Choisir votre rôle :</Text>
+
+            <View style={styles.row}>
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'passager' && styles.active]}
+                activeOpacity={0.85}
+                onPress={() => setRole('passager')}>
+                <Ionicons name="people" size={31} color="white" />
+                <Text style={styles.roleText}>Passager</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.roleBtn, role === 'chauffeur' && styles.active]}
+                activeOpacity={0.85}
+                onPress={() => setRole('chauffeur')}>
+                <MaterialCommunityIcons name="steering" size={33} color="white" />
+                <Text style={styles.roleText}>Chauffeur</Text>
+              </TouchableOpacity>
+            </View>
+
+              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleRegister}>
+                <Text style={styles.btnText}>Créer</Text>
+              </TouchableOpacity>
+            </>
+          ) : null}
         </View>
-
-        <View style={styles.inputBox}>
-          <Ionicons name="mail" size={26} color="#87909F" style={styles.inputIcon} />
-          <TextInput
-            placeholder="Email ou numéro"
-            placeholderTextColor="#87909F"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={styles.input}
-          />
-        </View>
-
-        <View style={styles.inputBox}>
-          <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
-          <TextInput
-            placeholder="Mot de passe"
-            placeholderTextColor="#87909F"
-            secureTextEntry={!showPassword}
-            style={styles.input}
-          />
-          <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
-            <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
-          </Pressable>
-        </View>
-
-        <View style={styles.inputBox}>
-          <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
-          <TextInput
-            placeholder="Confirmer mot de passe"
-            placeholderTextColor="#87909F"
-            secureTextEntry={!showConfirmPassword}
-            style={styles.input}
-          />
-          <Pressable onPress={() => setShowConfirmPassword((value) => !value)} hitSlop={10}>
-            <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
-          </Pressable>
-        </View>
-
-        <Text style={styles.label}>Choisir votre rôle :</Text>
-
-        <View style={styles.row}>
-          <TouchableOpacity
-            style={[styles.roleBtn, role === 'passager' && styles.active]}
-            activeOpacity={0.85}
-            onPress={() => setRole('passager')}>
-            <Ionicons name="people" size={31} color="white" />
-            <Text style={styles.roleText}>Passager</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.roleBtn, role === 'chauffeur' && styles.active]}
-            activeOpacity={0.85}
-            onPress={() => setRole('chauffeur')}>
-            <MaterialCommunityIcons name="steering" size={33} color="white" />
-            <Text style={styles.roleText}>Chauffeur</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleRegister}>
-          <Text style={styles.btnText}>Créer</Text>
-        </TouchableOpacity>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -124,52 +275,86 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    paddingHorizontal: 30,
-    paddingTop: 84,
+    paddingHorizontal: 24,
+    paddingTop: 54,
     paddingBottom: 42,
     backgroundColor: '#061F68',
   },
   logoWrap: {
     alignItems: 'flex-start',
-    marginBottom: 48,
-  },
-  logo: {
-    fontSize: 78,
-    fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: 0,
-  },
-  logoWhite: {
-    color: 'white',
-  },
-  logoBlue: {
-    color: '#129CFF',
-  },
-  glowLine: {
-    width: '78%',
-    height: 2,
-    marginTop: 16,
-    backgroundColor: '#0AA4FF',
-    shadowColor: '#0AA4FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 6,
+    marginBottom: 34,
   },
   title: {
     color: 'white',
-    fontSize: 31,
-    fontWeight: '800',
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 18,
+  },
+  formPanel: {
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 16,
+    paddingTop: 18,
+    paddingBottom: 18,
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 26,
+  },
+  stepDot: {
+    width: 13,
+    height: 13,
+    borderRadius: 7,
+    backgroundColor: 'rgba(255,255,255,0.32)',
+  },
+  stepLine: {
+    flex: 1,
+    height: 3,
+    marginHorizontal: 7,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  stepActive: {
+    backgroundColor: '#09D457',
+  },
+  stepTitle: {
+    color: 'white',
+    fontSize: 21,
+    fontWeight: '900',
+    marginBottom: 10,
+  },
+  helperText: {
+    color: 'rgba(255,255,255,0.84)',
+    fontSize: 14,
+    lineHeight: 21,
+    fontWeight: '600',
     marginBottom: 24,
   },
+  verifiedText: {
+    alignSelf: 'flex-start',
+    overflow: 'hidden',
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '800',
+    backgroundColor: 'rgba(9,212,87,0.24)',
+    borderColor: '#09D457',
+    borderWidth: 1,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 22,
+  },
   inputBox: {
-    height: 70,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F4F5F9',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    marginBottom: 20,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 14,
   },
   inputIcon: {
     marginRight: 16,
@@ -177,14 +362,14 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#202836',
-    fontSize: 21,
+    fontSize: 16,
     fontWeight: '500',
   },
   label: {
     color: 'white',
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '800',
-    marginTop: 24,
+    marginTop: 14,
     marginBottom: 16,
   },
   row: {
@@ -193,14 +378,14 @@ const styles = StyleSheet.create({
   },
   roleBtn: {
     flex: 1,
-    height: 73,
+    height: 60,
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 12,
     borderWidth: 1,
     borderColor: '#126CDE',
     backgroundColor: 'transparent',
-    borderRadius: 10,
+    borderRadius: 12,
     alignItems: 'center',
   },
   active: {
@@ -209,20 +394,31 @@ const styles = StyleSheet.create({
   },
   roleText: {
     color: 'white',
-    fontSize: 22,
+    fontSize: 15,
     fontWeight: '800',
   },
   btn: {
-    height: 80,
+    height: 62,
     backgroundColor: '#09D457',
-    borderRadius: 10,
-    marginTop: 64,
+    borderRadius: 14,
+    marginTop: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
   btnText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  textButton: {
+    alignSelf: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 10,
+  },
+  textButtonLabel: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: '800',
+    textDecorationLine: 'underline',
   },
 });

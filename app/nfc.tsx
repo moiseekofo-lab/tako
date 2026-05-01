@@ -6,11 +6,12 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import NfcManager, { NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { TakoLogo } from '../components/tako-logo';
 import { savePayment } from '../services/api';
+import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
 export default function NfcPayment() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ montant?: string }>();
+  const params = useLocalSearchParams<{ montant?: string; trajet?: string; bus?: string }>();
   const [amount, setAmount] = useState(params.montant ?? '');
   const [isReading, setIsReading] = useState(false);
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
@@ -19,6 +20,11 @@ export default function NfcPayment() {
 
   const balance = useStore((state: any) => state.balance);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
+  const addNotification = useStore((state: any) => state.addNotification);
+  const addTrip = useStore((state: any) => state.addTrip);
+  const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
+  const language = useStore((state: any) => state.language) as Language;
+  const text = translations[language];
 
   useEffect(() => {
     if (acceptedAmount === null) {
@@ -73,7 +79,26 @@ export default function NfcPayment() {
     }
 
     const tagLabel = getTagLabel(tag);
+
+    if (nfcCardBlocked) {
+      Alert.alert('Carte bloquée', 'Cette carte NFC est bloquée et ne peut pas être utilisée pour le paiement transport.');
+      Speech.speak('Carte bloquée');
+      return;
+    }
+
     increaseBalance(value);
+    addNotification({
+      title: text.nfcAccepted,
+      message: text.nfcMessage(value),
+      amount: value,
+      type: 'nfc',
+    });
+    addTrip({
+      bus: params.bus || 'Bus non renseigné',
+      route: params.trajet || 'Trajet non renseigné',
+      amount: value,
+      paymentType: 'nfc',
+    });
     savePayment(value, 'nfc', tagLabel).catch(() => {});
     setLastTag(tagLabel);
     setAcceptedAmount(value);

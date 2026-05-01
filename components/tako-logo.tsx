@@ -32,7 +32,7 @@ const styles = StyleSheet.create({
     height: 112,
   },
   logoLogin: {
-    height: 82,
+    height: 58,
   },
   logoSmall: {
     height: 64,
@@ -46,9 +46,9 @@ const styles = StyleSheet.create({
     marginRight: 22,
   },
   markLogin: {
-    width: 88,
-    height: 74,
-    marginRight: 16,
+    width: 62,
+    height: 52,
+    marginRight: 11,
   },
   markSmall: {
     width: 68,
@@ -67,11 +67,11 @@ const styles = StyleSheet.create({
     top: 17,
   },
   dotLogin: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     left: 0,
-    top: 13,
+    top: 9,
   },
   dotSmall: {
     width: 22,
@@ -93,11 +93,11 @@ const styles = StyleSheet.create({
     top: 3,
   },
   slashLogin: {
-    width: 31,
-    height: 70,
-    borderRadius: 18,
-    left: 46,
-    top: 2,
+    width: 22,
+    height: 49,
+    borderRadius: 13,
+    left: 32,
+    top: 1,
   },
   slashSmall: {
     width: 24,
@@ -109,11 +109,11 @@ const styles = StyleSheet.create({
   word: {
     color: 'white',
     fontFamily: Platform.select({
-      ios: 'Helvetica Neue',
-      android: 'sans-serif-light',
-      default: undefined,
+      ios: 'Boordens Street',
+      android: 'Boordens Street',
+      default: 'Boordens Street',
     }),
-    fontWeight: '200',
+    fontWeight: '300',
     letterSpacing: 0,
   },
   wordLarge: {
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     lineHeight: 56,
   },
   wordLogin: {
-    fontSize: 62,
-    lineHeight: 72,
+    fontSize: 43,
+    lineHeight: 51,
   },
 });

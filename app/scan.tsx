@@ -6,11 +6,12 @@ import { useEffect, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { savePayment } from '../services/api';
+import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
 export default function Scan() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ montant?: string }>();
+  const params = useLocalSearchParams<{ montant?: string; trajet?: string; bus?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [amount, setAmount] = useState(params.montant ?? '');
@@ -19,6 +20,10 @@ export default function Scan() {
 
   const balance = useStore((state: any) => state.balance);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
+  const addNotification = useStore((state: any) => state.addNotification);
+  const addTrip = useStore((state: any) => state.addTrip);
+  const language = useStore((state: any) => state.language) as Language;
+  const text = translations[language];
 
   useEffect(() => {
     if (acceptedAmount === null) {
@@ -44,6 +49,18 @@ export default function Scan() {
     }
 
     increaseBalance(value);
+    addNotification({
+      title: text.qrAccepted,
+      message: text.qrMessage(value),
+      amount: value,
+      type: 'qr',
+    });
+    addTrip({
+      bus: params.bus || 'Bus non renseigné',
+      route: params.trajet || 'Trajet non renseigné',
+      amount: value,
+      paymentType: 'qr',
+    });
     savePayment(value, 'qr').catch(() => {});
     Speech.speak('Paiement accepté');
     setAcceptedAmount(value);

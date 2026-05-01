@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -7,12 +8,15 @@ import { TakoLogo } from '../components/tako-logo';
 import { saveNfcCard } from '../services/api';
 import { useStore } from './store';
 
+const NFC_CARD_ID_KEY = 'tako:nfcCardId';
+
 export default function ClientNfcActivation() {
   const router = useRouter();
   const [isReading, setIsReading] = useState(false);
   const [isSupported, setIsSupported] = useState<boolean | null>(null);
 
   const nfcCardId = useStore((state: any) => state.nfcCardId);
+  const currentUser = useStore((state: any) => state.currentUser);
   const setNfcCardId = useStore((state: any) => state.setNfcCardId);
 
   useEffect(() => {
@@ -30,6 +34,11 @@ export default function ClientNfcActivation() {
     };
 
     startNfc();
+    AsyncStorage.getItem(NFC_CARD_ID_KEY).then((storedCardId) => {
+      if (storedCardId) {
+        setNfcCardId(storedCardId);
+      }
+    }).catch(() => {});
 
     return () => {
       NfcManager.cancelTechnologyRequest().catch(() => {});
@@ -64,8 +73,14 @@ export default function ClientNfcActivation() {
       }
 
       setNfcCardId(cardId);
-      await saveNfcCard('user_123', cardId);
-      Alert.alert('Carte activée', `Carte NFC enregistrée : ${cardId}`);
+      await AsyncStorage.setItem(NFC_CARD_ID_KEY, cardId);
+      await saveNfcCard(currentUser.id, cardId);
+      Alert.alert('Carte activée', `Carte NFC enregistrée : ${cardId}`, [
+        {
+          text: 'OK',
+          onPress: () => router.back(),
+        },
+      ]);
     } catch {
       Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
     } finally {
@@ -91,7 +106,7 @@ export default function ClientNfcActivation() {
           {isReading ? 'Approchez votre carte' : 'Enregistrer votre carte'}
         </Text>
         <Text style={styles.nfcSubtitle}>
-          Cliquez sur le bouton, approchez la carte NFC, puis TaKo enregistrera son identifiant.
+          Cliquez sur le bouton, approchez la carte NFC, puis TaKo enregistrera son identifiant pour le paiement transport.
         </Text>
       </View>
 

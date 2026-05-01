@@ -3,9 +3,13 @@ import { useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { TakoLogo } from '../components/tako-logo';
+import { translations, type Language } from './i18n';
+import { useStore } from './store';
 
 export default function QR() {
   const router = useRouter();
+  const language = useStore((state: any) => state.language) as Language;
+  const text = translations[language];
   const userId = "user_123"; // simulé
 
   const data = JSON.stringify({
@@ -21,15 +25,15 @@ export default function QR() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Mon QR Code</Text>
-      <Text style={styles.subtitle}>Montre ce QR au chauffeur</Text>
+      <Text style={styles.title}>{text.myQrCode}</Text>
+      <Text style={styles.subtitle}>{text.showQrDriver}</Text>
 
       <View style={styles.qrBox}>
         <QRCode value={data} size={220} />
       </View>
 
       <View style={styles.identityBox}>
-        <Text style={styles.identityLabel}>Identifiant client</Text>
+        <Text style={styles.identityLabel}>{text.clientId}</Text>
         <Text style={styles.identity}>{userId}</Text>
       </View>
     </View>
