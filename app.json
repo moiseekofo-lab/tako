@@ -28,7 +28,8 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.NFC"
-      ]
+      ],
+      "package": "com.moiseekofolab.tako"
     },
     "web": {
       "output": "static",
