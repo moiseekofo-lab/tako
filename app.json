@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "TaKo",
-    "slug": "tako",
+    "slug": "myApp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
