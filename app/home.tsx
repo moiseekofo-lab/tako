@@ -313,8 +313,10 @@ export default function Home() {
 
             <View style={styles.cardControlsRow}>
               <TouchableOpacity
-                style={styles.miniCard}
+                style={[styles.miniCard, nfcCardId && styles.miniCardDisabled]}
                 activeOpacity={0.85}
+                disabled={!!nfcCardId}
+                accessibilityLabel={nfcCardId ? text.active : text.activateCard}
                 onPress={() => router.push('/client-nfc' as any)}>
                 <Text style={styles.miniCardLogo}>TaKo</Text>
                 <MaterialCommunityIcons name="contactless-payment" size={35} color="#F2B624" />
@@ -324,6 +326,7 @@ export default function Home() {
               <TouchableOpacity
                 style={[styles.roundAction, nfcCardBlocked && styles.roundActionBlocked]}
                 activeOpacity={0.85}
+                accessibilityLabel={nfcCardBlocked ? 'Débloquer la carte' : text.blockCard}
                 onPress={toggleNfcCardBlocked}>
                 <Ionicons name={nfcCardBlocked ? 'lock-open-outline' : 'lock-closed-outline'} size={30} color="white" />
               </TouchableOpacity>
@@ -331,30 +334,10 @@ export default function Home() {
               <TouchableOpacity
                 style={styles.roundAction}
                 activeOpacity={0.85}
+                accessibilityLabel={text.cancelCard}
                 onPress={() => Alert.alert(text.physicalCard, text.cardCancelRequested)}>
                 <Ionicons name="card-outline" size={30} color="white" />
               </TouchableOpacity>
-            </View>
-
-            <View style={styles.cardLabelsRow}>
-              <TouchableOpacity
-                style={[styles.cardActionLabelButton, nfcCardId && styles.cardActionLabelButtonDisabled]}
-                activeOpacity={0.75}
-                disabled={!!nfcCardId}
-                onPress={() => router.push('/client-nfc' as any)}>
-                <Text style={[styles.cardActionLabelButtonText, nfcCardId && styles.cardActionLabelDisabledText]}>
-                  {nfcCardId ? text.active : text.activateCard}
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.cardActionLabelButton}
-                activeOpacity={0.75}
-                onPress={toggleNfcCardBlocked}>
-                <Text style={styles.cardActionLabelButtonText}>
-                  {nfcCardBlocked ? 'Débloquer\ncarte' : text.blockCard}
-                </Text>
-              </TouchableOpacity>
-              <Text style={styles.cardActionLabel}>{text.cancelCard}</Text>
             </View>
           </View>
 
@@ -738,6 +721,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
   },
+  miniCardDisabled: {
+    opacity: 0.72,
+  },
   roundAction: {
     width: 54,
     height: 54,
@@ -750,37 +736,6 @@ const styles = StyleSheet.create({
   },
   roundActionBlocked: {
     backgroundColor: '#E14C4C',
-  },
-  cardLabelsRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 8,
-  },
-  cardActionLabel: {
-    flex: 1,
-    color: '#3A3A3A',
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cardActionLabelButton: {
-    flex: 1,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 4,
-  },
-  cardActionLabelButtonDisabled: {
-    opacity: 0.55,
-  },
-  cardActionLabelButtonText: {
-    color: '#061F68',
-    textAlign: 'center',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  cardActionLabelDisabledText: {
-    color: '#55B86A',
   },
   newsHeader: {
     flexDirection: 'row',
