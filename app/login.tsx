@@ -361,10 +361,8 @@ export default function Login() {
                     autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
-                    maxLength={50}
                     style={styles.field}
                   />
-                  <Text style={styles.counter}>{email.length}/50</Text>
                 </View>
 
                 <View style={styles.fieldWrap}>
@@ -375,14 +373,12 @@ export default function Login() {
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={setPassword}
-                      maxLength={15}
                       style={styles.passwordField}
                     />
                     <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
                       <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={28} color="#8D8D8D" />
                     </Pressable>
                   </View>
-                  <Text style={styles.counter}>{password.length}/15</Text>
                 </View>
 
                 <View style={styles.optionsRow}>
@@ -427,10 +423,8 @@ export default function Login() {
                     autoCapitalize="none"
                     value={resetContact}
                     onChangeText={setResetContact}
-                    maxLength={50}
                     style={styles.field}
                   />
-                  <Text style={styles.counter}>{resetContact.length}/50</Text>
                 </View>
 
                 <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={sendResetCode}>
@@ -486,14 +480,12 @@ export default function Login() {
                       secureTextEntry={!showNewPassword}
                       value={newPassword}
                       onChangeText={setNewPassword}
-                      maxLength={15}
                       style={styles.passwordField}
                     />
                     <Pressable onPress={() => setShowNewPassword((value) => !value)} hitSlop={10}>
                       <Ionicons name={showNewPassword ? 'eye-off' : 'eye'} size={28} color="#8D8D8D" />
                     </Pressable>
                   </View>
-                  <Text style={styles.counter}>{newPassword.length}/15</Text>
                 </View>
 
                 <View style={styles.fieldWrap}>
@@ -503,10 +495,8 @@ export default function Login() {
                     secureTextEntry={!showNewPassword}
                     value={confirmNewPassword}
                     onChangeText={setConfirmNewPassword}
-                    maxLength={15}
                     style={styles.field}
                   />
-                  <Text style={styles.counter}>{confirmNewPassword.length}/15</Text>
                 </View>
 
                 <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={saveNewPassword}>
