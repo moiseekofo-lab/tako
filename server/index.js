@@ -5,6 +5,7 @@ import pg from 'pg';
 const port = Number(process.env.PORT || 3000);
 const databaseUrl = process.env.DATABASE_URL;
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+const adminEmail = (process.env.ADMIN_EMAIL || 'contact@takotransport.online').trim().toLowerCase();
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
 const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
@@ -428,7 +429,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    if (password !== adminPassword) {
+    if (login.toLowerCase() !== adminEmail || password !== adminPassword) {
       sendJson(response, 401, { ok: false, error: 'Accès administrateur refusé' });
       return;
     }
@@ -438,7 +439,7 @@ async function handleRequest(request, response) {
       user: {
         id: 'ADMIN',
         fullName: 'Administrateur TaKo',
-        email: login.includes('@') ? login : '',
+        email: adminEmail,
         phone: '',
         birthDate: '',
         role: 'admin',
