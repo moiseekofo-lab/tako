@@ -17,7 +17,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { loginAccount, requestVerificationCode, resetPassword } from '../services/api';
+import { loginAccount, loginAdmin, requestVerificationCode, resetPassword } from '../services/api';
 import { languageOptions, translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -243,6 +243,21 @@ export default function Login() {
     }
 
     try {
+      if (role === 'admin') {
+        const adminResult = await loginAdmin(cleanLogin, password);
+        if (adminResult?.user) {
+          setCurrentUser({
+            id: adminResult.user.id,
+            fullName: adminResult.user.fullName,
+            email: adminResult.user.email,
+            phone: adminResult.user.phone,
+            birthDate: adminResult.user.birthDate,
+          });
+          router.replace('/admin' as any);
+          return;
+        }
+      }
+
       const result = await loginAccount(cleanLogin, password);
       if (result?.user) {
         setCurrentUser({
@@ -256,11 +271,6 @@ export default function Login() {
         if (rememberAccess) {
           await AsyncStorage.setItem(CLIENT_NAME_KEY, result.user.fullName.split(' ')[0] || result.user.fullName);
           setClientName(result.user.fullName.split(' ')[0] || result.user.fullName);
-        }
-
-        if (role === 'admin') {
-          router.replace('/admin' as any);
-          return;
         }
 
         router.replace({
@@ -293,7 +303,7 @@ export default function Login() {
     }
 
     if (role === 'admin') {
-      router.replace('/admin' as any);
+      Alert.alert('Connexion impossible', 'Le backend doit être connecté pour accéder au mode administrateur.');
       return;
     }
 

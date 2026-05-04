@@ -418,6 +418,37 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/auth/admin-login') {
+    const body = await readJson(request);
+    const login = String(body.login || '').trim();
+    const password = String(body.password || '');
+
+    if (!login || !password) {
+      sendJson(response, 400, { ok: false, error: 'Identifiant et mot de passe obligatoires' });
+      return;
+    }
+
+    if (password !== adminPassword) {
+      sendJson(response, 401, { ok: false, error: 'Accès administrateur refusé' });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      user: {
+        id: 'ADMIN',
+        fullName: 'Administrateur TaKo',
+        email: login.includes('@') ? login : '',
+        phone: '',
+        birthDate: '',
+        role: 'admin',
+        status: 'active',
+        balance: 0,
+      },
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/auth/reset-password') {
     const body = await readJson(request);
     const contact = normalizeContact(body.contact);

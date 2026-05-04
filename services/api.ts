@@ -56,6 +56,13 @@ export function loginAccount(login: string, password: string) {
   });
 }
 
+export function loginAdmin(login: string, password: string) {
+  return postJson('/auth/admin-login', {
+    login,
+    password,
+  });
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,
