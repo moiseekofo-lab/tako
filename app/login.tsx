@@ -30,7 +30,6 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export default function Login() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
-  const [role, setRole] = useState<'passager' | 'chauffeur' | 'admin'>(isWeb ? 'admin' : 'passager');
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -243,21 +242,6 @@ export default function Login() {
     }
 
     try {
-      if (role === 'admin') {
-        const adminResult = await loginAdmin(cleanLogin, password);
-        if (adminResult?.user) {
-          setCurrentUser({
-            id: adminResult.user.id,
-            fullName: adminResult.user.fullName,
-            email: adminResult.user.email,
-            phone: adminResult.user.phone,
-            birthDate: adminResult.user.birthDate,
-          });
-          router.replace('/admin' as any);
-          return;
-        }
-      }
-
       const result = await loginAccount(cleanLogin, password);
       if (result?.user) {
         setCurrentUser({
@@ -275,13 +259,28 @@ export default function Login() {
 
         router.replace({
           pathname: '/home',
-          params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : role },
+          params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : 'passager' },
         } as any);
         return;
       }
     } catch (error: any) {
       if (API_URL) {
-        Alert.alert('Erreur', error?.message || 'Connexion impossible.');
+        try {
+          const adminResult = await loginAdmin(cleanLogin, password);
+          if (adminResult?.user) {
+            setCurrentUser({
+              id: adminResult.user.id,
+              fullName: adminResult.user.fullName,
+              email: adminResult.user.email,
+              phone: adminResult.user.phone,
+              birthDate: adminResult.user.birthDate,
+            });
+            router.replace('/admin' as any);
+            return;
+          }
+        } catch {
+          Alert.alert('Erreur', error?.message || 'Connexion impossible.');
+        }
         return;
       }
     }
@@ -302,14 +301,9 @@ export default function Login() {
       });
     }
 
-    if (role === 'admin') {
-      Alert.alert('Connexion impossible', 'Le backend doit être connecté pour accéder au mode administrateur.');
-      return;
-    }
-
     router.replace({
       pathname: '/home',
-      params: { role },
+      params: { role: 'passager' },
     } as any);
   };
 
@@ -526,31 +520,6 @@ export default function Login() {
           </View>
         ) : (
           <View style={[styles.bottom, isWeb && styles.webBottom]}>
-            <View style={styles.roleRow}>
-              {!isWeb && (
-                <TouchableOpacity
-                  style={[styles.roleChip, role === 'passager' && styles.activeRole]}
-                  activeOpacity={0.85}
-                  onPress={() => setRole('passager')}>
-                  <Text style={styles.roleText}>{text.client}</Text>
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity
-                style={[styles.roleChip, role === 'chauffeur' && styles.activeRole]}
-                activeOpacity={0.85}
-                onPress={() => setRole('chauffeur')}>
-                <Text style={styles.roleText}>{text.driver}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.roleChip, role === 'admin' && styles.activeRole]}
-                activeOpacity={0.85}
-                onPress={() => setRole('admin')}>
-                <Text style={styles.roleText}>{text.admin}</Text>
-              </TouchableOpacity>
-            </View>
-
             <TouchableOpacity
               style={styles.primaryButton}
               activeOpacity={0.9}
@@ -795,30 +764,6 @@ const styles = StyleSheet.create({
     padding: 24,
     borderRadius: 18,
     backgroundColor: 'rgba(6,31,104,0.72)',
-  },
-  roleRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 18,
-  },
-  roleChip: {
-    flex: 1,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.75)',
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activeRole: {
-    backgroundColor: '#139DFF',
-    borderColor: 'white',
-  },
-  roleText: {
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '900',
   },
   primaryButton: {
     height: 65,
