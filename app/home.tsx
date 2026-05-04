@@ -41,6 +41,14 @@ export default function Home() {
   const role = params.role === 'passager' ? 'passager' : 'chauffeur';
   const now = useMemo(() => new Date(), []);
   const greeting = now.getHours() < 18 ? text.morning : text.evening;
+  const clientDisplayName = useMemo(() => {
+    const cleanName = String(currentUser?.fullName || '').trim();
+    if (!cleanName || cleanName.toLowerCase() === 'client tako') {
+      return text.client;
+    }
+
+    return cleanName.split(/\s+/)[0];
+  }, [currentUser?.fullName, text.client]);
   const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
   const clientDate = now.toLocaleDateString(dateLocale, {
     day: '2-digit',
@@ -242,7 +250,7 @@ export default function Home() {
             style={[styles.clientHeroContent, { transform: [{ translateY: heroTranslateY }] }]}
             {...heroPanResponder.panHandlers}>
             <View style={styles.clientHeader}>
-              <Text style={styles.clientGreeting}>{greeting}, {text.client}</Text>
+              <Text style={styles.clientGreeting}>{greeting}, {clientDisplayName}</Text>
               <View style={styles.clientHeaderIcons}>
                 <TouchableOpacity
                   style={styles.notificationButton}
