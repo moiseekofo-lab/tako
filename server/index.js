@@ -5,6 +5,9 @@ import pg from 'pg';
 const port = Number(process.env.PORT || 3000);
 const databaseUrl = process.env.DATABASE_URL;
 const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+const sendGridApiKey = process.env.SENDGRID_API_KEY;
+const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
+const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
 
 const pool = databaseUrl
   ? new pg.Pool({
@@ -32,6 +35,63 @@ function generateCode() {
 
 function generateClientId() {
   return `TAKO-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`;
+}
+
+async function sendVerificationEmail(contact, code, purpose) {
+  if (!sendGridApiKey || !sendGridFromEmail || !contact.includes('@')) {
+    return false;
+  }
+
+  const subject =
+    purpose === 'reset'
+      ? 'Code de récupération TaKo'
+      : 'Code de confirmation TaKo';
+  const title =
+    purpose === 'reset'
+      ? 'Récupération de votre compte TaKo'
+      : 'Confirmation de votre compte TaKo';
+  const text = `${title}\n\nVotre code est : ${code}\n\nCe code expire dans 10 minutes.`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#202836;line-height:1.5">
+      <h2 style="color:#061F68">${title}</h2>
+      <p>Votre code est :</p>
+      <p style="font-size:28px;font-weight:700;letter-spacing:4px;color:#139DFF">${code}</p>
+      <p>Ce code expire dans 10 minutes.</p>
+      <p style="color:#6b7280">Si vous n’avez pas demandé ce code, ignorez cet email.</p>
+    </div>
+  `;
+
+  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sendGridApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      personalizations: [
+        {
+          to: [{ email: contact }],
+          subject,
+        },
+      ],
+      from: {
+        email: sendGridFromEmail,
+        name: sendGridFromName,
+      },
+      content: [
+        { type: 'text/plain', value: text },
+        { type: 'text/html', value: html },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    console.error('SendGrid failed:', response.status, errorText);
+    return false;
+  }
+
+  return true;
 }
 
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
@@ -295,11 +355,13 @@ async function handleRequest(request, response) {
       [contact, code, purpose],
     );
 
+    const emailSent = await sendVerificationEmail(contact, code, purpose);
+
     sendJson(response, 200, {
       ok: true,
-      message: 'Code envoyé',
-      // Demo: sans fournisseur SMS/email, on retourne le code pour tester.
-      code,
+      message: emailSent ? 'Code envoyé par email' : 'Code généré',
+      delivery: emailSent ? 'email' : 'demo',
+      ...(emailSent ? {} : { code }),
     });
     return;
   }
