@@ -49,19 +49,29 @@ export default function Register() {
 
     try {
       const result = await requestVerificationCode(cleanContact, 'register');
-      const nextCode = result?.code || Math.floor(100000 + Math.random() * 900000).toString();
+      const nextCode = result?.code ? String(result.code) : '';
       setSentCode(nextCode);
       setVerifiedContact(cleanContact);
       setVerificationCode('');
       setStep('code');
-      Alert.alert('Code envoyé', `Votre code de confirmation est ${nextCode}`);
+      Alert.alert(
+        'Code envoyé',
+        nextCode
+          ? `Votre code de confirmation est ${nextCode}`
+          : 'Votre code de confirmation a été envoyé par email.'
+      );
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
     }
   };
 
   const handleConfirmCode = () => {
-    if (verificationCode.trim() !== sentCode) {
+    if (!verificationCode.trim()) {
+      Alert.alert('Code manquant', 'Entrez le code reçu puis réessayez.');
+      return;
+    }
+
+    if (sentCode && verificationCode.trim() !== sentCode) {
       Alert.alert('Code incorrect', 'Vérifiez le code reçu puis réessayez.');
       return;
     }
