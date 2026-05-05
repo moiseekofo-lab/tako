@@ -94,7 +94,7 @@ export default function ClientNfcActivation() {
       <View style={styles.header}>
         <TakoLogo />
         <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+          <Ionicons name="chevron-back" size={26} color="#061F68" />
         </TouchableOpacity>
       </View>
 
@@ -138,7 +138,7 @@ export default function ClientNfcActivation() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
     paddingHorizontal: 30,
     paddingTop: 56,
     paddingBottom: 42,
@@ -167,13 +167,13 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   logoWhite: {
-    color: 'white',
+    color: '#061F68',
   },
   logoBlue: {
     color: '#129CFF',
   },
   title: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 31,
     fontWeight: '800',
     marginBottom: 24,
@@ -233,13 +233,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   statusText: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 16,
     fontWeight: '800',
     flex: 1,
   },
   warning: {
-    color: '#A9D9FF',
+    color: '#52627A',
     textAlign: 'center',
     marginTop: 18,
     fontWeight: '700',

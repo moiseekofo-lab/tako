@@ -27,7 +27,7 @@ export default function MyData() {
     <View style={styles.screen}>
       <View style={styles.header}>
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={33} color="white" />
+          <Ionicons name="chevron-back" size={33} color="#061F68" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{text.myData}</Text>
         <View style={styles.headerSpacer} />
@@ -86,7 +86,7 @@ export default function MyData() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
     paddingTop: 58,
   },
   header: {
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 28,
   },
   headerTitle: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 31,
     fontWeight: '900',
   },

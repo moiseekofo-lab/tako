@@ -24,7 +24,7 @@ export default function History() {
     <View style={styles.screen}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="white" />
+          <Ionicons name="chevron-back" size={28} color="#061F68" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{text.tripHistory}</Text>
         <View style={styles.backButtonPlaceholder} />
@@ -62,7 +62,7 @@ export default function History() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
     paddingHorizontal: 28,
     paddingTop: 58,
   },
@@ -85,7 +85,7 @@ const styles = StyleSheet.create({
     width: 48,
   },
   headerTitle: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 27,
     fontWeight: '900',
   },

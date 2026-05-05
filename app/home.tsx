@@ -447,7 +447,7 @@ export default function Home() {
       <View style={styles.header}>
         <TakoLogo />
         <TouchableOpacity style={styles.logoutIcon} onPress={() => router.replace('/login')}>
-          <Ionicons name="log-out-outline" size={25} color="white" />
+          <Ionicons name="log-out-outline" size={25} color="#061F68" />
         </TouchableOpacity>
       </View>
 
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
     paddingHorizontal: 30,
     paddingTop: 56,
     paddingBottom: 42,
@@ -967,8 +967,8 @@ const styles = StyleSheet.create({
     maxWidth: 620,
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#126CDE',
-    backgroundColor: '#082A82',
+    borderColor: '#D7E0EF',
+    backgroundColor: 'white',
     padding: 28,
   },
   mobileShell: {
@@ -1029,7 +1029,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   title: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 28,
     fontWeight: '800',
     marginBottom: 20,
@@ -1078,7 +1078,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   cardStatusText: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 16,
     fontWeight: '800',
     flex: 1,
@@ -1159,7 +1159,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modeText: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 18,
     fontWeight: '800',
   },

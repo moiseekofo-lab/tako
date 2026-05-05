@@ -273,16 +273,16 @@ export default function Register() {
                 style={[styles.roleBtn, role === 'passager' && styles.active]}
                 activeOpacity={0.85}
                 onPress={() => setRole('passager')}>
-                <Ionicons name="people" size={31} color="white" />
-                <Text style={styles.roleText}>Passager</Text>
+                <Ionicons name="people" size={31} color={role === 'passager' ? 'white' : '#061F68'} />
+                <Text style={[styles.roleText, role === 'passager' && styles.activeRoleText]}>Passager</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.roleBtn, role === 'chauffeur' && styles.active]}
                 activeOpacity={0.85}
                 onPress={() => setRole('chauffeur')}>
-                <MaterialCommunityIcons name="steering" size={33} color="white" />
-                <Text style={styles.roleText}>Chauffeur</Text>
+                <MaterialCommunityIcons name="steering" size={33} color={role === 'chauffeur' ? 'white' : '#061F68'} />
+                <Text style={[styles.roleText, role === 'chauffeur' && styles.activeRoleText]}>Chauffeur</Text>
               </TouchableOpacity>
             </View>
 
@@ -300,21 +300,21 @@ export default function Register() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
   },
   container: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 54,
     paddingBottom: 42,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
   },
   logoWrap: {
     alignItems: 'flex-start',
     marginBottom: 34,
   },
   title: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 28,
     fontWeight: '900',
     marginBottom: 18,
@@ -322,8 +322,8 @@ const styles = StyleSheet.create({
   formPanel: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: '#D7E0EF',
+    backgroundColor: 'white',
     paddingHorizontal: 16,
     paddingTop: 18,
     paddingBottom: 18,
@@ -337,26 +337,26 @@ const styles = StyleSheet.create({
     width: 13,
     height: 13,
     borderRadius: 7,
-    backgroundColor: 'rgba(255,255,255,0.32)',
+    backgroundColor: '#CCD6E3',
   },
   stepLine: {
     flex: 1,
     height: 3,
     marginHorizontal: 7,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: '#D7E0EF',
   },
   stepActive: {
     backgroundColor: '#09D457',
   },
   stepTitle: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 21,
     fontWeight: '900',
     marginBottom: 10,
   },
   helperText: {
-    color: 'rgba(255,255,255,0.84)',
+    color: '#52627A',
     fontSize: 14,
     lineHeight: 21,
     fontWeight: '600',
@@ -365,10 +365,10 @@ const styles = StyleSheet.create({
   verifiedText: {
     alignSelf: 'flex-start',
     overflow: 'hidden',
-    color: 'white',
+    color: '#061F68',
     fontSize: 15,
     fontWeight: '800',
-    backgroundColor: 'rgba(9,212,87,0.24)',
+    backgroundColor: '#E9FFF1',
     borderColor: '#09D457',
     borderWidth: 1,
     borderRadius: 20,
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   label: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 17,
     fontWeight: '800',
     marginTop: 14,
@@ -422,9 +422,12 @@ const styles = StyleSheet.create({
     borderColor: '#139DFF',
   },
   roleText: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 15,
     fontWeight: '800',
+  },
+  activeRoleText: {
+    color: 'white',
   },
   btn: {
     height: 62,
@@ -445,7 +448,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   textButtonLabel: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 16,
     fontWeight: '800',
     textDecorationLine: 'underline',

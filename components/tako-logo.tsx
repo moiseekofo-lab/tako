@@ -5,7 +5,7 @@ type TakoLogoProps = {
   color?: string;
 };
 
-export function TakoLogo({ size = 'small', color = 'white' }: TakoLogoProps) {
+export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
   const isLarge = size === 'large';
   const isLogin = size === 'login';
 

@@ -129,7 +129,7 @@ export default function Scan() {
       <View style={styles.header}>
         <TakoLogo />
         <TouchableOpacity style={styles.iconButton} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={26} color="white" />
+          <Ionicons name="chevron-back" size={26} color="#061F68" />
         </TouchableOpacity>
       </View>
 
@@ -170,7 +170,7 @@ export default function Scan() {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#061F68',
+    backgroundColor: '#F5F8FF',
     paddingHorizontal: 30,
     paddingTop: 56,
     paddingBottom: 42,
@@ -199,25 +199,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0,
   },
   logoWhite: {
-    color: 'white',
+    color: '#061F68',
   },
   logoBlue: {
     color: '#129CFF',
   },
   title: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 31,
     fontWeight: '800',
     marginBottom: 12,
   },
   balance: {
-    color: '#A9D9FF',
+    color: '#52627A',
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 24,
   },
   permissionText: {
-    color: 'white',
+    color: '#52627A',
     marginBottom: 20,
     textAlign: 'center',
     width: 260,
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   successText: {
-    color: 'white',
+    color: '#061F68',
     fontSize: 18,
     fontWeight: '800',
   },
