@@ -44,10 +44,13 @@ export default function Login() {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [clientName, setClientName] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const language = useStore((state: any) => state.language) as Language;
   const setGlobalLanguage = useStore((state: any) => state.setLanguage);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const sheetTranslateY = useRef(new Animated.Value(SHEET_DISMISS_Y)).current;
+  const busTranslateX = useRef(new Animated.Value(-150)).current;
+  const roadPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     AsyncStorage.getItem(CLIENT_NAME_KEY).then((storedName) => {
@@ -90,6 +93,44 @@ export default function Login() {
       hideSubscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    if (!isLoggingIn) {
+      busTranslateX.setValue(-150);
+      roadPulse.setValue(0);
+      return;
+    }
+
+    const busLoop = Animated.loop(
+      Animated.timing(busTranslateX, {
+        toValue: 430,
+        duration: 1900,
+        useNativeDriver: true,
+      })
+    );
+    const pulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(roadPulse, {
+          toValue: 1,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+        Animated.timing(roadPulse, {
+          toValue: 0,
+          duration: 650,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+
+    busLoop.start();
+    pulseLoop.start();
+
+    return () => {
+      busLoop.stop();
+      pulseLoop.stop();
+    };
+  }, [busTranslateX, isLoggingIn, roadPulse]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -241,6 +282,9 @@ export default function Login() {
       return;
     }
 
+    Keyboard.dismiss();
+    setIsLoggingIn(true);
+
     try {
       const result = await loginAccount(cleanLogin, password);
       if (result?.user) {
@@ -279,6 +323,7 @@ export default function Login() {
             return;
           }
         } catch {
+          setIsLoggingIn(false);
           Alert.alert('Erreur', error?.message || 'Connexion impossible.');
         }
         return;
@@ -397,7 +442,11 @@ export default function Login() {
                   </Pressable>
                 </View>
 
-                <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={handleLogin}>
+                <TouchableOpacity
+                  style={[styles.enterButton, isLoggingIn && styles.enterButtonDisabled]}
+                  activeOpacity={0.9}
+                  disabled={isLoggingIn}
+                  onPress={handleLogin}>
                   <Ionicons name="key" size={22} color="white" />
                   <Text style={styles.enterText}>{text.enter}</Text>
                 </TouchableOpacity>
@@ -529,6 +578,52 @@ export default function Login() {
             )}
 
             <Text style={styles.version}>v1.0.0</Text>
+          </View>
+        )}
+
+        {isLoggingIn && (
+          <View style={styles.loadingOverlay}>
+            <ImageBackground
+              source={require('../assets/images/decor-kinshasa-illustration.png')}
+              resizeMode="cover"
+              style={styles.loadingScene}>
+              <View style={styles.loadingShade}>
+                <View style={styles.limeteTower}>
+                  <View style={styles.towerTop} />
+                  <View style={styles.towerStem} />
+                  <View style={styles.towerBase} />
+                </View>
+
+                <View style={styles.loadingRoad}>
+                  <Animated.View
+                    style={[
+                      styles.roadLine,
+                      {
+                        opacity: roadPulse.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0.35, 1],
+                        }),
+                      },
+                    ]}
+                  />
+                  <Animated.View style={[styles.bus, { transform: [{ translateX: busTranslateX }] }]}>
+                    <View style={styles.busRoof} />
+                    <View style={styles.busBody}>
+                      <View style={styles.busWindow} />
+                      <View style={styles.busWindow} />
+                      <View style={styles.busWindowSmall} />
+                    </View>
+                    <View style={styles.busWheels}>
+                      <View style={styles.busWheel} />
+                      <View style={styles.busWheel} />
+                    </View>
+                  </Animated.View>
+                </View>
+
+                <Text style={styles.loadingTitle}>Téléchargement du compte</Text>
+                <Text style={styles.loadingText}>TaKo roule vers votre compte...</Text>
+              </View>
+            </ImageBackground>
           </View>
         )}
       </View>
@@ -730,6 +825,9 @@ const styles = StyleSheet.create({
     shadowRadius: 5,
     elevation: 4,
   },
+  enterButtonDisabled: {
+    opacity: 0.78,
+  },
   enterText: {
     color: 'white',
     fontSize: 16,
@@ -796,5 +894,128 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '800',
     marginTop: 34,
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 20,
+    backgroundColor: '#061F68',
+  },
+  loadingScene: {
+    flex: 1,
+  },
+  loadingShade: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(6,31,104,0.72)',
+    paddingHorizontal: 28,
+    paddingBottom: 74,
+  },
+  limeteTower: {
+    position: 'absolute',
+    top: 145,
+    alignSelf: 'center',
+    alignItems: 'center',
+    opacity: 0.82,
+  },
+  towerTop: {
+    width: 104,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F2B624',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.72)',
+  },
+  towerStem: {
+    width: 34,
+    height: 205,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+  },
+  towerBase: {
+    width: 125,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.72)',
+  },
+  loadingRoad: {
+    height: 118,
+    overflow: 'hidden',
+    borderRadius: 16,
+    backgroundColor: 'rgba(5,10,22,0.88)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.16)',
+    justifyContent: 'center',
+    marginBottom: 28,
+  },
+  roadLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    top: 58,
+    height: 5,
+    backgroundColor: '#F2B624',
+  },
+  bus: {
+    width: 138,
+    height: 64,
+    marginLeft: 0,
+  },
+  busRoof: {
+    width: 92,
+    height: 13,
+    marginLeft: 24,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+    backgroundColor: '#09D457',
+  },
+  busBody: {
+    height: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 10,
+    backgroundColor: '#139DFF',
+    borderWidth: 3,
+    borderColor: 'white',
+    paddingHorizontal: 13,
+  },
+  busWindow: {
+    width: 28,
+    height: 18,
+    borderRadius: 4,
+    backgroundColor: 'white',
+  },
+  busWindowSmall: {
+    width: 18,
+    height: 18,
+    borderRadius: 4,
+    backgroundColor: 'white',
+  },
+  busWheels: {
+    width: 108,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: -8,
+    marginLeft: 16,
+  },
+  busWheel: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#111827',
+    borderWidth: 4,
+    borderColor: 'white',
+  },
+  loadingTitle: {
+    color: 'white',
+    fontSize: 27,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  loadingText: {
+    color: '#BFE4FF',
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
   },
 });
