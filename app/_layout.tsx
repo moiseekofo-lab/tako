@@ -1,7 +1,13 @@
 import { Stack } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 const FONT_SCALE = 0.88;
+const APP_FONT_FAMILY = Platform.select({
+  android: 'Roboto',
+  ios: 'System',
+  web: 'Roboto, Arial, sans-serif',
+  default: 'Arial',
+});
 
 type FontPatchGlobal = typeof globalThis & {
   __takoFontPatchApplied?: boolean;
@@ -27,6 +33,14 @@ const patchFontSizes = (value: unknown): unknown => {
 
     nextStyle[key] = patchFontSizes(item);
   });
+
+  if (
+    APP_FONT_FAMILY &&
+    typeof nextStyle.fontSize === 'number' &&
+    typeof nextStyle.fontFamily !== 'string'
+  ) {
+    nextStyle.fontFamily = APP_FONT_FAMILY;
+  }
 
   return nextStyle;
 };
