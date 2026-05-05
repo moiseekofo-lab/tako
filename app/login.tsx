@@ -30,7 +30,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export default function Login() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
-  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showLoginForm, setShowLoginForm] = useState(Platform.OS === 'web');
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -358,14 +358,18 @@ export default function Login() {
       resizeMode="cover"
       style={styles.background}>
       <View style={[styles.overlay, isWeb && styles.webOverlay]}>
-        <View style={styles.header}>
-          <TakoLogo size="login" />
+        <View style={[styles.header, isWeb && styles.webHeader]}>
+          <TakoLogo size="login" color={isWeb ? '#061F68' : 'white'} />
 
-          <View style={styles.languages}>
+          <View style={[styles.languages, isWeb && styles.webLanguages]}>
             {languageOptions.map((item) => (
               <TouchableOpacity
                 key={item.code}
-                style={[styles.flagButton, language === item.code && styles.activeFlagButton]}
+                style={[
+                  styles.flagButton,
+                  language === item.code && styles.activeFlagButton,
+                  isWeb && language === item.code && styles.webActiveFlagButton,
+                ]}
                 activeOpacity={0.8}
                 accessibilityLabel={item.label}
                 onPress={() => changeLanguage(item.code)}>
@@ -376,7 +380,7 @@ export default function Login() {
         </View>
 
         {showLoginForm ? (
-          <View style={styles.keyboardAvoider}>
+          <View style={[styles.keyboardAvoider, isWeb && styles.webKeyboardAvoider]}>
             <Animated.View
               style={[
                 styles.loginSheet,
@@ -393,10 +397,10 @@ export default function Login() {
 
             {authMode === 'login' ? (
               <>
-                <Text style={styles.greeting}>
+                <Text style={[styles.greeting, isWeb && styles.webGreeting]}>
                   {greeting}, {displayName}
                 </Text>
-                <Text style={styles.loginTitle}>{text.loginTitle}</Text>
+                <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{text.loginTitle}</Text>
 
                 <View style={styles.fieldWrap}>
                   <TextInput
@@ -406,19 +410,19 @@ export default function Login() {
                     autoCapitalize="none"
                     value={email}
                     onChangeText={setEmail}
-                    style={styles.field}
+                    style={[styles.field, isWeb && styles.webField]}
                   />
                 </View>
 
                 <View style={styles.fieldWrap}>
-                  <View style={styles.passwordRow}>
+                  <View style={[styles.passwordRow, isWeb && styles.webPasswordRow]}>
                     <TextInput
                       placeholder={text.password}
                       placeholderTextColor="#9B9B9B"
                       secureTextEntry={!showPassword}
                       value={password}
                       onChangeText={setPassword}
-                      style={styles.passwordField}
+                      style={[styles.passwordField, isWeb && styles.webPasswordField]}
                     />
                     <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
                       <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={28} color="#8D8D8D" />
@@ -443,7 +447,7 @@ export default function Login() {
                 </View>
 
                 <TouchableOpacity
-                  style={[styles.enterButton, isLoggingIn && styles.enterButtonDisabled]}
+                  style={[styles.enterButton, isWeb && styles.webEnterButton, isLoggingIn && styles.enterButtonDisabled]}
                   activeOpacity={0.9}
                   disabled={isLoggingIn}
                   onPress={handleLogin}>
@@ -459,8 +463,8 @@ export default function Login() {
 
             {authMode === 'forgotContact' ? (
               <>
-                <Text style={styles.recoveryTitle}>Récupérer le compte</Text>
-                <Text style={styles.recoveryText}>
+                <Text style={[styles.recoveryTitle, isWeb && styles.webGreeting]}>Récupérer le compte</Text>
+                <Text style={[styles.recoveryText, isWeb && styles.webRecoveryText]}>
                   Entrez le numéro ou l’email enregistré sur votre compte. Vous recevrez un code de confirmation.
                 </Text>
 
@@ -472,11 +476,11 @@ export default function Login() {
                     autoCapitalize="none"
                     value={resetContact}
                     onChangeText={setResetContact}
-                    style={styles.field}
+                    style={[styles.field, isWeb && styles.webField]}
                   />
                 </View>
 
-                <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={sendResetCode}>
+                <TouchableOpacity style={[styles.enterButton, isWeb && styles.webEnterButton]} activeOpacity={0.9} onPress={sendResetCode}>
                   <Ionicons name="send" size={22} color="white" />
                   <Text style={styles.enterText}>ENVOYER LE CODE</Text>
                 </TouchableOpacity>
@@ -489,8 +493,8 @@ export default function Login() {
 
             {authMode === 'forgotCode' ? (
               <>
-                <Text style={styles.recoveryTitle}>Confirmer le code</Text>
-                <Text style={styles.recoveryText}>Entrez le code reçu sur {resetContact.trim()}.</Text>
+                <Text style={[styles.recoveryTitle, isWeb && styles.webGreeting]}>Confirmer le code</Text>
+                <Text style={[styles.recoveryText, isWeb && styles.webRecoveryText]}>Entrez le code reçu sur {resetContact.trim()}.</Text>
 
                 <View style={styles.fieldWrap}>
                   <TextInput
@@ -500,12 +504,12 @@ export default function Login() {
                     value={resetCode}
                     onChangeText={setResetCode}
                     maxLength={6}
-                    style={styles.field}
+                    style={[styles.field, isWeb && styles.webField]}
                   />
                   <Text style={styles.counter}>{resetCode.length}/6</Text>
                 </View>
 
-                <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={confirmResetCode}>
+                <TouchableOpacity style={[styles.enterButton, isWeb && styles.webEnterButton]} activeOpacity={0.9} onPress={confirmResetCode}>
                   <Ionicons name="checkmark-circle" size={22} color="white" />
                   <Text style={styles.enterText}>CONFIRMER</Text>
                 </TouchableOpacity>
@@ -518,18 +522,18 @@ export default function Login() {
 
             {authMode === 'newPassword' ? (
               <>
-                <Text style={styles.recoveryTitle}>Nouveau mot de passe</Text>
-                <Text style={styles.recoveryText}>Créez un nouveau mot de passe pour votre compte.</Text>
+                <Text style={[styles.recoveryTitle, isWeb && styles.webGreeting]}>Nouveau mot de passe</Text>
+                <Text style={[styles.recoveryText, isWeb && styles.webRecoveryText]}>Créez un nouveau mot de passe pour votre compte.</Text>
 
                 <View style={styles.fieldWrap}>
-                  <View style={styles.passwordRow}>
+                  <View style={[styles.passwordRow, isWeb && styles.webPasswordRow]}>
                     <TextInput
                       placeholder="Nouveau mot de passe"
                       placeholderTextColor="#9B9B9B"
                       secureTextEntry={!showNewPassword}
                       value={newPassword}
                       onChangeText={setNewPassword}
-                      style={styles.passwordField}
+                      style={[styles.passwordField, isWeb && styles.webPasswordField]}
                     />
                     <Pressable onPress={() => setShowNewPassword((value) => !value)} hitSlop={10}>
                       <Ionicons name={showNewPassword ? 'eye-off' : 'eye'} size={28} color="#8D8D8D" />
@@ -544,11 +548,11 @@ export default function Login() {
                     secureTextEntry={!showNewPassword}
                     value={confirmNewPassword}
                     onChangeText={setConfirmNewPassword}
-                    style={styles.field}
+                    style={[styles.field, isWeb && styles.webField]}
                   />
                 </View>
 
-                <TouchableOpacity style={styles.enterButton} activeOpacity={0.9} onPress={saveNewPassword}>
+                <TouchableOpacity style={[styles.enterButton, isWeb && styles.webEnterButton]} activeOpacity={0.9} onPress={saveNewPassword}>
                   <Ionicons name="lock-closed" size={22} color="white" />
                   <Text style={styles.enterText}>ENREGISTRER</Text>
                 </TouchableOpacity>
@@ -645,19 +649,31 @@ const styles = StyleSheet.create({
   },
   webOverlay: {
     width: '100%',
-    maxWidth: 1180,
+    maxWidth: '100%',
     alignSelf: 'center',
+    backgroundColor: '#F5F8FF',
     paddingHorizontal: 52,
+    paddingTop: 46,
+    paddingBottom: 46,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
+  webHeader: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   languages: {
     flexDirection: 'row',
     gap: 14,
     paddingTop: 5,
+  },
+  webLanguages: {
+    position: 'absolute',
+    right: 0,
+    top: 12,
   },
   flagButton: {
     width: 34,
@@ -672,6 +688,10 @@ const styles = StyleSheet.create({
     borderColor: 'white',
     backgroundColor: 'rgba(255,255,255,0.18)',
   },
+  webActiveFlagButton: {
+    borderColor: '#061F68',
+    backgroundColor: '#EAF3FF',
+  },
   flag: {
     fontSize: 24,
   },
@@ -679,6 +699,10 @@ const styles = StyleSheet.create({
     flex: 1,
     width: '100%',
     justifyContent: 'flex-end',
+  },
+  webKeyboardAvoider: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardWhiteBase: {
     marginHorizontal: -28,
@@ -696,12 +720,22 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
   },
   webLoginSheet: {
-    width: 470,
-    alignSelf: 'flex-end',
+    width: 560,
+    maxWidth: '100%',
+    alignSelf: 'center',
     marginHorizontal: 0,
-    marginBottom: 40,
-    borderRadius: 18,
-    paddingHorizontal: 34,
+    marginBottom: 0,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    paddingHorizontal: 46,
+    paddingTop: 44,
+    paddingBottom: 38,
+    shadowColor: '#061F68',
+    shadowOffset: { width: 0, height: 14 },
+    shadowOpacity: 0.08,
+    shadowRadius: 28,
+    elevation: 5,
   },
   webHidden: {
     display: 'none',
@@ -722,11 +756,24 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     marginBottom: 6,
   },
+  webGreeting: {
+    color: '#061F68',
+    fontSize: 25,
+    textAlign: 'center',
+    fontWeight: '900',
+  },
   loginTitle: {
     color: '#139DFF',
     fontSize: 21,
     fontWeight: '700',
     marginBottom: 30,
+  },
+  webLoginTitle: {
+    color: '#52627A',
+    fontSize: 15,
+    textAlign: 'center',
+    marginBottom: 34,
+    fontWeight: '800',
   },
   recoveryTitle: {
     color: '#139DFF',
@@ -741,6 +788,13 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginBottom: 18,
   },
+  webRecoveryText: {
+    textAlign: 'center',
+    color: '#52627A',
+    fontSize: 14,
+    lineHeight: 21,
+    marginBottom: 28,
+  },
   fieldWrap: {
     marginBottom: 12,
   },
@@ -752,6 +806,17 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '500',
   },
+  webField: {
+    height: 52,
+    borderWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#CCD6E3',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+    color: '#061F68',
+    fontSize: 16,
+    fontWeight: '800',
+  },
   passwordRow: {
     height: 38,
     flexDirection: 'row',
@@ -759,11 +824,24 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1.5,
     borderBottomColor: '#1E1E1E',
   },
+  webPasswordRow: {
+    height: 52,
+    borderWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#CCD6E3',
+    borderRadius: 8,
+    paddingHorizontal: 16,
+  },
   passwordField: {
     flex: 1,
     color: '#202836',
     fontSize: 18,
     fontWeight: '500',
+  },
+  webPasswordField: {
+    color: '#061F68',
+    fontSize: 16,
+    fontWeight: '800',
   },
   counter: {
     color: '#6F6F6F',
@@ -824,6 +902,14 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 5,
     elevation: 4,
+  },
+  webEnterButton: {
+    height: 54,
+    borderRadius: 8,
+    borderWidth: 0,
+    backgroundColor: '#061F68',
+    shadowColor: '#061F68',
+    marginTop: 6,
   },
   enterButtonDisabled: {
     opacity: 0.78,
