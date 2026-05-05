@@ -5,6 +5,10 @@ import { TakoLogo } from '../components/tako-logo';
 import { findClientById } from '../services/api';
 import { useStore } from './store';
 
+const TAKO_BLUE = '#061F68';
+const TAKO_ACTION = '#139DFF';
+const TAKO_GREEN = '#09D457';
+
 export default function Admin() {
   const isWeb = Platform.OS === 'web';
   const currentUser = useStore((state: any) => state.currentUser);
@@ -13,15 +17,11 @@ export default function Admin() {
   const balance = useStore((state: any) => state.balance);
   const [clientId, setClientId] = useState('');
   const [selectedClient, setSelectedClient] = useState<any>(null);
-
-  let chauffeur = {
-    name: "John",
-    status: "pending"
-  };
+  const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
 
   const approve = () => {
-    chauffeur.status = "active";
-    alert("✅ Chauffeur validé !");
+    setDriverStatus('Actif');
+    Alert.alert('Chauffeur validé', 'Le chauffeur peut maintenant utiliser son compte.');
   };
 
   const findClient = async () => {
@@ -41,7 +41,7 @@ export default function Admin() {
       // Le mode local reste disponible si le backend n’est pas joignable.
     }
 
-    if (cleanClientId !== currentUser.id.toUpperCase()) {
+    if (!currentUser?.id || cleanClientId !== currentUser.id.toUpperCase()) {
       setSelectedClient(null);
       Alert.alert('Client introuvable', 'Aucun compte client trouvé avec cet ID.');
       return;
@@ -53,257 +53,392 @@ export default function Admin() {
   return (
     <ScrollView contentContainerStyle={[styles.container, isWeb && styles.webContainer]} keyboardShouldPersistTaps="always">
       <View style={[styles.shell, isWeb && styles.webShell]}>
-        <View style={styles.topBar}>
-          <TakoLogo size={isWeb ? 'small' : 'login'} />
-          <TouchableOpacity style={styles.logoutButton} onPress={() => {}}>
-            <Ionicons name="shield-checkmark" size={24} color="white" />
-            <Text style={styles.logoutText}>Privé travailleurs</Text>
-          </TouchableOpacity>
+        <View style={styles.brandRow}>
+          <TakoLogo size={isWeb ? 'small' : 'login'} color={TAKO_BLUE} />
         </View>
 
-        <Text style={styles.title}>Compte administrateur</Text>
+        <View style={styles.panel}>
+          <View style={styles.panelHeader}>
+            <View>
+              <Text style={styles.kicker}>Espace privé</Text>
+              <Text style={styles.title}>Compte administrateur</Text>
+              <Text style={styles.subtitle}>Gestion interne des clients, chauffeurs et paiements TaKo.</Text>
+            </View>
 
-        <View style={isWeb ? styles.webGrid : undefined}>
-      <View style={[styles.infoBox, isWeb && styles.gridBox]}>
-        <Text style={styles.boxTitle}>Accès compte client</Text>
-        <View style={styles.inputBox}>
-          <Ionicons name="id-card-outline" size={25} color="#87909F" />
-          <TextInput
-            placeholder="Entrer ID client"
-            placeholderTextColor="#87909F"
-            value={clientId}
-            onChangeText={setClientId}
-            autoCapitalize="characters"
-            style={styles.input}
-          />
-        </View>
+            <View style={styles.badge}>
+              <Ionicons name="shield-checkmark" size={20} color={TAKO_BLUE} />
+              <Text style={styles.badgeText}>Travailleurs seulement</Text>
+            </View>
+          </View>
 
-        <TouchableOpacity style={styles.searchBtn} activeOpacity={0.9} onPress={findClient}>
-          <Ionicons name="search" size={24} color="white" />
-          <Text style={styles.text}>Voir le compte client</Text>
-        </TouchableOpacity>
-      </View>
+          <View style={styles.notice}>
+            <Ionicons name="information-circle-outline" size={24} color={TAKO_BLUE} />
+            <Text style={styles.noticeText}>
+              Cette version web n’est pas publique. Elle est réservée aux comptes administrateur et chauffeur.
+            </Text>
+          </View>
 
-      {selectedClient && (
-        <View style={[styles.infoBox, isWeb && styles.gridBox]}>
-          <Text style={styles.boxTitle}>Compte client</Text>
-          <View style={styles.infoRow}>
-            <Ionicons name="finger-print" size={25} color="#09D457" />
-            <Text style={styles.infoText}>ID: {selectedClient.id}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="person" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Nom: {selectedClient.fullName}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="mail" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Email: {selectedClient.email}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="call" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Téléphone: {selectedClient.phone || 'Non renseigné'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="calendar" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Naissance: {selectedClient.birthDate || 'Non renseignée'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="wallet" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Solde: {balance} FC</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <MaterialCommunityIcons name="bus" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Trajets: {trips.length}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Ionicons name="notifications" size={25} color="#09D457" />
-            <Text style={styles.infoText}>Notifications: {notifications.length}</Text>
-          </View>
-          <Text style={styles.lockedText}>ID permanent : non modifiable, même par administrateur.</Text>
-        </View>
-      )}
+          <View style={isWeb ? styles.webGrid : styles.mobileGrid}>
+            <View style={[styles.card, styles.searchCard]}>
+              <Text style={styles.cardTitle}>Accès au compte client</Text>
+              <Text style={styles.cardText}>Recherchez un client avec son ID TaKo permanent.</Text>
 
-      <View style={[styles.infoBox, isWeb && styles.gridBox]}>
-        <Text style={styles.boxTitle}>Validation chauffeur</Text>
-        <View style={styles.infoRow}>
-          <Ionicons name="person" size={25} color="#09D457" />
-          <Text style={styles.infoText}>Nom: {chauffeur.name}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <MaterialCommunityIcons name="timer-sand" size={25} color="#09D457" />
-          <Text style={styles.infoText}>Status: {chauffeur.status}</Text>
-        </View>
-      </View>
+              <View style={styles.inputBox}>
+                <Ionicons name="id-card-outline" size={24} color="#7B8798" />
+                <TextInput
+                  placeholder="Entrer l’ID client"
+                  placeholderTextColor="#8B95A5"
+                  value={clientId}
+                  onChangeText={setClientId}
+                  autoCapitalize="characters"
+                  style={styles.input}
+                />
+              </View>
 
-      {chauffeur.status === "pending" && (
-        <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={approve}>
-          <Ionicons name="checkmark-circle" size={25} color="white" />
-          <Text style={styles.text}>Valider Chauffeur</Text>
-        </TouchableOpacity>
-      )}
+              <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} onPress={findClient}>
+                <Ionicons name="search" size={22} color="white" />
+                <Text style={styles.primaryButtonText}>Voir le compte client</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.card}>
+              <Text style={styles.cardTitle}>Validation chauffeur</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="person-circle-outline" size={24} color={TAKO_ACTION} />
+                <Text style={styles.infoText}>Nom : John</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <MaterialCommunityIcons name="timer-sand" size={24} color={TAKO_ACTION} />
+                <Text style={styles.infoText}>Statut : {driverStatus}</Text>
+              </View>
+
+              {driverStatus === 'En attente' ? (
+                <TouchableOpacity style={styles.successButton} activeOpacity={0.9} onPress={approve}>
+                  <Ionicons name="checkmark-circle" size={22} color="white" />
+                  <Text style={styles.primaryButtonText}>Valider le chauffeur</Text>
+                </TouchableOpacity>
+              ) : (
+                <View style={styles.activeState}>
+                  <Ionicons name="checkmark-circle" size={23} color={TAKO_GREEN} />
+                  <Text style={styles.activeText}>Chauffeur actif</Text>
+                </View>
+              )}
+            </View>
+
+            {selectedClient ? (
+              <View style={[styles.card, isWeb && styles.fullCard]}>
+                <View style={styles.clientHeader}>
+                  <View>
+                    <Text style={styles.cardTitle}>Compte client</Text>
+                    <Text style={styles.cardText}>Informations enregistrées dans TaKo.</Text>
+                  </View>
+                  <View style={styles.clientPill}>
+                    <Ionicons name="finger-print" size={18} color={TAKO_BLUE} />
+                    <Text style={styles.clientPillText}>{selectedClient.id}</Text>
+                  </View>
+                </View>
+
+                <View style={styles.detailsGrid}>
+                  <InfoItem icon="person-outline" label="Nom" value={selectedClient.fullName || 'Non renseigné'} />
+                  <InfoItem icon="mail-outline" label="Email" value={selectedClient.email || 'Non renseigné'} />
+                  <InfoItem icon="call-outline" label="Téléphone" value={selectedClient.phone || 'Non renseigné'} />
+                  <InfoItem icon="calendar-outline" label="Naissance" value={selectedClient.birthDate || 'Non renseignée'} />
+                  <InfoItem icon="wallet-outline" label="Solde" value={`${balance} FC`} />
+                  <InfoItem icon="bus-outline" label="Trajets" value={`${trips.length}`} />
+                  <InfoItem icon="notifications-outline" label="Notifications" value={`${notifications.length}`} />
+                </View>
+
+                <View style={styles.lockedBox}>
+                  <Ionicons name="lock-closed-outline" size={21} color={TAKO_BLUE} />
+                  <Text style={styles.lockedText}>ID permanent : non modifiable, même par administrateur.</Text>
+                </View>
+              </View>
+            ) : null}
+          </View>
         </View>
       </View>
     </ScrollView>
   );
 }
 
+function InfoItem({ icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <View style={styles.detailItem}>
+      <Ionicons name={icon} size={22} color={TAKO_ACTION} />
+      <View style={styles.detailTextWrap}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <Text style={styles.detailValue}>{value}</Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    alignItems: 'center',
-    backgroundColor: '#061F68',
-    paddingHorizontal: 30,
-    paddingTop: 56,
+    backgroundColor: '#F5F8FF',
+    paddingHorizontal: 22,
+    paddingTop: 42,
     paddingBottom: 42,
   },
   webContainer: {
     minHeight: '100%',
-    justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 42,
+    paddingHorizontal: 48,
+    paddingTop: 48,
   },
   shell: {
     width: '100%',
-    alignItems: 'center',
   },
   webShell: {
-    maxWidth: 1120,
-    alignItems: 'stretch',
+    maxWidth: 1180,
   },
-  topBar: {
+  brandRow: {
+    alignItems: 'center',
+    marginBottom: 70,
+  },
+  panel: {
     width: '100%',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  logoutButton: {
-    minHeight: 46,
-    flexDirection: 'row',
-    gap: 8,
-    alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#126CDE',
-    paddingHorizontal: 14,
+    borderColor: '#D7E0EF',
+    backgroundColor: 'white',
+    padding: 34,
+    shadowColor: '#061F68',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 26,
+    elevation: 4,
   },
-  logoutText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  webGrid: {
-    width: '100%',
+  panelHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 20,
+    justifyContent: 'space-between',
+    gap: 24,
     alignItems: 'flex-start',
+    marginBottom: 26,
   },
-  gridBox: {
-    width: '48%',
-    minWidth: 420,
-  },
-  logo: {
-    fontSize: 70,
+  kicker: {
+    color: TAKO_ACTION,
+    fontSize: 13,
     fontWeight: '900',
-    fontStyle: 'italic',
-    letterSpacing: 0,
-  },
-  logoWhite: {
-    color: 'white',
-  },
-  logoBlue: {
-    color: '#129CFF',
-  },
-  glowLine: {
-    width: '78%',
-    height: 2,
-    marginTop: 16,
-    marginBottom: 48,
-    backgroundColor: '#0AA4FF',
-    shadowColor: '#0AA4FF',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 1,
-    shadowRadius: 10,
-    elevation: 6,
+    textTransform: 'uppercase',
+    marginBottom: 8,
   },
   title: {
-    alignSelf: 'flex-start',
-    color: 'white',
-    fontSize: 31,
-    fontWeight: '800',
-    marginBottom: 22,
-  },
-  infoBox: {
-    width: '100%',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#126CDE',
-    backgroundColor: '#082A82',
-    padding: 22,
-    marginBottom: 24,
-  },
-  boxTitle: {
-    color: 'white',
-    fontSize: 22,
+    color: TAKO_BLUE,
+    fontSize: 32,
     fontWeight: '900',
-    marginBottom: 16,
+    marginBottom: 8,
   },
-  inputBox: {
-    height: 62,
+  subtitle: {
+    color: '#5C667A',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  badge: {
+    minHeight: 42,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 8,
+    backgroundColor: '#EAF3FF',
+    paddingHorizontal: 14,
+  },
+  badgeText: {
+    color: TAKO_BLUE,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  notice: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    borderRadius: 10,
-    backgroundColor: '#F4F5F9',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CFE0F7',
+    backgroundColor: '#F7FBFF',
+    padding: 16,
+    marginBottom: 28,
+  },
+  noticeText: {
+    flex: 1,
+    color: '#263247',
+    fontSize: 15,
+    fontWeight: '700',
+    lineHeight: 21,
+  },
+  webGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 20,
+    alignItems: 'stretch',
+  },
+  mobileGrid: {
+    gap: 18,
+  },
+  card: {
+    flexGrow: 1,
+    flexBasis: 0,
+    minWidth: 330,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    padding: 24,
+  },
+  searchCard: {
+    borderTopWidth: 4,
+    borderTopColor: TAKO_ACTION,
+  },
+  fullCard: {
+    flexBasis: '100%',
+  },
+  cardTitle: {
+    color: TAKO_BLUE,
+    fontSize: 22,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  cardText: {
+    color: '#6B7280',
+    fontSize: 14,
+    fontWeight: '700',
+    marginBottom: 18,
+  },
+  inputBox: {
+    height: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#CCD6E3',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   input: {
     flex: 1,
-    color: '#202836',
-    fontSize: 18,
-    fontWeight: '700',
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  primaryButton: {
+    height: 56,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: TAKO_BLUE,
+  },
+  successButton: {
+    height: 56,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: TAKO_GREEN,
+    marginTop: 18,
+  },
+  primaryButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '900',
   },
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginVertical: 8,
-  },
-  infoText: {
-    color: 'white',
-    fontSize: 20,
-    fontWeight: '800',
-  },
-  btn: {
-    width: '100%',
-    height: 78,
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#09D457',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  searchBtn: {
-    width: '100%',
-    height: 64,
-    flexDirection: 'row',
-    gap: 10,
-    backgroundColor: '#139DFF',
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  lockedText: {
-    color: '#A9D9FF',
-    fontSize: 14,
-    fontWeight: '800',
     marginTop: 12,
   },
-  text: {
-    color: 'white',
-    fontSize: 21,
+  infoText: {
+    color: '#263247',
+    fontSize: 16,
     fontWeight: '800',
-  }
+  },
+  activeState: {
+    height: 56,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    backgroundColor: '#E9FFF1',
+    marginTop: 18,
+  },
+  activeText: {
+    color: '#087B35',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  clientHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 18,
+    alignItems: 'flex-start',
+    marginBottom: 6,
+  },
+  clientPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 8,
+    backgroundColor: '#EAF3FF',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  clientPillText: {
+    color: TAKO_BLUE,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  detailsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+    marginTop: 12,
+  },
+  detailItem: {
+    minWidth: 240,
+    flexGrow: 1,
+    flexBasis: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 8,
+    backgroundColor: '#F6F9FE',
+    padding: 14,
+  },
+  detailTextWrap: {
+    flex: 1,
+  },
+  detailLabel: {
+    color: '#7B8798',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 3,
+  },
+  detailValue: {
+    color: '#1F2937',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  lockedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 8,
+    backgroundColor: '#EAF3FF',
+    padding: 14,
+    marginTop: 18,
+  },
+  lockedText: {
+    flex: 1,
+    color: TAKO_BLUE,
+    fontSize: 14,
+    fontWeight: '900',
+  },
 });

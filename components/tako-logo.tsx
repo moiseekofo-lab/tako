@@ -2,20 +2,29 @@ import { Platform, StyleSheet, Text, View } from 'react-native';
 
 type TakoLogoProps = {
   size?: 'large' | 'login' | 'small';
+  color?: string;
 };
 
-export function TakoLogo({ size = 'small' }: TakoLogoProps) {
+export function TakoLogo({ size = 'small', color = 'white' }: TakoLogoProps) {
   const isLarge = size === 'large';
   const isLogin = size === 'login';
 
   return (
     <View style={[styles.logo, isLarge ? styles.logoLarge : isLogin ? styles.logoLogin : styles.logoSmall]}>
       <View style={[styles.mark, isLarge ? styles.markLarge : isLogin ? styles.markLogin : styles.markSmall]}>
-        <View style={[styles.dot, isLarge ? styles.dotLarge : isLogin ? styles.dotLogin : styles.dotSmall]} />
-        <View style={[styles.slash, isLarge ? styles.slashLarge : isLogin ? styles.slashLogin : styles.slashSmall]} />
+        <View
+          style={[styles.dot, isLarge ? styles.dotLarge : isLogin ? styles.dotLogin : styles.dotSmall, { backgroundColor: color }]}
+        />
+        <View
+          style={[
+            styles.slash,
+            isLarge ? styles.slashLarge : isLogin ? styles.slashLogin : styles.slashSmall,
+            { backgroundColor: color },
+          ]}
+        />
       </View>
 
-      <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall]}>
+      <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall, { color }]}>
         TaKo
       </Text>
     </View>
