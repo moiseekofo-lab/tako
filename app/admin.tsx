@@ -1,4 +1,5 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
@@ -35,6 +36,7 @@ const formatDate = (date?: string) => {
 };
 
 export default function Admin() {
+  const router = useRouter();
   const isWeb = Platform.OS === 'web';
   const currentUser = useStore((state: any) => state.currentUser);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
@@ -55,6 +57,12 @@ export default function Admin() {
   const approve = () => {
     setDriverStatus('Actif');
     Alert.alert('Chauffeur validé', 'Le chauffeur peut maintenant utiliser son compte.');
+  };
+
+  const logout = () => {
+    setSelectedClient(null);
+    setClientId('');
+    router.replace('/login' as any);
   };
 
   const findClient = async () => {
@@ -112,6 +120,11 @@ export default function Admin() {
             <Text style={styles.privateTitle}>Accès privé</Text>
             <Text style={styles.privateText}>Réservé aux administrateurs et travailleurs TaKo.</Text>
           </View>
+
+          <TouchableOpacity style={styles.sidebarLogout} activeOpacity={0.85} onPress={logout}>
+            <Ionicons name="log-out-outline" size={22} color="white" />
+            <Text style={styles.sidebarLogoutText}>Déconnexion</Text>
+          </TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -122,12 +135,19 @@ export default function Admin() {
               <Text style={styles.subtitle}>Clients, chauffeurs, paiements et sécurité opérationnelle.</Text>
             </View>
 
-            <View style={styles.adminBadge}>
-              <Ionicons name="person-circle-outline" size={24} color={TAKO_BLUE} />
-              <View>
-                <Text style={styles.adminName}>Administrateur</Text>
-                <Text style={styles.adminEmail}>{currentUser?.email || 'contact@takotransport.online'}</Text>
+            <View style={styles.topActions}>
+              <View style={styles.adminBadge}>
+                <Ionicons name="person-circle-outline" size={24} color={TAKO_BLUE} />
+                <View>
+                  <Text style={styles.adminName}>Administrateur</Text>
+                  <Text style={styles.adminEmail}>{currentUser?.email || 'contact@takotransport.online'}</Text>
+                </View>
               </View>
+
+              <TouchableOpacity style={styles.logoutButton} activeOpacity={0.85} onPress={logout}>
+                <Ionicons name="log-out-outline" size={20} color="white" />
+                <Text style={styles.logoutButtonText}>Déconnecter</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -490,6 +510,22 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 6,
   },
+  sidebarLogout: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    marginTop: 14,
+  },
+  sidebarLogoutText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
+  },
   content: {
     flexGrow: 1,
     padding: 34,
@@ -500,6 +536,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 20,
     marginBottom: 24,
+  },
+  topActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   kicker: {
     color: TAKO_ACTION,
@@ -541,6 +582,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
+  },
+  logoutButton: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: 8,
+    backgroundColor: TAKO_BLUE,
+    paddingHorizontal: 16,
+  },
+  logoutButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
   },
   statsGrid: {
     flexDirection: 'row',
