@@ -677,6 +677,7 @@ async function handleRequest(request, response) {
     const body = await readJson(request);
     const amount = Number(body.amount);
     const clientId = String(body.clientId || '').trim() || null;
+    let storedClientId = clientId;
     const provider = String(body.provider || '').trim();
     const operator = normalizeMobileMoneyProvider(provider);
     const walletId = normalizeWalletId(body.walletId);
@@ -694,6 +695,13 @@ async function handleRequest(request, response) {
         error: 'Configuration MaishaPay manquante sur Render',
       });
       return;
+    }
+
+    if (storedClientId) {
+      const clientResult = await query('SELECT id FROM users WHERE id = $1 LIMIT 1;', [storedClientId]);
+      if (!clientResult.rowCount) {
+        storedClientId = null;
+      }
     }
 
     const transactionReference = `TAKO-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
@@ -756,15 +764,15 @@ async function handleRequest(request, response) {
       [
         rechargeId,
         amount,
-        clientId,
+        storedClientId,
         operator,
         transactionReference,
       ],
     );
 
-    if (clientId) {
+    if (storedClientId) {
       await createNotification({
-        clientId,
+        clientId: storedClientId,
         title: 'Recharge demandée',
         message: `Recharge ${provider} de ${amount} FC en attente de confirmation.`,
         amount,
