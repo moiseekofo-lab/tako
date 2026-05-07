@@ -16,9 +16,21 @@ async function requestJson(path: string, options: RequestInit = {}) {
     },
   });
 
-  const data = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let data: any = {};
+  try {
+    data = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    data = { error: responseText };
+  }
+
   if (!response.ok) {
-    throw new Error(data?.error || `API error ${response.status}`);
+    const providerMessage =
+      data?.providerResponse?.original?.data?.statusDescription ||
+      data?.providerResponse?.data?.statusDescription ||
+      data?.providerResponse?.statusDescription ||
+      data?.providerResponse?.message;
+    throw new Error(data?.error || providerMessage || `Erreur API ${response.status}`);
   }
 
   return data;

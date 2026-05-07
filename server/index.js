@@ -727,9 +727,16 @@ async function handleRequest(request, response) {
     const accepted = maishaResponse.ok && (providerStatus === 202 || providerStatus === 200);
 
     if (!accepted) {
+      console.error('MaishaPay recharge refused:', {
+        httpStatus: maishaResponse.status,
+        providerStatus,
+        providerMessage: extractMaishaPayMessage(providerData),
+        providerData,
+      });
       sendJson(response, 502, {
         ok: false,
         error: extractMaishaPayMessage(providerData),
+        status: providerStatus,
         providerResponse: providerData,
       });
       return;
