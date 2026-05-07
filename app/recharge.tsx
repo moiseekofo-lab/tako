@@ -1,7 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { initiateMobileMoneyRecharge } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -10,37 +11,85 @@ const providers = ['M-Pesa', 'Airtel Money', 'Orange Money'];
 export default function Recharge() {
   const router = useRouter();
   const [amount, setAmount] = useState('');
+  const [walletId, setWalletId] = useState('');
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language) as Language;
+  const currentUser = useStore((state: any) => state.currentUser);
   const text = translations[language];
 
-  const handleRecharge = (provider: string) => {
+  const handleRecharge = async (provider: string) => {
     const value = Number.parseInt(amount, 10);
+    const cleanWalletId = walletId.trim();
 
     if (!Number.isFinite(value) || value <= 0) {
       Alert.alert(text.error, text.enterRechargeAmount);
       return;
     }
 
-    increaseBalance(value);
-    addNotification({
-      title: text.rechargeSuccess,
-      message: text.rechargeMessage(value, provider),
-      amount: value,
-      type: 'recharge',
-    });
-    setAmount('');
-    Alert.alert(text.rechargeSuccess, text.rechargeMessage(value, provider), [
-      {
-        text: 'OK',
-        onPress: () =>
-          router.replace({
-            pathname: '/home',
-            params: { role: 'passager' },
-          } as any),
-      },
-    ]);
+    if (!cleanWalletId) {
+      Alert.alert(text.error, 'Ajoutez le numéro mobile money à recharger.');
+      return;
+    }
+
+    try {
+      setLoadingProvider(provider);
+      const result = await initiateMobileMoneyRecharge({
+        clientId: currentUser?.id,
+        amount: value,
+        provider,
+        walletId: cleanWalletId,
+        customerFullName: currentUser?.fullName,
+        customerEmailAddress: currentUser?.email,
+      });
+
+      if (result?.recharge) {
+        addNotification({
+          title: 'Recharge demandée',
+          message: `Confirmez la demande ${provider} sur votre téléphone.`,
+          amount: value,
+          type: 'recharge',
+        });
+        setAmount('');
+        setWalletId('');
+        Alert.alert('Recharge envoyée', `Confirmez la demande ${provider} sur votre téléphone.`, [
+          {
+            text: 'OK',
+            onPress: () =>
+              router.replace({
+                pathname: '/home',
+                params: { role: 'passager' },
+              } as any),
+          },
+        ]);
+        return;
+      }
+
+      increaseBalance(value);
+      addNotification({
+        title: text.rechargeSuccess,
+        message: text.rechargeMessage(value, provider),
+        amount: value,
+        type: 'recharge',
+      });
+      setAmount('');
+      setWalletId('');
+      Alert.alert(text.rechargeSuccess, text.rechargeMessage(value, provider), [
+        {
+          text: 'OK',
+          onPress: () =>
+            router.replace({
+              pathname: '/home',
+              params: { role: 'passager' },
+            } as any),
+        },
+      ]);
+    } catch (error) {
+      Alert.alert(text.error, error instanceof Error ? error.message : 'Recharge impossible pour le moment.');
+    } finally {
+      setLoadingProvider(null);
+    }
   };
 
   return (
@@ -73,14 +122,31 @@ export default function Recharge() {
           />
         </View>
 
+        <View style={styles.inputBox}>
+          <MaterialCommunityIcons name="cellphone" size={24} color="#061F68" />
+          <TextInput
+            placeholder="Numéro mobile money"
+            placeholderTextColor="#87909F"
+            keyboardType="phone-pad"
+            value={walletId}
+            onChangeText={setWalletId}
+            style={styles.input}
+          />
+        </View>
+
         <View style={styles.providerGrid}>
           {providers.map((provider) => (
             <TouchableOpacity
               key={provider}
-              style={styles.providerButton}
+              style={[styles.providerButton, loadingProvider ? styles.providerButtonDisabled : null]}
               activeOpacity={0.88}
+              disabled={Boolean(loadingProvider)}
               onPress={() => handleRecharge(provider)}>
-              <MaterialCommunityIcons name="cellphone" size={27} color="white" />
+              {loadingProvider === provider ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <MaterialCommunityIcons name="cellphone" size={27} color="white" />
+              )}
               <Text style={styles.providerText}>{provider}</Text>
             </TouchableOpacity>
           ))}
@@ -150,10 +216,11 @@ const styles = StyleSheet.create({
     height: 68,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 12,
     borderRadius: 12,
     backgroundColor: '#F4F5F9',
     paddingHorizontal: 18,
-    marginBottom: 24,
+    marginBottom: 14,
   },
   currency: {
     color: '#061F68',
@@ -168,6 +235,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   providerGrid: {
+    marginTop: 10,
     gap: 12,
   },
   providerButton: {
@@ -178,6 +246,9 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 12,
     backgroundColor: '#139DFF',
+  },
+  providerButtonDisabled: {
+    opacity: 0.72,
   },
   providerText: {
     color: 'white',

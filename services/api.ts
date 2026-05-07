@@ -98,6 +98,17 @@ export function saveDriverTripSettings(params: {
   return postJson('/drivers/trip-settings', params);
 }
 
+export function initiateMobileMoneyRecharge(params: {
+  clientId?: string;
+  amount: number;
+  provider: string;
+  walletId: string;
+  customerFullName?: string;
+  customerEmailAddress?: string;
+}) {
+  return postJson('/recharges/mobile-money', params);
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

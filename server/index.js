@@ -9,6 +9,12 @@ const adminEmail = (process.env.ADMIN_EMAIL || 'contact@takotransport.online').t
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
 const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
+const maishaPayEndpoint =
+  process.env.MAISHA_PAY_ENDPOINT || 'https://marchand.maishapay.online/api/payment/rest/vers1.0/merchant';
+const maishaPayGatewayMode = Number(process.env.MAISHA_PAY_GATEWAY_MODE || 0);
+const maishaPayPublicApiKey = process.env.MAISHA_PAY_PUBLIC_API_KEY;
+const maishaPaySecretApiKey = process.env.MAISHA_PAY_SECRET_API_KEY;
+const maishaPayCurrency = process.env.MAISHA_PAY_CURRENCY || 'CDF';
 
 const pool = databaseUrl
   ? new pg.Pool({
@@ -269,6 +275,53 @@ function publicUser(user) {
     balance: Number(user.balance || 0),
     createdAt: user.created_at,
   };
+}
+
+function normalizeMobileMoneyProvider(provider = '') {
+  const value = String(provider).trim().toUpperCase().replace(/\s+/g, '');
+
+  if (value.includes('MPESA') || value.includes('M-PESA')) {
+    return 'MPESA';
+  }
+
+  if (value.includes('ORANGE')) {
+    return 'ORANGE';
+  }
+
+  if (value.includes('AIRTEL')) {
+    return 'AITEL';
+  }
+
+  if (value.includes('AFRICEL')) {
+    return 'AFRICEL';
+  }
+
+  if (value.includes('MTN')) {
+    return 'MTN';
+  }
+
+  return value;
+}
+
+function normalizeWalletId(walletId = '') {
+  const clean = String(walletId).trim().replace(/\s+/g, '');
+  if (!clean) {
+    return '';
+  }
+
+  if (clean.startsWith('+')) {
+    return clean;
+  }
+
+  if (clean.startsWith('243')) {
+    return `+${clean}`;
+  }
+
+  if (clean.startsWith('0')) {
+    return `+243${clean.slice(1)}`;
+  }
+
+  return clean;
 }
 
 async function createNotification({ clientId, title, message, amount = null, type }) {
@@ -597,6 +650,108 @@ async function handleRequest(request, response) {
     );
 
     sendJson(response, 200, { ok: true, settings: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/recharges/mobile-money') {
+    const body = await readJson(request);
+    const amount = Number(body.amount);
+    const clientId = String(body.clientId || '').trim() || null;
+    const provider = String(body.provider || '').trim();
+    const operator = normalizeMobileMoneyProvider(provider);
+    const walletId = normalizeWalletId(body.walletId);
+    const customerFullName = String(body.customerFullName || 'Client TaKo').trim();
+    const customerEmailAddress = String(body.customerEmailAddress || adminEmail).trim();
+
+    if (!Number.isFinite(amount) || amount <= 0 || !operator || !walletId) {
+      sendJson(response, 400, { ok: false, error: 'Montant, opérateur et numéro mobile money obligatoires' });
+      return;
+    }
+
+    if (!maishaPayPublicApiKey || !maishaPaySecretApiKey) {
+      sendJson(response, 503, {
+        ok: false,
+        error: 'Configuration MaishaPay manquante sur Render',
+      });
+      return;
+    }
+
+    const payload = {
+      publicApiKey: maishaPayPublicApiKey,
+      secretApiKey: maishaPaySecretApiKey,
+      gatewayMode: maishaPayGatewayMode,
+      amount,
+      currency: maishaPayCurrency,
+      operator,
+      customerFullName,
+      customerEmailAddress,
+      walletID: walletId,
+    };
+
+    const maishaResponse = await fetch(maishaPayEndpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    const responseText = await maishaResponse.text();
+    let providerData = {};
+    try {
+      providerData = responseText ? JSON.parse(responseText) : {};
+    } catch {
+      providerData = { message: responseText };
+    }
+
+    const providerStatus = Number(providerData.statusCode || maishaResponse.status);
+    const accepted = maishaResponse.ok && (providerStatus === 202 || providerStatus === 200);
+
+    if (!accepted) {
+      sendJson(response, 502, {
+        ok: false,
+        error: providerData.message || 'MaishaPay a refusé la demande de recharge',
+        providerResponse: providerData,
+      });
+      return;
+    }
+
+    const rechargeId = `rch_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const paymentResult = await query(
+      `
+        INSERT INTO payments (id, amount, method, client_id, driver_id, bus_plate, route, status, created_at)
+        VALUES ($1, $2, 'mobile_money', $3, NULL, $4, $5, 'pending', NOW())
+        RETURNING id, amount, method, client_id, status, created_at;
+      `,
+      [
+        rechargeId,
+        amount,
+        clientId,
+        operator,
+        providerData.transactionReference || providerData.reference || null,
+      ],
+    );
+
+    if (clientId) {
+      await createNotification({
+        clientId,
+        title: 'Recharge demandée',
+        message: `Recharge ${provider} de ${amount} FC en attente de confirmation.`,
+        amount,
+        type: 'recharge',
+      });
+    }
+
+    sendJson(response, 202, {
+      ok: true,
+      recharge: {
+        ...paymentResult.rows[0],
+        provider,
+        operator,
+        currency: maishaPayCurrency,
+        walletId,
+        transactionReference: providerData.transactionReference || null,
+        providerResponse: providerData,
+      },
+    });
     return;
   }
 
