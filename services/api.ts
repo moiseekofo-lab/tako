@@ -27,8 +27,12 @@ async function requestJson(path: string, options: RequestInit = {}) {
   if (!response.ok) {
     const providerMessage =
       data?.providerResponse?.original?.data?.statusDescription ||
+      data?.providerResponse?.original?.data?.description ||
       data?.providerResponse?.data?.statusDescription ||
+      data?.providerResponse?.data?.description ||
       data?.providerResponse?.statusDescription ||
+      data?.providerResponse?.description ||
+      data?.providerResponse?.title ||
       data?.providerResponse?.message;
     throw new Error(data?.error || providerMessage || `Erreur API ${response.status}`);
   }

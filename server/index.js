@@ -332,7 +332,11 @@ function extractMaishaPayMessage(data = {}) {
   const extracted = extractMaishaPayData(data);
   return (
     extracted.statusDescription ||
+    extracted.description ||
+    extracted.title ||
     extracted.message ||
+    data.description ||
+    data.title ||
     data.message ||
     data.error ||
     data.exception ||
