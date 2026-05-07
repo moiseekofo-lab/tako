@@ -289,7 +289,7 @@ function normalizeMobileMoneyProvider(provider = '') {
   }
 
   if (value.includes('AIRTEL')) {
-    return 'AITEL';
+    return 'AIRTEL';
   }
 
   if (value.includes('AFRICEL')) {
@@ -322,6 +322,22 @@ function normalizeWalletId(walletId = '') {
   }
 
   return clean;
+}
+
+function extractMaishaPayData(data = {}) {
+  return data.original?.data || data.data || data;
+}
+
+function extractMaishaPayMessage(data = {}) {
+  const extracted = extractMaishaPayData(data);
+  return (
+    extracted.statusDescription ||
+    extracted.message ||
+    data.message ||
+    data.error ||
+    data.exception ||
+    'MaishaPay a refusé la demande de recharge'
+  );
 }
 
 async function createNotification({ clientId, title, message, amount = null, type }) {
@@ -676,14 +692,18 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const transactionReference = `TAKO-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
     const payload = {
       publicApiKey: maishaPayPublicApiKey,
       secretApiKey: maishaPaySecretApiKey,
       gatewayMode: maishaPayGatewayMode,
+      transactionReference,
       amount,
       currency: maishaPayCurrency,
-      operator,
+      chanel: 'MOBILEMONEY',
+      provider: operator,
       customerFullName,
+      customerPhoneNumber: walletId,
       customerEmailAddress,
       walletID: walletId,
     };
@@ -702,13 +722,14 @@ async function handleRequest(request, response) {
       providerData = { message: responseText };
     }
 
-    const providerStatus = Number(providerData.statusCode || maishaResponse.status);
+    const extractedProviderData = extractMaishaPayData(providerData);
+    const providerStatus = Number(extractedProviderData.statusCode || extractedProviderData.status || maishaResponse.status);
     const accepted = maishaResponse.ok && (providerStatus === 202 || providerStatus === 200);
 
     if (!accepted) {
       sendJson(response, 502, {
         ok: false,
-        error: providerData.message || 'MaishaPay a refusé la demande de recharge',
+        error: extractMaishaPayMessage(providerData),
         providerResponse: providerData,
       });
       return;
@@ -726,7 +747,7 @@ async function handleRequest(request, response) {
         amount,
         clientId,
         operator,
-        providerData.transactionReference || providerData.reference || null,
+        transactionReference,
       ],
     );
 
@@ -748,7 +769,8 @@ async function handleRequest(request, response) {
         operator,
         currency: maishaPayCurrency,
         walletId,
-        transactionReference: providerData.transactionReference || null,
+        transactionReference,
+        providerTransactionId: extractedProviderData.transactionId || null,
         providerResponse: providerData,
       },
     });
