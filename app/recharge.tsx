@@ -1,7 +1,18 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { initiateMobileMoneyRecharge } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
@@ -93,66 +104,76 @@ export default function Recharge() {
   };
 
   return (
-    <View style={styles.screen}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
-          <Ionicons name="chevron-back" size={28} color="#061F68" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>{text.recharge}</Text>
-        <View style={styles.backButtonPlaceholder} />
-      </View>
-
-      <View style={styles.card}>
-        <View style={styles.iconCircle}>
-          <MaterialCommunityIcons name="cash-plus" size={42} color="white" />
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={28} color="#061F68" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>{text.recharge}</Text>
+          <View style={styles.backButtonPlaceholder} />
         </View>
 
-        <Text style={styles.title}>{text.rechargeAccount}</Text>
-        <Text style={styles.subtitle}>{text.chooseRecharge}</Text>
+        <View style={styles.card}>
+          <View style={styles.iconCircle}>
+            <MaterialCommunityIcons name="cash-plus" size={42} color="white" />
+          </View>
 
-        <View style={styles.inputBox}>
-          <Text style={styles.currency}>FC</Text>
-          <TextInput
-            placeholder={text.amount}
-            placeholderTextColor="#87909F"
-            keyboardType="numeric"
-            value={amount}
-            onChangeText={setAmount}
-            style={styles.input}
-          />
-        </View>
+          <Text style={styles.title}>{text.rechargeAccount}</Text>
+          <Text style={styles.subtitle}>{text.chooseRecharge}</Text>
 
-        <View style={styles.inputBox}>
-          <MaterialCommunityIcons name="cellphone" size={24} color="#061F68" />
-          <TextInput
-            placeholder="Numéro mobile money"
-            placeholderTextColor="#87909F"
-            keyboardType="phone-pad"
-            value={walletId}
-            onChangeText={setWalletId}
-            style={styles.input}
-          />
-        </View>
+          <View style={styles.inputBox}>
+            <Text style={styles.currency}>FC</Text>
+            <TextInput
+              placeholder={text.amount}
+              placeholderTextColor="#87909F"
+              keyboardType="numeric"
+              value={amount}
+              onChangeText={setAmount}
+              style={styles.input}
+              returnKeyType="next"
+            />
+          </View>
 
-        <View style={styles.providerGrid}>
-          {providers.map((provider) => (
-            <TouchableOpacity
-              key={provider}
-              style={[styles.providerButton, loadingProvider ? styles.providerButtonDisabled : null]}
-              activeOpacity={0.88}
-              disabled={Boolean(loadingProvider)}
-              onPress={() => handleRecharge(provider)}>
-              {loadingProvider === provider ? (
-                <ActivityIndicator color="white" />
-              ) : (
-                <MaterialCommunityIcons name="cellphone" size={27} color="white" />
-              )}
-              <Text style={styles.providerText}>{provider}</Text>
-            </TouchableOpacity>
-          ))}
+          <View style={styles.inputBox}>
+            <MaterialCommunityIcons name="cellphone" size={24} color="#061F68" />
+            <TextInput
+              placeholder="Numéro mobile money"
+              placeholderTextColor="#87909F"
+              keyboardType="phone-pad"
+              value={walletId}
+              onChangeText={setWalletId}
+              style={styles.input}
+              returnKeyType="done"
+            />
+          </View>
+
+          <View style={styles.providerGrid}>
+            {providers.map((provider) => (
+              <TouchableOpacity
+                key={provider}
+                style={[styles.providerButton, loadingProvider ? styles.providerButtonDisabled : null]}
+                activeOpacity={0.88}
+                disabled={Boolean(loadingProvider)}
+                onPress={() => handleRecharge(provider)}>
+                {loadingProvider === provider ? (
+                  <ActivityIndicator color="white" />
+                ) : (
+                  <MaterialCommunityIcons name="cellphone" size={27} color="white" />
+                )}
+                <Text style={styles.providerText}>{provider}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
-      </View>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -160,8 +181,12 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F5F8FF',
+  },
+  scrollContent: {
+    flexGrow: 1,
     paddingHorizontal: 28,
     paddingTop: 58,
+    paddingBottom: 34,
   },
   header: {
     flexDirection: 'row',
