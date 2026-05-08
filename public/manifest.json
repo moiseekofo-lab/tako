@@ -1,0 +1,27 @@
+{
+  "name": "TaKo Transport",
+  "short_name": "TaKo",
+  "description": "Paiement transport en RDC par QR, NFC et mobile money.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F5F8FF",
+  "theme_color": "#061F68",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "transportation", "utilities"],
+  "lang": "fr-CD"
+}
