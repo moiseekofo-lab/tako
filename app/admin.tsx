@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { findClientById } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -37,7 +37,8 @@ const formatDate = (date?: string) => {
 
 export default function Admin() {
   const router = useRouter();
-  const isWeb = Platform.OS === 'web';
+  const { width } = useWindowDimensions();
+  const isNarrow = width < 760;
   const currentUser = useStore((state: any) => state.currentUser);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const notifications = useStore((state: any) => state.notifications) as TransactionNotification[];
@@ -95,47 +96,50 @@ export default function Admin() {
 
   return (
     <View style={styles.page}>
-      <View style={[styles.shell, !isWeb && styles.mobileShell]}>
-        <View style={[styles.sidebar, !isWeb && styles.mobileSidebar]}>
+      <View style={[styles.shell, isNarrow && styles.mobileShell]}>
+        <View style={[styles.sidebar, isNarrow && styles.mobileSidebar]}>
           <View style={styles.brandBlock}>
             <TakoLogo size="small" color="white" />
             <Text style={styles.brandSubtitle}>Administration</Text>
           </View>
 
-          <View style={styles.navList}>
+          <ScrollView
+            horizontal={isNarrow}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
-                style={[styles.navItem, activeSection === item.key && styles.navItemActive]}
+                style={[styles.navItem, isNarrow && styles.mobileNavItem, activeSection === item.key && styles.navItemActive]}
                 activeOpacity={0.82}
                 onPress={() => setActiveSection(item.key)}>
                 <Ionicons name={item.icon} size={22} color={activeSection === item.key ? TAKO_BLUE : 'white'} />
                 <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
 
-          <View style={styles.privateBox}>
+          <View style={[styles.privateBox, isNarrow && styles.mobileHidden]}>
             <Ionicons name="shield-checkmark" size={22} color={TAKO_GREEN} />
             <Text style={styles.privateTitle}>Accès privé</Text>
             <Text style={styles.privateText}>Réservé aux administrateurs et travailleurs TaKo.</Text>
           </View>
 
-          <TouchableOpacity style={styles.sidebarLogout} activeOpacity={0.85} onPress={logout}>
+          <TouchableOpacity style={[styles.sidebarLogout, isNarrow && styles.mobileSidebarLogout]} activeOpacity={0.85} onPress={logout}>
             <Ionicons name="log-out-outline" size={22} color="white" />
             <Text style={styles.sidebarLogoutText}>Déconnexion</Text>
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-          <View style={styles.topBar}>
+        <ScrollView contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]} showsVerticalScrollIndicator={false}>
+          <View style={[styles.topBar, isNarrow && styles.mobileTopBar]}>
             <View>
               <Text style={styles.kicker}>Espace administrateur</Text>
               <Text style={styles.title}>Centre de contrôle TaKo</Text>
               <Text style={styles.subtitle}>Clients, chauffeurs, paiements et sécurité opérationnelle.</Text>
             </View>
 
-            <View style={styles.topActions}>
+            <View style={[styles.topActions, isNarrow && styles.mobileTopActions]}>
               <View style={styles.adminBadge}>
                 <Ionicons name="person-circle-outline" size={24} color={TAKO_BLUE} />
                 <View>
@@ -151,7 +155,7 @@ export default function Admin() {
             </View>
           </View>
 
-          <View style={styles.statsGrid}>
+          <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
             <StatCard icon="wallet-outline" label="Solde suivi" value={`${balance} FC`} tone="blue" />
             <StatCard icon="bus-outline" label="Trajets" value={`${trips.length}`} tone="green" />
             <StatCard icon="receipt-outline" label="Transactions" value={`${notifications.length}`} tone="blue" />
@@ -456,7 +460,9 @@ const styles = StyleSheet.create({
   },
   mobileSidebar: {
     width: '100%',
-    paddingBottom: 16,
+    paddingHorizontal: 14,
+    paddingTop: 22,
+    paddingBottom: 14,
   },
   brandBlock: {
     marginBottom: 38,
@@ -472,6 +478,11 @@ const styles = StyleSheet.create({
   navList: {
     gap: 10,
   },
+  mobileNavList: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingRight: 14,
+  },
   navItem: {
     minHeight: 48,
     flexDirection: 'row',
@@ -479,6 +490,9 @@ const styles = StyleSheet.create({
     gap: 12,
     borderRadius: 8,
     paddingHorizontal: 14,
+  },
+  mobileNavItem: {
+    minWidth: 154,
   },
   navItemActive: {
     backgroundColor: 'white',
@@ -496,6 +510,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
     padding: 16,
+  },
+  mobileHidden: {
+    display: 'none',
   },
   privateTitle: {
     color: 'white',
@@ -521,6 +538,9 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.28)',
     marginTop: 14,
   },
+  mobileSidebarLogout: {
+    alignSelf: 'stretch',
+  },
   sidebarLogoutText: {
     color: 'white',
     fontSize: 14,
@@ -530,6 +550,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     padding: 34,
   },
+  mobileContent: {
+    width: '100%',
+    paddingHorizontal: 14,
+    paddingTop: 18,
+    paddingBottom: 28,
+  },
   topBar: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -537,10 +563,18 @@ const styles = StyleSheet.create({
     gap: 20,
     marginBottom: 24,
   },
+  mobileTopBar: {
+    flexDirection: 'column',
+  },
   topActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  mobileTopActions: {
+    width: '100%',
+    flexDirection: 'column',
+    alignItems: 'stretch',
   },
   kicker: {
     color: TAKO_ACTION,
@@ -561,7 +595,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   adminBadge: {
-    minWidth: 250,
+    minWidth: 0,
     minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
@@ -604,8 +638,11 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 18,
   },
+  mobileStatsGrid: {
+    flexDirection: 'column',
+  },
   statCard: {
-    minWidth: 210,
+    minWidth: 0,
     flexGrow: 1,
     flexBasis: 0,
     borderRadius: 8,
@@ -646,7 +683,7 @@ const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
     flexBasis: 0,
-    minWidth: 330,
+    minWidth: 0,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#DCE5F2',
@@ -662,6 +699,7 @@ const styles = StyleSheet.create({
   },
   cardHeaderRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
     gap: 18,
     alignItems: 'flex-start',
@@ -768,7 +806,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   detailItem: {
-    minWidth: 235,
+    minWidth: 0,
     flexGrow: 1,
     flexBasis: 0,
     flexDirection: 'row',
@@ -829,6 +867,7 @@ const styles = StyleSheet.create({
   transactionRow: {
     minHeight: 74,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
     gap: 14,
     borderBottomWidth: 1,
@@ -859,6 +898,7 @@ const styles = StyleSheet.create({
   },
   transactionMeta: {
     alignItems: 'flex-end',
+    marginLeft: 'auto',
   },
   transactionAmount: {
     color: TAKO_GREEN,
