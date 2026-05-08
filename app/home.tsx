@@ -11,7 +11,7 @@ import { useStore } from './store';
 const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
-const HERO_REFRESH_THRESHOLD = 44;
+const HERO_REFRESH_THRESHOLD = 32;
 
 export default function Home() {
   const router = useRouter();
@@ -26,6 +26,7 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const heroTranslateY = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
+  const webHeroTouchStartY = useRef<number | null>(null);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
@@ -245,6 +246,45 @@ export default function Home() {
     setTimeout(() => setRefreshing(false), 750);
   };
 
+  const startWebHeroPull = (event: any) => {
+    if (Platform.OS !== 'web') {
+      return;
+    }
+
+    webHeroTouchStartY.current = event?.nativeEvent?.pageY ?? null;
+  };
+
+  const moveWebHeroPull = (event: any) => {
+    if (Platform.OS !== 'web' || webHeroTouchStartY.current === null) {
+      return;
+    }
+
+    const currentY = event?.nativeEvent?.pageY ?? webHeroTouchStartY.current;
+    const distance = Math.max(0, currentY - webHeroTouchStartY.current);
+    heroTranslateY.setValue(Math.min(distance, 56));
+  };
+
+  const endWebHeroPull = (event: any) => {
+    if (Platform.OS !== 'web' || webHeroTouchStartY.current === null) {
+      return;
+    }
+
+    const currentY = event?.nativeEvent?.pageY ?? webHeroTouchStartY.current;
+    const distance = currentY - webHeroTouchStartY.current;
+    webHeroTouchStartY.current = null;
+
+    Animated.spring(heroTranslateY, {
+      toValue: 0,
+      damping: 14,
+      stiffness: 130,
+      useNativeDriver: true,
+    }).start();
+
+    if (distance >= HERO_REFRESH_THRESHOLD) {
+      refreshPage();
+    }
+  };
+
   if (role === 'passager') {
     return (
       <View style={styles.clientScreen}>
@@ -264,7 +304,10 @@ export default function Home() {
 
           <Animated.View
             style={[styles.clientHeroContent, { transform: [{ translateY: heroTranslateY }] }]}
-            {...heroPanResponder.panHandlers}>
+            onTouchStart={startWebHeroPull}
+            onTouchMove={moveWebHeroPull}
+            onTouchEnd={endWebHeroPull}
+            {...(isWeb ? {} : heroPanResponder.panHandlers)}>
             <View style={styles.clientHeader}>
               <Text style={styles.clientGreeting}>{greeting}, {clientDisplayName}</Text>
               <View style={styles.clientHeaderIcons}>
