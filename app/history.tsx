@@ -1,6 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore, type TripHistoryItem } from './store';
 
@@ -19,6 +20,12 @@ export default function History() {
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const text = translations[language];
   const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
+  const [refreshing, setRefreshing] = useState(false);
+
+  const refreshPage = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 750);
+  };
 
   return (
     <View style={styles.screen}>
@@ -30,7 +37,12 @@ export default function History() {
         <View style={styles.backButtonPlaceholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+        }>
         {trips.length === 0 ? (
           <View style={styles.emptyBox}>
             <MaterialCommunityIcons name="bus-clock" size={62} color="#139DFF" />

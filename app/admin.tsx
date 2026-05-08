@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { findClientById } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -48,6 +48,7 @@ export default function Admin() {
   const [clientId, setClientId] = useState('');
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
+  const [refreshing, setRefreshing] = useState(false);
 
   const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
@@ -94,6 +95,11 @@ export default function Admin() {
     setActiveSection('clients');
   };
 
+  const refreshPage = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 750);
+  };
+
   return (
     <View style={styles.page}>
       <View style={[styles.shell, isNarrow && styles.mobileShell]}>
@@ -128,7 +134,12 @@ export default function Admin() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor={TAKO_BLUE} colors={[TAKO_BLUE]} />
+          }>
           <View style={[styles.topBar, isNarrow && styles.mobileTopBar]}>
             <View>
               <Text style={styles.kicker}>Espace administrateur</Text>

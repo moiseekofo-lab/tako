@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore, type TransactionNotification } from './store';
 
@@ -33,10 +33,16 @@ export default function Notifications() {
   const language = useStore((state: any) => state.language) as Language;
   const text = translations[language];
   const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     markNotificationsRead();
   }, [markNotificationsRead]);
+
+  const refreshPage = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 750);
+  };
 
   return (
     <View style={styles.screen}>
@@ -48,7 +54,12 @@ export default function Notifications() {
         <View style={styles.backButtonPlaceholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+        }>
         {notifications.length === 0 ? (
           <View style={styles.emptyBox}>
             <Ionicons name="notifications-off-outline" size={58} color="#139DFF" />

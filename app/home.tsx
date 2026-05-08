@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Image, PanResponder, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
 import { translations, type Language } from './i18n';
@@ -22,6 +22,7 @@ export default function Home() {
   const [isTripInfoSaved, setIsTripInfoSaved] = useState(false);
   const [showBalance, setShowBalance] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const heroTranslateY = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const balance = useStore((state: any) => state.balance);
@@ -229,6 +230,11 @@ export default function Home() {
     }).start(() => setIsMenuOpen(false));
   };
 
+  const refreshPage = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 750);
+  };
+
   if (role === 'passager') {
     return (
       <View style={styles.clientScreen}>
@@ -292,7 +298,12 @@ export default function Home() {
           </Animated.View>
         </View>
 
-        <ScrollView contentContainerStyle={styles.clientContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          contentContainerStyle={styles.clientContent}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+          }>
           <View style={styles.pullIcon}>
             <Ionicons name="arrow-down" size={25} color="#8C8C8C" />
           </View>
@@ -442,7 +453,12 @@ export default function Home() {
   }
 
   return (
-    <ScrollView contentContainerStyle={[styles.container, isWeb && styles.webContainer]} keyboardShouldPersistTaps="always">
+    <ScrollView
+      contentContainerStyle={[styles.container, isWeb && styles.webContainer]}
+      keyboardShouldPersistTaps="always"
+      refreshControl={
+        <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+      }>
       <View style={[styles.webShell, !isWeb && styles.mobileShell]}>
       <View style={styles.header}>
         <TakoLogo />

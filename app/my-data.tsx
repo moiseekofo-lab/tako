@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -13,6 +13,7 @@ export default function MyData() {
   const text = translations[language];
   const [email, setEmail] = useState(currentUser.email);
   const [phone, setPhone] = useState(currentUser.phone);
+  const [refreshing, setRefreshing] = useState(false);
 
   const updateEditableData = () => {
     setCurrentUser({
@@ -21,6 +22,13 @@ export default function MyData() {
       phone: phone.trim(),
     });
     Alert.alert(text.dataUpdated);
+  };
+
+  const refreshPage = () => {
+    setRefreshing(true);
+    setEmail(currentUser.email);
+    setPhone(currentUser.phone);
+    setTimeout(() => setRefreshing(false), 750);
   };
 
   return (
@@ -33,7 +41,12 @@ export default function MyData() {
         <View style={styles.headerSpacer} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.card} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.card}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+        }>
         <View style={styles.avatarCircle}>
           <Ionicons name="person" size={70} color="white" />
         </View>

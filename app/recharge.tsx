@@ -6,6 +6,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +25,7 @@ export default function Recharge() {
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language) as Language;
@@ -103,6 +105,11 @@ export default function Recharge() {
     }
   };
 
+  const refreshPage = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 750);
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -111,7 +118,10 @@ export default function Recharge() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}>
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
+        }>
         <View style={styles.header}>
           <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={28} color="#061F68" />
