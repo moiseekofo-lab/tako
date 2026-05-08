@@ -14,6 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
@@ -30,6 +31,8 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 export default function Login() {
   const router = useRouter();
   const isWeb = Platform.OS === 'web';
+  const { width } = useWindowDimensions();
+  const isNarrowWeb = isWeb && width < 760;
   const [showLoginForm, setShowLoginForm] = useState(Platform.OS === 'web');
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -358,10 +361,10 @@ export default function Login() {
       resizeMode="cover"
       style={styles.background}>
       <View style={[styles.overlay, isWeb && styles.webOverlay]}>
-        <View style={[styles.header, isWeb && styles.webHeader]}>
+        <View style={[styles.header, isWeb && styles.webHeader, isNarrowWeb && styles.mobileWebHeader]}>
           <TakoLogo size="login" color={isWeb ? '#061F68' : 'white'} />
 
-          <View style={[styles.languages, isWeb && styles.webLanguages]}>
+          <View style={[styles.languages, isWeb && styles.webLanguages, isNarrowWeb && styles.mobileWebLanguages]}>
             {languageOptions.map((item) => (
               <TouchableOpacity
                 key={item.code}
@@ -665,6 +668,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  mobileWebHeader: {
+    flexDirection: 'column',
+    gap: 18,
+    marginBottom: 26,
+  },
   languages: {
     flexDirection: 'row',
     gap: 14,
@@ -674,6 +682,13 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 0,
     top: 12,
+  },
+  mobileWebLanguages: {
+    position: 'relative',
+    right: 'auto',
+    top: 'auto',
+    alignSelf: 'center',
+    paddingTop: 0,
   },
   flagButton: {
     width: 34,
