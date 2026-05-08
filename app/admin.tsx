@@ -103,10 +103,7 @@ export default function Admin() {
             <Text style={styles.brandSubtitle}>Administration</Text>
           </View>
 
-          <ScrollView
-            horizontal={isNarrow}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}>
+          <View style={[styles.navList, isNarrow && styles.mobileNavList]}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -117,7 +114,7 @@ export default function Admin() {
                 <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
-          </ScrollView>
+          </View>
 
           <View style={[styles.privateBox, isNarrow && styles.mobileHidden]}>
             <Ionicons name="shield-checkmark" size={22} color={TAKO_GREEN} />
@@ -163,7 +160,7 @@ export default function Admin() {
           </View>
 
           {activeSection === 'dashboard' ? (
-            <View style={styles.grid}>
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
@@ -176,14 +173,14 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'clients' ? (
-            <View style={styles.grid}>
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
               <ClientDetails client={activeClient} balance={balance} trips={trips.length} notifications={notifications.length} />
             </View>
           ) : null}
 
           {activeSection === 'drivers' ? (
-            <View style={styles.grid}>
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
                 route={driverTripInfo.route}
@@ -201,7 +198,7 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'transactions' ? (
-            <View style={styles.grid}>
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <TransactionSummary qr={qrTransactions} nfc={nfcTransactions} recharge={rechargeTransactions} />
               <View style={[styles.card, styles.fullCard]}>
                 <View style={styles.cardHeaderRow}>
@@ -224,7 +221,7 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'settings' ? (
-            <View style={styles.grid}>
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Sécurité</Text>
                 <ChecklistItem label="Web non public pour les clients" done />
@@ -461,7 +458,7 @@ const styles = StyleSheet.create({
   mobileSidebar: {
     width: '100%',
     paddingHorizontal: 14,
-    paddingTop: 22,
+    paddingTop: 18,
     paddingBottom: 14,
   },
   brandBlock: {
@@ -480,8 +477,8 @@ const styles = StyleSheet.create({
   },
   mobileNavList: {
     flexDirection: 'row',
-    gap: 10,
-    paddingRight: 14,
+    flexWrap: 'wrap',
+    gap: 8,
   },
   navItem: {
     minHeight: 48,
@@ -492,7 +489,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   mobileNavItem: {
-    minWidth: 154,
+    width: '48%',
+    minHeight: 46,
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   navItemActive: {
     backgroundColor: 'white',
@@ -540,6 +540,7 @@ const styles = StyleSheet.create({
   },
   mobileSidebarLogout: {
     alignSelf: 'stretch',
+    marginTop: 10,
   },
   sidebarLogoutText: {
     color: 'white',
@@ -553,7 +554,7 @@ const styles = StyleSheet.create({
   mobileContent: {
     width: '100%',
     paddingHorizontal: 14,
-    paddingTop: 18,
+    paddingTop: 16,
     paddingBottom: 28,
   },
   topBar: {
@@ -680,9 +681,15 @@ const styles = StyleSheet.create({
     gap: 18,
     alignItems: 'stretch',
   },
+  mobileGrid: {
+    flexDirection: 'column',
+    flexWrap: 'nowrap',
+    gap: 14,
+  },
   card: {
     flexGrow: 1,
-    flexBasis: 0,
+    flexShrink: 1,
+    flexBasis: 'auto',
     minWidth: 0,
     borderRadius: 8,
     borderWidth: 1,
@@ -800,15 +807,14 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   detailsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
+    flexDirection: 'column',
     gap: 14,
     marginTop: 12,
   },
   detailItem: {
     minWidth: 0,
     flexGrow: 1,
-    flexBasis: 0,
+    flexBasis: 'auto',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -866,9 +872,8 @@ const styles = StyleSheet.create({
   },
   transactionRow: {
     minHeight: 74,
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     gap: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#EEF2F7',
@@ -897,8 +902,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   transactionMeta: {
-    alignItems: 'flex-end',
-    marginLeft: 'auto',
+    alignItems: 'flex-start',
+    marginLeft: 0,
   },
   transactionAmount: {
     color: TAKO_GREEN,
