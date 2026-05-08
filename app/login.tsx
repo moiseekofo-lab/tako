@@ -52,7 +52,6 @@ export default function Login() {
   const setGlobalLanguage = useStore((state: any) => state.setLanguage);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const sheetTranslateY = useRef(new Animated.Value(SHEET_DISMISS_Y)).current;
-  const busTranslateX = useRef(new Animated.Value(-150)).current;
   const roadPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -99,18 +98,10 @@ export default function Login() {
 
   useEffect(() => {
     if (!isLoggingIn) {
-      busTranslateX.setValue(-150);
       roadPulse.setValue(0);
       return;
     }
 
-    const busLoop = Animated.loop(
-      Animated.timing(busTranslateX, {
-        toValue: 430,
-        duration: 1900,
-        useNativeDriver: true,
-      })
-    );
     const pulseLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(roadPulse, {
@@ -126,14 +117,12 @@ export default function Login() {
       ])
     );
 
-    busLoop.start();
     pulseLoop.start();
 
     return () => {
-      busLoop.stop();
       pulseLoop.stop();
     };
-  }, [busTranslateX, isLoggingIn, roadPulse]);
+  }, [isLoggingIn, roadPulse]);
 
   const greeting = useMemo(() => {
     const hour = new Date().getHours();
@@ -590,47 +579,61 @@ export default function Login() {
 
         {isLoggingIn && (
           <View style={styles.loadingOverlay}>
-            <ImageBackground
-              source={require('../assets/images/decor-kinshasa-illustration.png')}
-              resizeMode="cover"
-              style={styles.loadingScene}>
-              <View style={styles.loadingShade}>
-                <View style={styles.limeteTower}>
-                  <View style={styles.towerTop} />
-                  <View style={styles.towerStem} />
-                  <View style={styles.towerBase} />
-                </View>
-
-                <View style={styles.loadingRoad}>
-                  <Animated.View
-                    style={[
-                      styles.roadLine,
+            <View style={styles.loadingScene}>
+              <Animated.View
+                style={[
+                  styles.simpleBusWrap,
+                  {
+                    transform: [
                       {
-                        opacity: roadPulse.interpolate({
+                        translateY: roadPulse.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [0.35, 1],
+                          outputRange: [0, -5],
                         }),
                       },
-                    ]}
-                  />
-                  <Animated.View style={[styles.bus, { transform: [{ translateX: busTranslateX }] }]}>
-                    <View style={styles.busRoof} />
-                    <View style={styles.busBody}>
-                      <View style={styles.busWindow} />
-                      <View style={styles.busWindow} />
-                      <View style={styles.busWindowSmall} />
+                    ],
+                  },
+                ]}>
+                <View style={styles.simpleBus}>
+                  <View style={styles.simpleBusTop} />
+                  <View style={styles.simpleBusBody}>
+                    <View style={styles.busBackLights}>
+                      <View style={styles.busLight} />
+                      <View style={styles.busLight} />
+                      <View style={styles.busLight} />
                     </View>
-                    <View style={styles.busWheels}>
-                      <View style={styles.busWheel} />
-                      <View style={styles.busWheel} />
+                    <View style={styles.simpleWindowRow}>
+                      <View style={styles.simpleWindow} />
+                      <View style={styles.simpleWindow} />
+                      <View style={styles.simpleWindow} />
+                      <View style={[styles.simpleWindow, styles.simpleWindowAccent]} />
+                      <View style={styles.simpleFrontWindow} />
                     </View>
-                  </Animated.View>
+                    <Text style={styles.simpleBusLogo}>TaKo</Text>
+                    <View style={styles.busDoor}>
+                      <View style={styles.doorWindow} />
+                      <View style={styles.doorHandle} />
+                    </View>
+                  </View>
+                  <View style={styles.simpleWheels}>
+                    <View style={styles.simpleWheel} />
+                    <View style={styles.simpleWheel} />
+                    <View style={styles.simpleWheel} />
+                  </View>
                 </View>
-
-                <Text style={styles.loadingTitle}>Téléchargement du compte</Text>
-                <Text style={styles.loadingText}>TaKo roule vers votre compte...</Text>
-              </View>
-            </ImageBackground>
+                <Animated.View
+                  style={[
+                    styles.simpleRoad,
+                    {
+                      opacity: roadPulse.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.42, 1],
+                      }),
+                    },
+                  ]}
+                />
+              </Animated.View>
+            </View>
           </View>
         )}
       </View>
@@ -999,124 +1002,141 @@ const styles = StyleSheet.create({
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
     zIndex: 20,
-    backgroundColor: '#061F68',
+    backgroundColor: 'white',
   },
   loadingScene: {
     flex: 1,
-  },
-  loadingShade: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    backgroundColor: 'rgba(6,31,104,0.72)',
-    paddingHorizontal: 28,
-    paddingBottom: 74,
-  },
-  limeteTower: {
-    position: 'absolute',
-    top: 145,
-    alignSelf: 'center',
     alignItems: 'center',
-    opacity: 0.82,
-  },
-  towerTop: {
-    width: 104,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F2B624',
-    borderWidth: 3,
-    borderColor: 'rgba(255,255,255,0.72)',
-  },
-  towerStem: {
-    width: 34,
-    height: 205,
-    backgroundColor: 'rgba(255,255,255,0.92)',
-  },
-  towerBase: {
-    width: 125,
-    height: 28,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.72)',
-  },
-  loadingRoad: {
-    height: 118,
-    overflow: 'hidden',
-    borderRadius: 16,
-    backgroundColor: 'rgba(5,10,22,0.88)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
     justifyContent: 'center',
-    marginBottom: 28,
+    backgroundColor: 'white',
   },
-  roadLine: {
+  simpleBusWrap: {
+    width: 168,
+    height: 112,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  simpleBus: {
+    width: 154,
+    height: 82,
+  },
+  simpleBusTop: {
+    position: 'absolute',
+    top: 0,
+    left: 38,
+    width: 28,
+    height: 8,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderWidth: 2,
+    borderBottomWidth: 0,
+    borderColor: '#10202A',
+    backgroundColor: '#34C7D0',
+  },
+  simpleBusBody: {
     position: 'absolute',
     left: 0,
     right: 0,
-    top: 58,
-    height: 5,
-    backgroundColor: '#F2B624',
-  },
-  bus: {
-    width: 138,
-    height: 64,
-    marginLeft: 0,
-  },
-  busRoof: {
-    width: 92,
-    height: 13,
-    marginLeft: 24,
-    borderTopLeftRadius: 10,
-    borderTopRightRadius: 10,
-    backgroundColor: '#09D457',
-  },
-  busBody: {
-    height: 43,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    borderRadius: 10,
-    backgroundColor: '#139DFF',
+    top: 8,
+    height: 58,
+    borderRadius: 7,
     borderWidth: 3,
-    borderColor: 'white',
-    paddingHorizontal: 13,
+    borderColor: '#10202A',
+    backgroundColor: '#36CAD1',
+    overflow: 'hidden',
   },
-  busWindow: {
-    width: 28,
+  busBackLights: {
+    position: 'absolute',
+    left: 3,
+    bottom: 10,
+    gap: 2,
+  },
+  busLight: {
+    width: 4,
+    height: 5,
+    borderRadius: 2,
+    backgroundColor: '#F0494F',
+  },
+  simpleWindowRow: {
+    position: 'absolute',
+    left: 18,
+    top: 8,
+    flexDirection: 'row',
+    gap: 5,
+  },
+  simpleWindow: {
+    width: 15,
     height: 18,
-    borderRadius: 4,
-    backgroundColor: 'white',
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: '#10202A',
+    backgroundColor: '#77E8F4',
   },
-  busWindowSmall: {
+  simpleWindowAccent: {
+    backgroundColor: '#F7D7DE',
+  },
+  simpleFrontWindow: {
+    width: 20,
+    height: 18,
+    borderRadius: 3,
+    borderWidth: 2,
+    borderColor: '#10202A',
+    backgroundColor: '#6BE8F3',
+    transform: [{ skewX: '-12deg' }],
+  },
+  simpleBusLogo: {
+    position: 'absolute',
+    left: 72,
+    bottom: 9,
+    color: '#10202A',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  busDoor: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
     width: 18,
-    height: 18,
-    borderRadius: 4,
-    backgroundColor: 'white',
+    height: 44,
+    borderLeftWidth: 2,
+    borderColor: '#10202A',
+    alignItems: 'center',
   },
-  busWheels: {
-    width: 108,
+  doorWindow: {
+    width: 8,
+    height: 13,
+    borderRadius: 4,
+    backgroundColor: '#10202A',
+    marginTop: 4,
+  },
+  doorHandle: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#10202A',
+    marginTop: 11,
+  },
+  simpleWheels: {
+    position: 'absolute',
+    left: 28,
+    right: 20,
+    bottom: 0,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: -8,
-    marginLeft: 16,
   },
-  busWheel: {
+  simpleWheel: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#111827',
-    borderWidth: 4,
-    borderColor: 'white',
+    borderWidth: 3,
+    borderColor: '#10202A',
+    backgroundColor: '#D9DDE3',
   },
-  loadingTitle: {
-    color: 'white',
-    fontSize: 27,
-    fontWeight: '900',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  loadingText: {
-    color: '#BFE4FF',
-    fontSize: 15,
-    fontWeight: '700',
-    textAlign: 'center',
+  simpleRoad: {
+    width: 164,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#10202A',
+    marginTop: 4,
   },
 });
