@@ -11,7 +11,7 @@ import { useStore } from './store';
 const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
-const HERO_REFRESH_THRESHOLD = 72;
+const HERO_REFRESH_THRESHOLD = 44;
 
 export default function Home() {
   const router = useRouter();
