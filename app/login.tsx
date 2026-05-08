@@ -588,7 +588,19 @@ export default function Login() {
                       {
                         translateY: roadPulse.interpolate({
                           inputRange: [0, 1],
-                          outputRange: [0, -5],
+                          outputRange: [0, -6],
+                        }),
+                      },
+                      {
+                        translateX: roadPulse.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-9, 9],
+                        }),
+                      },
+                      {
+                        rotate: roadPulse.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: ['-1deg', '1deg'],
                         }),
                       },
                     ],
@@ -616,9 +628,51 @@ export default function Login() {
                     </View>
                   </View>
                   <View style={styles.simpleWheels}>
-                    <View style={styles.simpleWheel} />
-                    <View style={styles.simpleWheel} />
-                    <View style={styles.simpleWheel} />
+                    <Animated.View
+                      style={[
+                        styles.simpleWheel,
+                        {
+                          transform: [
+                            {
+                              rotate: roadPulse.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '360deg'],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Animated.View
+                      style={[
+                        styles.simpleWheel,
+                        {
+                          transform: [
+                            {
+                              rotate: roadPulse.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '360deg'],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
+                    <Animated.View
+                      style={[
+                        styles.simpleWheel,
+                        {
+                          transform: [
+                            {
+                              rotate: roadPulse.interpolate({
+                                inputRange: [0, 1],
+                                outputRange: ['0deg', '360deg'],
+                              }),
+                            },
+                          ],
+                        },
+                      ]}
+                    />
                   </View>
                 </View>
                 <Animated.View
@@ -1031,7 +1085,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderBottomWidth: 0,
     borderColor: '#10202A',
-    backgroundColor: '#34C7D0',
+    backgroundColor: '#061F68',
   },
   simpleBusBody: {
     position: 'absolute',
@@ -1042,7 +1096,7 @@ const styles = StyleSheet.create({
     borderRadius: 7,
     borderWidth: 3,
     borderColor: '#10202A',
-    backgroundColor: '#36CAD1',
+    backgroundColor: '#139DFF',
     overflow: 'hidden',
   },
   busBackLights: {
@@ -1070,10 +1124,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     borderWidth: 2,
     borderColor: '#10202A',
-    backgroundColor: '#77E8F4',
+    backgroundColor: '#BFE4FF',
   },
   simpleWindowAccent: {
-    backgroundColor: '#F7D7DE',
+    backgroundColor: '#EAF5FF',
   },
   simpleFrontWindow: {
     width: 20,
@@ -1081,14 +1135,14 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     borderWidth: 2,
     borderColor: '#10202A',
-    backgroundColor: '#6BE8F3',
+    backgroundColor: '#BFE4FF',
     transform: [{ skewX: '-12deg' }],
   },
   simpleBusLogo: {
     position: 'absolute',
     left: 72,
     bottom: 9,
-    color: '#10202A',
+    color: 'white',
     fontSize: 18,
     fontWeight: '900',
   },
@@ -1131,6 +1185,7 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#10202A',
     backgroundColor: '#D9DDE3',
+    borderLeftColor: '#139DFF',
   },
   simpleRoad: {
     width: 164,
