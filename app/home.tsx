@@ -11,6 +11,7 @@ import { useStore } from './store';
 const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
+const HERO_REFRESH_THRESHOLD = 72;
 
 export default function Home() {
   const router = useRouter();
@@ -189,10 +190,14 @@ export default function Home() {
     PanResponder.create({
       onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dy) > 8,
       onPanResponderMove: (_, gesture) => {
-        const nextPosition = Math.min(Math.max(gesture.dy, -34), 34);
+        const nextPosition = Math.min(Math.max(gesture.dy, -34), 56);
         heroTranslateY.setValue(nextPosition);
       },
-      onPanResponderRelease: () => {
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dy >= HERO_REFRESH_THRESHOLD) {
+          refreshPage();
+        }
+
         Animated.spring(heroTranslateY, {
           toValue: 0,
           damping: 14,
@@ -231,6 +236,11 @@ export default function Home() {
   };
 
   const refreshPage = () => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.location.reload();
+      return;
+    }
+
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 750);
   };
