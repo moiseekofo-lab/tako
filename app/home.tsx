@@ -15,6 +15,9 @@ const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
 const NEWS_CARD_COUNT = 4;
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
+const takoPetitTransportNews = require('../assets/images/news-tako-petit-transport.jpeg');
+const takoPublicTransportNews = require('../assets/images/news-tako-public-transport.jpeg');
+const takoEgliseNews = require('../assets/images/news-tako-eglise.jpeg');
 
 export default function Home() {
   const router = useRouter();
@@ -302,27 +305,16 @@ export default function Home() {
   };
 
   const newsCards = [
-    { type: 'image' as const, source: takoTrajetsNews },
-    { type: 'text' as const, title: text.recharge, body: text.addBalanceFast, variant: 'yellow' as const },
-    { type: 'text' as const, title: 'Carte TaKo', body: text.payQrNfc, variant: 'white' as const },
-    { type: 'text' as const, title: text.transport, body: text.travelSimple, variant: 'blue' as const },
+    takoTrajetsNews,
+    takoPetitTransportNews,
+    takoPublicTransportNews,
+    takoEgliseNews,
   ];
 
   const renderNewsCardContent = (index: number) => {
     const card = newsCards[index % NEWS_CARD_COUNT];
 
-    if (card.type === 'image') {
-      return <Image source={card.source} style={styles.newsImage} resizeMode="cover" />;
-    }
-
-    const isWhite = card.variant === 'white';
-
-    return (
-      <View style={[styles.newsTextCard, card.variant === 'yellow' && styles.newsYellow, isWhite && styles.newsWhite, card.variant === 'blue' && styles.newsBlue]}>
-        <Text style={isWhite ? styles.newsCardTitleDark : styles.newsCardTitle}>{card.title}</Text>
-        <Text style={isWhite ? styles.newsCardTextDark : styles.newsCardText}>{card.body}</Text>
-      </View>
-    );
+    return <Image source={card} style={styles.newsImage} resizeMode="cover" />;
   };
 
   if (role === 'passager') {
