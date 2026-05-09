@@ -12,6 +12,7 @@ const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
+const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 
 export default function Home() {
   const router = useRouter();
@@ -411,6 +412,9 @@ export default function Home() {
           </View>
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsRow}>
+            <View style={[styles.newsCard, styles.newsImageCard]}>
+              <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
+            </View>
             <View style={[styles.newsCard, styles.newsYellow]}>
               <Text style={styles.newsCardTitle}>{text.recharge}</Text>
               <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
@@ -828,6 +832,16 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 18,
     justifyContent: 'center',
+  },
+  newsImageCard: {
+    width: 320,
+    padding: 0,
+    overflow: 'hidden',
+    backgroundColor: '#000',
+  },
+  newsImage: {
+    width: '100%',
+    height: '100%',
   },
   newsYellow: {
     backgroundColor: '#F2B624',
