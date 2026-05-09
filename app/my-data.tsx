@@ -47,22 +47,22 @@ export default function MyData() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
         }>
+        <View style={styles.noticeBox}>
+          <Text style={styles.notice}>{text.immutableDataNotice}</Text>
+        </View>
+
         <View style={styles.avatarCircle}>
           <Ionicons name="person" size={70} color="white" />
         </View>
 
-        <Text style={styles.notice}>{text.immutableDataNotice}</Text>
-
         <View style={styles.fieldBlock}>
           <Text style={styles.label}>ID</Text>
           <TextInput value={currentUser.id} editable={false} style={[styles.input, styles.lockedInput]} />
-          <Text style={styles.lockedHint}>{text.idNeverEditable}</Text>
         </View>
 
         <View style={styles.fieldBlock}>
           <Text style={styles.label}>{text.fullName}</Text>
           <TextInput value={currentUser.fullName} editable={false} style={[styles.input, styles.lockedInput]} />
-          <Text style={styles.lockedHint}>{text.adminOnlyEdit}</Text>
         </View>
 
         <View style={styles.fieldBlock}>
@@ -84,7 +84,6 @@ export default function MyData() {
         <View style={styles.fieldBlock}>
           <Text style={styles.label}>{text.birthDate}</Text>
           <TextInput value={currentUser.birthDate || '--/--/----'} editable={false} style={[styles.input, styles.lockedInput]} />
-          <Text style={styles.lockedHint}>{text.adminOnlyEdit}</Text>
         </View>
 
         <TouchableOpacity style={styles.updateButton} activeOpacity={0.9} onPress={updateEditableData}>
@@ -137,15 +136,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
+    marginBottom: 30,
+  },
+  noticeBox: {
+    backgroundColor: 'white',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#EEF1F6',
+    paddingHorizontal: 16,
+    paddingVertical: 18,
     marginBottom: 28,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 4,
   },
   notice: {
-    color: '#1F2937',
-    fontSize: 24,
-    fontWeight: '600',
-    lineHeight: 34,
+    color: '#202836',
+    fontSize: 22,
+    fontWeight: '500',
+    lineHeight: 32,
     textAlign: 'center',
-    marginBottom: 34,
   },
   fieldBlock: {
     marginBottom: 22,
@@ -168,12 +180,6 @@ const styles = StyleSheet.create({
   lockedInput: {
     color: '#9B9B9B',
     borderBottomColor: '#DADADA',
-  },
-  lockedHint: {
-    color: '#9B9B9B',
-    fontSize: 12,
-    fontWeight: '700',
-    marginTop: 4,
   },
   updateButton: {
     height: 66,
