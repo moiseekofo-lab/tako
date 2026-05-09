@@ -213,7 +213,7 @@ export default function Home() {
     { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
     { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
     { icon: 'help-box-outline', title: text.help, subtitle: text.helpSubtitle },
-    { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle },
+    { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
     { icon: 'chat-outline', title: text.chat, subtitle: text.chatSubtitle },
   ];
 
