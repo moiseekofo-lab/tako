@@ -13,10 +13,11 @@ const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
-const NEWS_CARD_WIDTH = 320;
+const NEWS_CARD_WIDTH = 292;
 const NEWS_CARD_GAP = 18;
 const NEWS_CARD_STEP = NEWS_CARD_WIDTH + NEWS_CARD_GAP;
 const NEWS_CARD_COUNT = 4;
+const NEWS_LOOP_RESET_DELAY_MS = 360;
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 
 export default function Home() {
@@ -137,11 +138,19 @@ export default function Home() {
         return;
       }
 
-      newsIndex.current = (newsIndex.current + 1) % NEWS_CARD_COUNT;
+      const nextIndex = newsIndex.current + 1;
+      newsIndex.current = nextIndex;
       newsScrollRef.current?.scrollTo({
-        x: newsIndex.current * NEWS_CARD_STEP,
+        x: nextIndex * NEWS_CARD_STEP,
         animated: true,
       });
+
+      if (nextIndex === NEWS_CARD_COUNT) {
+        setTimeout(() => {
+          newsIndex.current = 0;
+          newsScrollRef.current?.scrollTo({ x: 0, animated: false });
+        }, NEWS_LOOP_RESET_DELAY_MS);
+      }
     }, NEWS_AUTO_SCROLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -311,20 +320,23 @@ export default function Home() {
 
   const renderNewsCards = () => (
     <>
-      <View style={[styles.newsCard, styles.newsImageCard]}>
+      <View key="trajets" style={[styles.newsCard, styles.newsImageCard]}>
         <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
       </View>
-      <View style={[styles.newsCard, styles.newsYellow]}>
+      <View key="recharge" style={[styles.newsCard, styles.newsYellow]}>
         <Text style={styles.newsCardTitle}>{text.recharge}</Text>
         <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
       </View>
-      <View style={[styles.newsCard, styles.newsWhite]}>
+      <View key="card" style={[styles.newsCard, styles.newsWhite]}>
         <Text style={styles.newsCardTitleDark}>Carte TaKo</Text>
         <Text style={styles.newsCardTextDark}>{text.payQrNfc}</Text>
       </View>
-      <View style={[styles.newsCard, styles.newsBlue]}>
+      <View key="transport" style={[styles.newsCard, styles.newsBlue]}>
         <Text style={styles.newsCardTitle}>{text.transport}</Text>
         <Text style={styles.newsCardText}>{text.travelSimple}</Text>
+      </View>
+      <View key="trajets-loop" style={[styles.newsCard, styles.newsImageCard]}>
+        <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
       </View>
     </>
   );
@@ -650,11 +662,11 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   clientHero: {
-    minHeight: 320,
+    minHeight: 252,
     backgroundColor: '#061F68',
-    paddingHorizontal: 28,
-    paddingTop: 58,
-    paddingBottom: 16,
+    paddingHorizontal: 24,
+    paddingTop: 48,
+    paddingBottom: 10,
     overflow: 'hidden',
   },
   heroDecor: {
@@ -682,11 +694,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 28,
+    marginBottom: 14,
   },
   clientGreeting: {
     color: 'white',
-    fontSize: 29,
+    fontSize: 24,
     fontWeight: '600',
   },
   clientHeaderIcons: {
@@ -719,9 +731,9 @@ const styles = StyleSheet.create({
   },
   transportTitle: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 23,
     fontWeight: '900',
-    marginBottom: 22,
+    marginBottom: 12,
   },
   balanceLine: {
     flexDirection: 'row',
@@ -730,7 +742,7 @@ const styles = StyleSheet.create({
   },
   clientBalanceLabel: {
     color: 'white',
-    fontSize: 21,
+    fontSize: 18,
     fontWeight: '800',
   },
   statementButton: {
@@ -741,24 +753,24 @@ const styles = StyleSheet.create({
   },
   statementText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
   },
   clientDate: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
-    marginTop: 7,
+    marginTop: 4,
   },
   hiddenBalanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginTop: 16,
+    marginTop: 8,
   },
   hiddenBalance: {
     color: 'white',
-    fontSize: 29,
+    fontSize: 23,
     fontWeight: '900',
     letterSpacing: 2,
   },
@@ -767,27 +779,27 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 28,
-    paddingTop: 14,
+    paddingHorizontal: 24,
+    paddingTop: 8,
     paddingBottom: 150,
-    marginTop: -24,
+    marginTop: -18,
   },
   pullIcon: {
     alignItems: 'center',
-    marginBottom: 22,
+    marginBottom: 8,
   },
   clientSectionTitle: {
     color: '#061F68',
-    fontSize: 27,
+    fontSize: 22,
     fontWeight: '800',
-    marginBottom: 34,
+    marginBottom: 16,
   },
   physicalCardBox: {
-    minHeight: 202,
-    borderRadius: 22,
+    minHeight: 144,
+    borderRadius: 18,
     backgroundColor: '#F7F7F7',
-    padding: 20,
-    marginBottom: 58,
+    padding: 14,
+    marginBottom: 28,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.18,
@@ -798,12 +810,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginLeft: 30,
-    marginBottom: 14,
+    marginLeft: 18,
+    marginBottom: 8,
   },
   activeCardText: {
     color: '#4B4B4B',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
   },
   cardControlsRow: {
@@ -814,15 +826,15 @@ const styles = StyleSheet.create({
   },
   miniCard: {
     flex: 1,
-    height: 104,
+    height: 82,
     borderRadius: 9,
     backgroundColor: '#061F68',
-    padding: 14,
+    padding: 10,
     justifyContent: 'space-between',
   },
   miniCardLogo: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '900',
   },
   miniCardVisa: {
@@ -835,9 +847,9 @@ const styles = StyleSheet.create({
     opacity: 0.72,
   },
   roundAction: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#061F68',
     borderWidth: 5,
     borderColor: 'white',
@@ -851,11 +863,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 14,
   },
   newsTitle: {
     color: '#061F68',
-    fontSize: 25,
+    fontSize: 22,
     fontWeight: '900',
   },
   newsRow: {
@@ -865,13 +877,13 @@ const styles = StyleSheet.create({
   },
   newsCard: {
     width: NEWS_CARD_WIDTH,
-    height: 160,
+    height: 132,
     borderRadius: 8,
     padding: 18,
     justifyContent: 'center',
   },
   newsImageCard: {
-    width: 320,
+    width: NEWS_CARD_WIDTH,
     padding: 0,
     overflow: 'hidden',
     backgroundColor: '#000',
@@ -893,23 +905,23 @@ const styles = StyleSheet.create({
   },
   newsCardTitle: {
     color: 'white',
-    fontSize: 28,
+    fontSize: 23,
     fontWeight: '900',
   },
   newsCardText: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     marginTop: 8,
   },
   newsCardTitleDark: {
     color: '#061F68',
-    fontSize: 27,
+    fontSize: 22,
     fontWeight: '900',
   },
   newsCardTextDark: {
     color: '#061F68',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     marginTop: 8,
   },
