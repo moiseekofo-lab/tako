@@ -13,11 +13,7 @@ const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
-const NEWS_CARD_WIDTH = 312;
-const NEWS_CARD_GAP = 18;
-const NEWS_CARD_STEP = NEWS_CARD_WIDTH + NEWS_CARD_GAP;
 const NEWS_CARD_COUNT = 4;
-const NEWS_LOOP_RESET_DELAY_MS = 360;
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 
 export default function Home() {
@@ -34,8 +30,7 @@ export default function Home() {
   const heroTranslateY = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const webHeroTouchStartY = useRef<number | null>(null);
-  const newsScrollRef = useRef<ScrollView>(null);
-  const newsIndex = useRef(0);
+  const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
@@ -138,19 +133,7 @@ export default function Home() {
         return;
       }
 
-      const nextIndex = newsIndex.current + 1;
-      newsIndex.current = nextIndex;
-      newsScrollRef.current?.scrollTo({
-        x: nextIndex * NEWS_CARD_STEP,
-        animated: true,
-      });
-
-      if (nextIndex === NEWS_CARD_COUNT) {
-        setTimeout(() => {
-          newsIndex.current = 0;
-          newsScrollRef.current?.scrollTo({ x: 0, animated: false });
-        }, NEWS_LOOP_RESET_DELAY_MS);
-      }
+      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
     }, NEWS_AUTO_SCROLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -318,28 +301,29 @@ export default function Home() {
     }
   };
 
-  const renderNewsCards = () => (
-    <>
-      <View key="trajets" style={[styles.newsCard, styles.newsImageCard]}>
-        <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
+  const newsCards = [
+    { type: 'image' as const, source: takoTrajetsNews },
+    { type: 'text' as const, title: text.recharge, body: text.addBalanceFast, variant: 'yellow' as const },
+    { type: 'text' as const, title: 'Carte TaKo', body: text.payQrNfc, variant: 'white' as const },
+    { type: 'text' as const, title: text.transport, body: text.travelSimple, variant: 'blue' as const },
+  ];
+
+  const renderNewsCardContent = (index: number) => {
+    const card = newsCards[index % NEWS_CARD_COUNT];
+
+    if (card.type === 'image') {
+      return <Image source={card.source} style={styles.newsImage} resizeMode="cover" />;
+    }
+
+    const isWhite = card.variant === 'white';
+
+    return (
+      <View style={[styles.newsTextCard, card.variant === 'yellow' && styles.newsYellow, isWhite && styles.newsWhite, card.variant === 'blue' && styles.newsBlue]}>
+        <Text style={isWhite ? styles.newsCardTitleDark : styles.newsCardTitle}>{card.title}</Text>
+        <Text style={isWhite ? styles.newsCardTextDark : styles.newsCardText}>{card.body}</Text>
       </View>
-      <View key="recharge" style={[styles.newsCard, styles.newsYellow]}>
-        <Text style={styles.newsCardTitle}>{text.recharge}</Text>
-        <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
-      </View>
-      <View key="card" style={[styles.newsCard, styles.newsWhite]}>
-        <Text style={styles.newsCardTitleDark}>Carte TaKo</Text>
-        <Text style={styles.newsCardTextDark}>{text.payQrNfc}</Text>
-      </View>
-      <View key="transport" style={[styles.newsCard, styles.newsBlue]}>
-        <Text style={styles.newsCardTitle}>{text.transport}</Text>
-        <Text style={styles.newsCardText}>{text.travelSimple}</Text>
-      </View>
-      <View key="trajets-loop" style={[styles.newsCard, styles.newsImageCard]}>
-        <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
-      </View>
-    </>
-  );
+    );
+  };
 
   if (role === 'passager') {
     return (
@@ -466,17 +450,17 @@ export default function Home() {
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
           </View>
 
-          <ScrollView
-            ref={newsScrollRef}
-            horizontal
-            scrollEventThrottle={16}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.newsRow}
-            onScroll={(event) => {
-              newsIndex.current = Math.round(event.nativeEvent.contentOffset.x / NEWS_CARD_STEP) % NEWS_CARD_COUNT;
-            }}>
-            {renderNewsCards()}
-          </ScrollView>
+          <View style={styles.newsCarousel3d}>
+            <View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
+              {renderNewsCardContent((activeNewsIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT)}
+            </View>
+            <View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
+              {renderNewsCardContent((activeNewsIndex + 1) % NEWS_CARD_COUNT)}
+            </View>
+            <View style={[styles.news3dCard, styles.news3dMain]}>
+              {renderNewsCardContent(activeNewsIndex)}
+            </View>
+          </View>
 
         </ScrollView>
 
@@ -781,7 +765,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 112,
+    paddingBottom: 88,
     marginTop: -18,
   },
   pullIcon: {
@@ -795,11 +779,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   physicalCardBox: {
-    minHeight: 144,
+    minHeight: 160,
     borderRadius: 18,
     backgroundColor: '#F7F7F7',
     padding: 14,
-    marginBottom: 28,
+    marginBottom: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.18,
@@ -825,8 +809,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   miniCard: {
-    flex: 1,
-    height: 82,
+    width: 104,
+    height: 104,
     borderRadius: 9,
     backgroundColor: '#061F68',
     padding: 10,
@@ -870,27 +854,48 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
   },
-  newsRow: {
-    gap: NEWS_CARD_GAP,
-    paddingRight: 28,
+  newsCarousel3d: {
+    height: 178,
     marginBottom: 0,
+    overflow: 'visible',
   },
-  newsCard: {
-    width: NEWS_CARD_WIDTH,
+  news3dCard: {
+    position: 'absolute',
+    top: 0,
     height: 168,
     borderRadius: 8,
-    padding: 18,
-    justifyContent: 'center',
-  },
-  newsImageCard: {
-    width: NEWS_CARD_WIDTH,
-    padding: 0,
     overflow: 'hidden',
-    backgroundColor: '#000',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  news3dMain: {
+    left: 0,
+    right: 58,
+    zIndex: 3,
+  },
+  news3dSide: {
+    width: 178,
+    opacity: 0.56,
+    transform: [{ scale: 0.88 }],
+    zIndex: 1,
+  },
+  news3dLeft: {
+    left: -118,
+  },
+  news3dRight: {
+    right: -116,
   },
   newsImage: {
     width: '100%',
     height: '100%',
+  },
+  newsTextCard: {
+    flex: 1,
+    padding: 18,
+    justifyContent: 'center',
   },
   newsYellow: {
     backgroundColor: '#F2B624',
