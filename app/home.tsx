@@ -24,7 +24,7 @@ export default function Home() {
   const [tripRoute, setTripRoute] = useState('');
   const [busPlate, setBusPlate] = useState('');
   const [isTripInfoSaved, setIsTripInfoSaved] = useState(false);
-  const [showBalance, setShowBalance] = useState(false);
+  const [showBalance, setShowBalance] = useState(true);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const heroTranslateY = useRef(new Animated.Value(0)).current;
