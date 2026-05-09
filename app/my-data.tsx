@@ -34,7 +34,7 @@ export default function MyData() {
   const scrollToPhoneField = (delay = 120) => {
     setTimeout(() => {
       scrollRef.current?.scrollTo({
-        y: Math.max(phoneFieldY.current - 90, 0),
+        y: Math.max(phoneFieldY.current - 170, 0),
         animated: true,
       });
     }, delay);
@@ -89,14 +89,10 @@ export default function MyData() {
       <ScrollView
         ref={scrollRef}
         style={styles.scrollArea}
-        contentContainerStyle={[
-          styles.card,
-          { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 190 : 190 },
-        ]}
+        contentContainerStyle={[styles.card, keyboardHeight > 0 && styles.cardWithKeyboard]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
-        automaticallyAdjustKeyboardInsets
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
         }>
@@ -194,8 +190,11 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 28,
     paddingTop: 28,
-    paddingBottom: 190,
+    paddingBottom: 120,
     alignItems: 'stretch',
+  },
+  cardWithKeyboard: {
+    paddingBottom: 28,
   },
   avatarCircle: {
     width: 145,
