@@ -47,13 +47,11 @@ export default function MyData() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
         }>
-        <View style={styles.noticeBox}>
-          <Text style={styles.notice}>{text.immutableDataNotice}</Text>
-        </View>
-
         <View style={styles.avatarCircle}>
           <Ionicons name="person" size={70} color="white" />
         </View>
+
+        <Text style={styles.notice}>{text.immutableDataNotice}</Text>
 
         <View style={styles.fieldBlock}>
           <Text style={styles.label}>ID</Text>
@@ -136,28 +134,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 30,
-  },
-  noticeBox: {
-    backgroundColor: 'white',
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#EEF1F6',
-    paddingHorizontal: 16,
-    paddingVertical: 18,
     marginBottom: 28,
-    shadowColor: '#061F68',
-    shadowOpacity: 0.12,
-    shadowRadius: 14,
-    shadowOffset: { width: 0, height: 7 },
-    elevation: 4,
   },
   notice: {
     color: '#202836',
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: '500',
-    lineHeight: 32,
+    lineHeight: 31,
     textAlign: 'center',
+    marginBottom: 32,
   },
   fieldBlock: {
     marginBottom: 22,
