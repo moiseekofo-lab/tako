@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: 46,
   },
   mainTitle: {
-    color: '#111111',
+    color: '#061F68',
     fontSize: 34,
     fontWeight: '800',
     lineHeight: 44,
