@@ -465,6 +465,10 @@ export default function Home() {
         </ScrollView>
 
         <View style={styles.clientBottomNav}>
+          <View pointerEvents="none" style={styles.bottomNavWave}>
+            <View style={styles.bottomNavCurveLeft} />
+            <View style={styles.bottomNavCurveRight} />
+          </View>
           <TouchableOpacity
             style={styles.bottomNavItem}
             activeOpacity={0.85}
@@ -961,6 +965,40 @@ const styles = StyleSheet.create({
     paddingBottom: 18,
     zIndex: 20,
     elevation: 20,
+  },
+  bottomNavWave: {
+    position: 'absolute',
+    top: -1,
+    left: 0,
+    right: 0,
+    height: 52,
+    overflow: 'hidden',
+  },
+  bottomNavCurveLeft: {
+    position: 'absolute',
+    top: -52,
+    left: 0,
+    right: '50%',
+    height: 104,
+    borderTopRightRadius: 120,
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderBottomWidth: 0,
+    borderColor: '#EFEFEF',
+    backgroundColor: 'white',
+  },
+  bottomNavCurveRight: {
+    position: 'absolute',
+    top: -52,
+    left: '50%',
+    right: 0,
+    height: 104,
+    borderTopLeftRadius: 120,
+    borderWidth: 1,
+    borderRightWidth: 0,
+    borderBottomWidth: 0,
+    borderColor: '#EFEFEF',
+    backgroundColor: 'white',
   },
   bottomNavItem: {
     alignItems: 'center',
