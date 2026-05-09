@@ -12,8 +12,11 @@ const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
-const NEWS_AUTO_SCROLL_INTERVAL_MS = 32;
-const NEWS_AUTO_SCROLL_SPEED = 0.85;
+const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
+const NEWS_CARD_WIDTH = 320;
+const NEWS_CARD_GAP = 18;
+const NEWS_CARD_STEP = NEWS_CARD_WIDTH + NEWS_CARD_GAP;
+const NEWS_CARD_COUNT = 4;
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 
 export default function Home() {
@@ -31,8 +34,7 @@ export default function Home() {
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const webHeroTouchStartY = useRef<number | null>(null);
   const newsScrollRef = useRef<ScrollView>(null);
-  const newsScrollOffset = useRef(0);
-  const newsLoopWidth = useRef(0);
+  const newsIndex = useRef(0);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
@@ -131,13 +133,15 @@ export default function Home() {
 
   useEffect(() => {
     const intervalId = setInterval(() => {
-      if (role !== 'passager' || newsLoopWidth.current <= 0) {
+      if (role !== 'passager') {
         return;
       }
 
-      const nextOffset = newsScrollOffset.current + NEWS_AUTO_SCROLL_SPEED;
-      newsScrollOffset.current = nextOffset >= newsLoopWidth.current ? 0 : nextOffset;
-      newsScrollRef.current?.scrollTo({ x: newsScrollOffset.current, animated: false });
+      newsIndex.current = (newsIndex.current + 1) % NEWS_CARD_COUNT;
+      newsScrollRef.current?.scrollTo({
+        x: newsIndex.current * NEWS_CARD_STEP,
+        animated: true,
+      });
     }, NEWS_AUTO_SCROLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -305,20 +309,20 @@ export default function Home() {
     }
   };
 
-  const renderNewsCards = (suffix: string) => (
+  const renderNewsCards = () => (
     <>
-      <View key={`trajets-${suffix}`} style={[styles.newsCard, styles.newsImageCard]}>
+      <View style={[styles.newsCard, styles.newsImageCard]}>
         <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
       </View>
-      <View key={`recharge-${suffix}`} style={[styles.newsCard, styles.newsYellow]}>
+      <View style={[styles.newsCard, styles.newsYellow]}>
         <Text style={styles.newsCardTitle}>{text.recharge}</Text>
         <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
       </View>
-      <View key={`card-${suffix}`} style={[styles.newsCard, styles.newsWhite]}>
+      <View style={[styles.newsCard, styles.newsWhite]}>
         <Text style={styles.newsCardTitleDark}>Carte TaKo</Text>
         <Text style={styles.newsCardTextDark}>{text.payQrNfc}</Text>
       </View>
-      <View key={`transport-${suffix}`} style={[styles.newsCard, styles.newsBlue]}>
+      <View style={[styles.newsCard, styles.newsBlue]}>
         <Text style={styles.newsCardTitle}>{text.transport}</Text>
         <Text style={styles.newsCardText}>{text.travelSimple}</Text>
       </View>
@@ -457,13 +461,9 @@ export default function Home() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.newsRow}
             onScroll={(event) => {
-              newsScrollOffset.current = event.nativeEvent.contentOffset.x;
-            }}
-            onContentSizeChange={(width) => {
-              newsLoopWidth.current = width / 2;
+              newsIndex.current = Math.round(event.nativeEvent.contentOffset.x / NEWS_CARD_STEP) % NEWS_CARD_COUNT;
             }}>
-            {renderNewsCards('a')}
-            {renderNewsCards('b')}
+            {renderNewsCards()}
           </ScrollView>
 
         </ScrollView>
@@ -859,12 +859,12 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   newsRow: {
-    gap: 18,
+    gap: NEWS_CARD_GAP,
     paddingRight: 28,
     marginBottom: 28,
   },
   newsCard: {
-    width: 265,
+    width: NEWS_CARD_WIDTH,
     height: 160,
     borderRadius: 8,
     padding: 18,
