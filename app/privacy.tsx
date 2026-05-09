@@ -129,7 +129,7 @@ export default function Privacy() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#74CEC8',
+    backgroundColor: '#061F68',
     paddingTop: 54,
   },
   header: {
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     paddingBottom: 46,
   },
   mainTitle: {
-    color: '#139DFF',
+    color: '#111111',
     fontSize: 34,
     fontWeight: '800',
     lineHeight: 44,
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   menuSubtitle: {
-    color: '#9A9A9A',
+    color: '#111111',
     fontSize: 18,
     fontWeight: '500',
     lineHeight: 25,
@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   detailTitle: {
-    color: '#139DFF',
+    color: '#111111',
     fontSize: 23,
     fontWeight: '900',
     marginBottom: 8,
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     lineHeight: 27,
   },
   footerText: {
-    color: '#061F68',
+    color: '#111111',
     fontSize: 16,
     fontWeight: '800',
     lineHeight: 24,
