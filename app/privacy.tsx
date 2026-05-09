@@ -9,6 +9,8 @@ type LegalSection = {
   paragraphs: string[];
 };
 
+const getSectionNumber = (title: string) => title.match(/^(\d+)\./)?.[1];
+
 const termsSections: LegalSection[] = [
   {
     title: 'Conditions générales d’utilisation (CGU)',
@@ -341,14 +343,21 @@ export default function Privacy() {
                 : 'Cette politique explique comment TaKo protège et utilise les données personnelles.'}
             </Text>
 
-            {activeSections.map((section) => (
+            {activeSections.map((section) => {
+              const sectionNumber = getSectionNumber(section.title);
+
+              return (
               <View key={section.title} style={styles.detailSection}>
                 <Text style={styles.detailTitle}>{section.title}</Text>
-                {section.paragraphs.map((paragraph) => (
-                  <Text key={paragraph} style={styles.detailText}>{paragraph}</Text>
+                {section.paragraphs.map((paragraph, index) => (
+                  <Text key={paragraph} style={styles.detailText}>
+                    {sectionNumber ? `${sectionNumber}.${index + 1}. ` : ''}
+                    {paragraph}
+                  </Text>
                 ))}
               </View>
-            ))}
+              );
+            })}
 
             <Text style={styles.footerText}>
               Pour toute question ou demande liée à votre compte, contactez le centre d’appel TaKo.
@@ -432,20 +441,21 @@ const styles = StyleSheet.create({
     marginBottom: 26,
   },
   detailSection: {
-    marginBottom: 28,
+    marginBottom: 32,
   },
   detailTitle: {
     color: '#111111',
-    fontSize: 23,
+    fontSize: 28,
     fontWeight: '900',
-    marginBottom: 8,
+    lineHeight: 35,
+    marginBottom: 22,
   },
   detailText: {
     color: '#111111',
-    fontSize: 17,
-    fontWeight: '500',
-    lineHeight: 27,
-    marginBottom: 10,
+    fontSize: 20,
+    fontWeight: '400',
+    lineHeight: 31,
+    marginBottom: 22,
   },
   footerText: {
     color: '#111111',
