@@ -1,7 +1,18 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useRef, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -14,6 +25,7 @@ export default function MyData() {
   const [email, setEmail] = useState(currentUser.email);
   const [phone, setPhone] = useState(currentUser.phone);
   const [refreshing, setRefreshing] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
 
   const updateEditableData = () => {
     setCurrentUser({
@@ -32,7 +44,10 @@ export default function MyData() {
   };
 
   return (
-    <View style={styles.screen}>
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
       <View style={styles.header}>
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={33} color="#061F68" />
@@ -42,8 +57,12 @@ export default function MyData() {
       </View>
 
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.card}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
         }>
@@ -76,7 +95,13 @@ export default function MyData() {
 
         <View style={styles.fieldBlock}>
           <Text style={styles.label}>{text.phone}</Text>
-          <TextInput value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} />
+          <TextInput
+            value={phone}
+            onChangeText={setPhone}
+            keyboardType="phone-pad"
+            style={styles.input}
+            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220)}
+          />
         </View>
 
         <View style={styles.fieldBlock}>
@@ -89,7 +114,7 @@ export default function MyData() {
           <Text style={styles.updateText}>{text.update}</Text>
         </TouchableOpacity>
       </ScrollView>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -121,7 +146,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 28,
     paddingTop: 28,
-    paddingBottom: 46,
+    paddingBottom: 240,
     alignItems: 'stretch',
   },
   avatarCircle: {
