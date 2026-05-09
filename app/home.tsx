@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   physicalCardBox: {
-    minHeight: 144,
+    minHeight: 170,
     borderRadius: 18,
     backgroundColor: '#F7F7F7',
     padding: 14,
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   miniCard: {
-    flex: 1,
-    height: 96,
+    width: 206,
+    height: 124,
     borderRadius: 9,
     backgroundColor: '#061F68',
     padding: 10,
