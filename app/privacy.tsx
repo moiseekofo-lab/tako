@@ -153,27 +153,132 @@ const termsSections: LegalSection[] = [
 
 const privacySections: LegalSection[] = [
   {
-    title: 'Données collectées',
+    title: 'Politique de confidentialité',
     paragraphs: [
-      'TaKo collecte uniquement les informations nécessaires au fonctionnement du service: ID client, nom complet, email ou numéro, date de naissance, solde, historique de transactions et informations NFC si la carte est activée.',
+      'Application TaKo',
+      'Dernière mise à jour : Mai 2026',
+      'TaKo accorde une importance particulière à la protection des données personnelles, à la sécurité des informations des utilisateurs et au respect de la confidentialité.',
+      'La présente Politique de Confidentialité explique de manière détaillée comment TaKo collecte, utilise, protège, stocke et partage les informations personnelles des utilisateurs dans le cadre de l’utilisation de l’application mobile, du site web et des services associés.',
+      'En utilisant les services TaKo, l’utilisateur accepte les pratiques décrites dans la présente Politique de Confidentialité.',
     ],
   },
   {
-    title: 'Utilisation des données',
+    title: '1. Présentation de TaKo',
     paragraphs: [
-      'Ces données servent à identifier le compte, sécuriser les paiements, afficher l’historique, envoyer des notifications et permettre l’assistance client.',
+      'TaKo est une plateforme numérique de transport et de paiement développée pour faciliter les déplacements urbains et les paiements électroniques en République Démocratique du Congo.',
+      'La plateforme permet notamment : le paiement des transports via QR Code, les paiements via technologie NFC, les recharges Mobile Money, la gestion des portefeuilles électroniques, les services de paiement digital, les services de mobilité urbaine et les transactions électroniques intégrées.',
     ],
   },
   {
-    title: 'Protection des informations',
+    title: '2. Données collectées',
     paragraphs: [
-      'Les informations personnelles ne sont pas vendues à des tiers. Les travailleurs autorisés peuvent accéder aux données nécessaires uniquement pour l’assistance, la sécurité et l’administration du service.',
+      'Dans le cadre de l’utilisation des services TaKo, certaines informations peuvent être collectées.',
+      'Données d’identification : nom et prénom, numéro de téléphone, adresse email, photo de profil, date de naissance, informations d’identité et documents de vérification.',
+      'Données financières et transactions : historique des transactions, identifiants de paiement, recharges Mobile Money, informations liées aux paiements, données de portefeuille électronique, montants et références des transactions.',
+      'TaKo ne stocke pas les codes PIN Mobile Money des utilisateurs.',
+      'Données techniques : adresse IP, type d’appareil, système d’exploitation, identifiant de l’appareil, informations réseau, données de connexion, journaux techniques et données de performance.',
+      'Données de localisation : avec l’autorisation de l’utilisateur, TaKo peut accéder à certaines données de localisation afin d’améliorer les services de transport, optimiser les trajets, identifier les points de départ et d’arrivée et améliorer la sécurité des services.',
+      'L’utilisateur peut désactiver la géolocalisation dans les paramètres de son appareil.',
     ],
   },
   {
-    title: 'Correction des données',
+    title: '3. Utilisation des données',
     paragraphs: [
-      'L’utilisateur peut demander une correction des informations non modifiables auprès du centre d’appel TaKo.',
+      'Les informations collectées peuvent être utilisées pour créer et gérer les comptes utilisateurs, permettre les paiements, exécuter les transactions, sécuriser les comptes, prévenir les fraudes, améliorer l’expérience utilisateur, fournir une assistance technique, respecter les obligations réglementaires, assurer la conformité financière et envoyer des notifications importantes.',
+    ],
+  },
+  {
+    title: '4. Base légale du traitement',
+    paragraphs: [
+      'Les données personnelles sont traitées sur la base du consentement de l’utilisateur, de l’exécution des services, des obligations légales, des exigences réglementaires et des intérêts légitimes liés à la sécurité et à la prévention de la fraude.',
+    ],
+  },
+  {
+    title: '5. Partage des données',
+    paragraphs: [
+      'TaKo peut partager certaines informations avec des partenaires de confiance lorsque cela est nécessaire au fonctionnement des services.',
+      'Ces partenaires peuvent inclure les opérateurs Mobile Money, fournisseurs de paiement, prestataires cloud, fournisseurs SMS, fournisseurs email, partenaires financiers et autorités compétentes lorsque la loi l’exige.',
+      'TaKo ne vend pas les données personnelles des utilisateurs.',
+    ],
+  },
+  {
+    title: '6. Sécurité des données',
+    paragraphs: [
+      'TaKo met en œuvre des mesures techniques et organisationnelles afin de protéger les données personnelles contre l’accès non autorisé, la perte, le vol, la divulgation, la modification et la destruction des données.',
+      'Les mesures de sécurité peuvent inclure le chiffrement des données, la protection des serveurs, le contrôle d’accès, l’authentification sécurisée, la surveillance des activités suspectes et la sécurisation des API.',
+      'Malgré tous les efforts de sécurité, aucun système informatique ne peut garantir une sécurité absolue.',
+    ],
+  },
+  {
+    title: '7. Conservation des données',
+    paragraphs: [
+      'Les données personnelles sont conservées pendant la durée nécessaire au fonctionnement des services, au respect des obligations légales, à la prévention des fraudes, à la gestion des litiges et aux obligations réglementaires financières.',
+      'Certaines données peuvent être conservées après fermeture du compte lorsque la réglementation l’exige.',
+    ],
+  },
+  {
+    title: '8. Droits des utilisateurs',
+    paragraphs: [
+      'Les utilisateurs disposent notamment du droit d’accès, du droit de rectification, du droit de suppression, du droit de limitation, du droit d’opposition, du droit de retirer leur consentement et du droit de demander des informations sur le traitement des données.',
+      'Toute demande peut être adressée à : contact@takotransport.online',
+    ],
+  },
+  {
+    title: '9. Prévention de la fraude et conformité',
+    paragraphs: [
+      'Dans le cadre de la lutte contre la fraude, le blanchiment d’argent et les activités illicites, TaKo peut analyser certaines transactions, suspendre temporairement des comptes, effectuer des vérifications d’identité et signaler des activités suspectes aux autorités compétentes.',
+      'Les utilisateurs acceptent ces mesures dans le cadre de l’utilisation des services.',
+    ],
+  },
+  {
+    title: '10. Cookies et technologies similaires',
+    paragraphs: [
+      'Le site web et certaines fonctionnalités de TaKo peuvent utiliser des cookies ou technologies similaires afin d’améliorer l’expérience utilisateur, mémoriser certaines préférences, analyser les performances et améliorer les services.',
+      'L’utilisateur peut configurer son navigateur pour limiter ou bloquer certains cookies.',
+    ],
+  },
+  {
+    title: '11. Services tiers',
+    paragraphs: [
+      'Les services TaKo peuvent intégrer des services externes exploités par des tiers.',
+      'Ces services peuvent avoir leurs propres politiques de confidentialité.',
+      'TaKo ne peut être tenu responsable des pratiques de confidentialité des services tiers.',
+    ],
+  },
+  {
+    title: '12. Transfert international des données',
+    paragraphs: [
+      'Certaines données peuvent être hébergées ou traitées sur des serveurs situés dans différents pays selon les partenaires techniques utilisés.',
+      'TaKo s’efforce de collaborer avec des prestataires respectant des standards de sécurité appropriés.',
+    ],
+  },
+  {
+    title: '13. Confidentialité des enfants',
+    paragraphs: [
+      'Les services TaKo ne sont pas destinés aux enfants sans autorisation parentale lorsque cela est requis par la loi.',
+      'TaKo ne collecte pas volontairement des données personnelles d’enfants de manière illégale.',
+    ],
+  },
+  {
+    title: '14. Modification de la politique',
+    paragraphs: [
+      'TaKo peut modifier la présente Politique de Confidentialité à tout moment afin de refléter les évolutions techniques, les changements réglementaires, les nouveaux services et les exigences de conformité.',
+      'Les utilisateurs seront informés des modifications importantes.',
+    ],
+  },
+  {
+    title: '15. Contact',
+    paragraphs: [
+      'Pour toute question relative à la protection des données ou à la confidentialité :',
+      'Email : contact@takotransport.online',
+      'Support : support@takotransport.online',
+    ],
+  },
+  {
+    title: '16. Acceptation',
+    paragraphs: [
+      'En utilisant les services TaKo, l’utilisateur reconnaît avoir lu, compris et accepté la présente Politique de Confidentialité.',
+      '© TaKo – Tous droits réservés.',
     ],
   },
 ];
