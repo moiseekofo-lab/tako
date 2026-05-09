@@ -765,7 +765,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 88,
+    paddingBottom: 62,
     marginTop: -18,
   },
   pullIcon: {
@@ -779,7 +779,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   physicalCardBox: {
-    minHeight: 160,
+    minHeight: 144,
     borderRadius: 18,
     backgroundColor: '#F7F7F7',
     padding: 14,
@@ -809,8 +809,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   miniCard: {
-    width: 104,
-    height: 104,
+    flex: 1,
+    height: 96,
     borderRadius: 9,
     backgroundColor: '#061F68',
     padding: 10,
@@ -872,8 +872,8 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   news3dMain: {
-    left: 0,
-    right: 58,
+    left: 16,
+    right: 16,
     zIndex: 3,
   },
   news3dSide: {
@@ -883,10 +883,10 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   news3dLeft: {
-    left: -118,
+    left: -138,
   },
   news3dRight: {
-    right: -116,
+    right: -138,
   },
   newsImage: {
     width: '100%',
