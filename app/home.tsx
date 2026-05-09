@@ -31,8 +31,10 @@ export default function Home() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const heroTranslateY = useRef(new Animated.Value(0)).current;
+  const newsDragX = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const webHeroTouchStartY = useRef<number | null>(null);
+  const isNewsTouched = useRef(false);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
@@ -136,6 +138,10 @@ export default function Home() {
         return;
       }
 
+      if (isNewsTouched.current) {
+        return;
+      }
+
       setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
     }, NEWS_AUTO_SCROLL_INTERVAL_MS);
 
@@ -224,6 +230,47 @@ export default function Home() {
           stiffness: 130,
           useNativeDriver: true,
         }).start();
+      },
+    })
+  ).current;
+
+  const newsPanResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+      onPanResponderGrant: () => {
+        isNewsTouched.current = true;
+        newsDragX.stopAnimation();
+      },
+      onPanResponderMove: (_, gesture) => {
+        newsDragX.setValue(Math.max(Math.min(gesture.dx, 56), -56));
+      },
+      onPanResponderRelease: (_, gesture) => {
+        if (gesture.dx <= -34) {
+          setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
+        }
+
+        if (gesture.dx >= 34) {
+          setActiveNewsIndex((currentIndex) => (currentIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT);
+        }
+
+        Animated.spring(newsDragX, {
+          toValue: 0,
+          damping: 14,
+          stiffness: 150,
+          useNativeDriver: true,
+        }).start(() => {
+          isNewsTouched.current = false;
+        });
+      },
+      onPanResponderTerminate: () => {
+        Animated.spring(newsDragX, {
+          toValue: 0,
+          damping: 14,
+          stiffness: 150,
+          useNativeDriver: true,
+        }).start(() => {
+          isNewsTouched.current = false;
+        });
       },
     })
   ).current;
@@ -442,16 +489,24 @@ export default function Home() {
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
           </View>
 
-          <View style={styles.newsCarousel3d}>
-            <View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
+          <View
+            style={styles.newsCarousel3d}
+            onTouchStart={() => {
+              isNewsTouched.current = true;
+            }}
+            onTouchEnd={() => {
+              isNewsTouched.current = false;
+            }}
+            {...newsPanResponder.panHandlers}>
+            <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
               {renderNewsCardContent((activeNewsIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT)}
-            </View>
-            <View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
+            </Animated.View>
+            <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
               {renderNewsCardContent((activeNewsIndex + 1) % NEWS_CARD_COUNT)}
-            </View>
-            <View style={[styles.news3dCard, styles.news3dMain]}>
+            </Animated.View>
+            <Animated.View style={[styles.news3dCard, styles.news3dMain, { transform: [{ translateX: newsDragX }] }]}>
               {renderNewsCardContent(activeNewsIndex)}
-            </View>
+            </Animated.View>
           </View>
 
         </ScrollView>
