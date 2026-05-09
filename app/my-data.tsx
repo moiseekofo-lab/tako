@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
@@ -25,7 +26,36 @@ export default function MyData() {
   const [email, setEmail] = useState(currentUser.email);
   const [phone, setPhone] = useState(currentUser.phone);
   const [refreshing, setRefreshing] = useState(false);
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
+  const phoneFieldY = useRef(0);
+  const phoneFocused = useRef(false);
+
+  const scrollToPhoneField = (delay = 120) => {
+    setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(phoneFieldY.current - 90, 0),
+        animated: true,
+      });
+    }, delay);
+  };
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, (event) => {
+      setKeyboardHeight(event.endCoordinates.height);
+      if (phoneFocused.current) {
+        scrollToPhoneField(260);
+      }
+    });
+    const hideSub = Keyboard.addListener(hideEvent, () => setKeyboardHeight(0));
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const updateEditableData = () => {
     setCurrentUser({
@@ -58,7 +88,11 @@ export default function MyData() {
 
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={styles.card}
+        style={styles.scrollArea}
+        contentContainerStyle={[
+          styles.card,
+          { paddingBottom: keyboardHeight > 0 ? keyboardHeight + 190 : 190 },
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -93,14 +127,25 @@ export default function MyData() {
           />
         </View>
 
-        <View style={styles.fieldBlock}>
+        <View
+          style={styles.fieldBlock}
+          onLayout={(event) => {
+            phoneFieldY.current = event.nativeEvent.layout.y;
+          }}>
           <Text style={styles.label}>{text.phone}</Text>
           <TextInput
             value={phone}
             onChangeText={setPhone}
             keyboardType="phone-pad"
             style={styles.input}
-            onFocus={() => setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 220)}
+            onFocus={() => {
+              phoneFocused.current = true;
+              scrollToPhoneField();
+              scrollToPhoneField(420);
+            }}
+            onBlur={() => {
+              phoneFocused.current = false;
+            }}
           />
         </View>
 
@@ -139,6 +184,9 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 33,
   },
+  scrollArea: {
+    flex: 1,
+  },
   card: {
     flexGrow: 1,
     backgroundColor: 'white',
@@ -146,7 +194,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 28,
     paddingTop: 28,
-    paddingBottom: 240,
+    paddingBottom: 190,
     alignItems: 'stretch',
   },
   avatarCircle: {
