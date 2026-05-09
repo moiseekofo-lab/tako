@@ -481,10 +481,13 @@ export default function Home() {
             <Text style={styles.bottomNavText}>{text.recharge}</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.payButton} activeOpacity={0.9} onPress={() => router.push('/qr')}>
-            <Ionicons name="qr-code" size={34} color="white" />
-            <Text style={styles.payButtonText}>{text.pay}</Text>
-          </TouchableOpacity>
+          <View style={styles.payButtonDepth}>
+            <View style={styles.payButtonHalo} />
+            <TouchableOpacity style={styles.payButton} activeOpacity={0.9} onPress={() => router.push('/qr')}>
+              <Ionicons name="qr-code" size={34} color="white" />
+              <Text style={styles.payButtonText}>{text.pay}</Text>
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.85}>
             <Ionicons name="help-circle-outline" size={32} color="#061F68" />
@@ -1013,20 +1016,49 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   payButton: {
-    width: 102,
-    height: 102,
-    borderRadius: 51,
+    width: 94,
+    height: 94,
+    borderRadius: 47,
     backgroundColor: '#061F68',
-    borderWidth: 5,
+    borderWidth: 3,
     borderColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: -52,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    elevation: 9,
+  },
+  payButtonDepth: {
+    width: 118,
+    height: 118,
+    borderRadius: 59,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: -58,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#E6E6E6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 7 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 8,
+  },
+  payButtonHalo: {
+    position: 'absolute',
+    width: 108,
+    height: 108,
+    borderRadius: 54,
+    backgroundColor: '#F7F7F7',
+    borderWidth: 4,
+    borderColor: 'white',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.12,
     shadowRadius: 6,
-    elevation: 8,
+    elevation: 5,
   },
   payButtonText: {
     color: 'white',
