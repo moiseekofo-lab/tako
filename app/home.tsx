@@ -12,6 +12,8 @@ const DRIVER_TRIP_INFO_KEY = 'tako:driverTripInfo';
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
+const NEWS_AUTO_SCROLL_INTERVAL_MS = 32;
+const NEWS_AUTO_SCROLL_SPEED = 0.85;
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 
 export default function Home() {
@@ -28,6 +30,9 @@ export default function Home() {
   const heroTranslateY = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const webHeroTouchStartY = useRef<number | null>(null);
+  const newsScrollRef = useRef<ScrollView>(null);
+  const newsScrollOffset = useRef(0);
+  const newsLoopWidth = useRef(0);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
@@ -123,6 +128,20 @@ export default function Home() {
       }
     }).catch(() => {});
   }, [driverTripInfo.amount, driverTripInfo.bus, driverTripInfo.route, setDriverTripInfo]);
+
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      if (role !== 'passager' || newsLoopWidth.current <= 0) {
+        return;
+      }
+
+      const nextOffset = newsScrollOffset.current + NEWS_AUTO_SCROLL_SPEED;
+      newsScrollOffset.current = nextOffset >= newsLoopWidth.current ? 0 : nextOffset;
+      newsScrollRef.current?.scrollTo({ x: newsScrollOffset.current, animated: false });
+    }, NEWS_AUTO_SCROLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [role]);
 
   const saveDriverTripInfo = async () => {
     const info = {
@@ -286,6 +305,26 @@ export default function Home() {
     }
   };
 
+  const renderNewsCards = (suffix: string) => (
+    <>
+      <View key={`trajets-${suffix}`} style={[styles.newsCard, styles.newsImageCard]}>
+        <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
+      </View>
+      <View key={`recharge-${suffix}`} style={[styles.newsCard, styles.newsYellow]}>
+        <Text style={styles.newsCardTitle}>{text.recharge}</Text>
+        <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
+      </View>
+      <View key={`card-${suffix}`} style={[styles.newsCard, styles.newsWhite]}>
+        <Text style={styles.newsCardTitleDark}>Carte TaKo</Text>
+        <Text style={styles.newsCardTextDark}>{text.payQrNfc}</Text>
+      </View>
+      <View key={`transport-${suffix}`} style={[styles.newsCard, styles.newsBlue]}>
+        <Text style={styles.newsCardTitle}>{text.transport}</Text>
+        <Text style={styles.newsCardText}>{text.travelSimple}</Text>
+      </View>
+    </>
+  );
+
   if (role === 'passager') {
     return (
       <View style={styles.clientScreen}>
@@ -411,22 +450,20 @@ export default function Home() {
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.newsRow}>
-            <View style={[styles.newsCard, styles.newsImageCard]}>
-              <Image source={takoTrajetsNews} style={styles.newsImage} resizeMode="cover" />
-            </View>
-            <View style={[styles.newsCard, styles.newsYellow]}>
-              <Text style={styles.newsCardTitle}>{text.recharge}</Text>
-              <Text style={styles.newsCardText}>{text.addBalanceFast}</Text>
-            </View>
-            <View style={[styles.newsCard, styles.newsWhite]}>
-              <Text style={styles.newsCardTitleDark}>Carte TaKo</Text>
-              <Text style={styles.newsCardTextDark}>{text.payQrNfc}</Text>
-            </View>
-            <View style={[styles.newsCard, styles.newsBlue]}>
-              <Text style={styles.newsCardTitle}>{text.transport}</Text>
-              <Text style={styles.newsCardText}>{text.travelSimple}</Text>
-            </View>
+          <ScrollView
+            ref={newsScrollRef}
+            horizontal
+            scrollEventThrottle={16}
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.newsRow}
+            onScroll={(event) => {
+              newsScrollOffset.current = event.nativeEvent.contentOffset.x;
+            }}
+            onContentSizeChange={(width) => {
+              newsLoopWidth.current = width / 2;
+            }}>
+            {renderNewsCards('a')}
+            {renderNewsCards('b')}
           </ScrollView>
 
         </ScrollView>
