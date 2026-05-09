@@ -41,7 +41,19 @@ function generateCode() {
 }
 
 function generateClientId() {
-  return `TAKO-${Date.now().toString().slice(-6)}${Math.floor(Math.random() * 90 + 10)}`;
+  return `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
+}
+
+async function generateUniqueClientId() {
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const id = generateClientId();
+    const existing = await query('SELECT id FROM users WHERE id = $1 LIMIT 1;', [id]);
+    if (!existing.rows.length) {
+      return id;
+    }
+  }
+
+  return String(crypto.randomInt(1000000000, 9999999999));
 }
 
 async function sendVerificationEmail(contact, code, purpose) {
@@ -455,7 +467,7 @@ async function handleRequest(request, response) {
 
     await verifyStoredCode(contact, body.code, 'register');
 
-    const id = generateClientId();
+    const id = await generateUniqueClientId();
     const email = contact.includes('@') ? contact : null;
     const phone = contact.includes('@') ? null : contact;
     const status = role === 'chauffeur' ? 'pending' : 'active';

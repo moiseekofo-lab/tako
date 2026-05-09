@@ -328,11 +328,12 @@ export default function Login() {
     }
 
     if (email.trim()) {
-      const isClientId = email.trim().toUpperCase().startsWith('TAKO-');
+      const cleanFallbackLogin = email.trim();
+      const isClientId = /^\d{6,}$/.test(cleanFallbackLogin);
       setCurrentUser({
-        id: isClientId ? email.trim().toUpperCase() : `TAKO-${Date.now().toString().slice(-6)}`,
+        id: isClientId ? cleanFallbackLogin : `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`,
         fullName: guessedName || clientName || text.defaultName,
-        email: isClientId ? 'client@tako.app' : email.trim(),
+        email: isClientId ? 'client@tako.app' : cleanFallbackLogin,
         phone: '',
         birthDate: '',
       });

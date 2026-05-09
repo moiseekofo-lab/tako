@@ -57,7 +57,7 @@ type StoreState = {
 export const useStore = create<StoreState>((set) => ({
   language: 'fr',
   currentUser: {
-    id: 'TAKO-000001',
+    id: '1000000001',
     fullName: 'Client TaKo',
     email: 'client@tako.app',
     phone: '',

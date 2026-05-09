@@ -33,7 +33,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
 
-  const generateClientId = () => `TAKO-${Date.now().toString().slice(-6)}`;
+  const generateClientId = () => `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
   const isEmail = (value: string) => value.includes('@');
   const isValidContact = (value: string) => {
     const cleanValue = value.trim();

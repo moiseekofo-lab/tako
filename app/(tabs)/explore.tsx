@@ -4,7 +4,7 @@ import { TakoLogo } from '../../components/tako-logo';
 
 export default function Explore() {
 
-  const userId = "client_12345";
+  const userId = '1000000001';
 
   return (
     <View style={styles.container}>

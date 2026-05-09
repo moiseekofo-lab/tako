@@ -68,7 +68,7 @@ export default function Admin() {
   };
 
   const findClient = async () => {
-    const cleanClientId = clientId.trim().toUpperCase();
+    const cleanClientId = clientId.trim();
     if (!cleanClientId) {
       Alert.alert('ID obligatoire', 'Entrez l’ID du client.');
       return;
@@ -85,7 +85,7 @@ export default function Admin() {
       // Le mode local reste disponible si le backend n’est pas joignable.
     }
 
-    if (!currentUser?.id || cleanClientId !== currentUser.id.toUpperCase()) {
+    if (!currentUser?.id || cleanClientId !== currentUser.id) {
       setSelectedClient(null);
       Alert.alert('Client introuvable', 'Aucun compte client trouvé avec cet ID.');
       return;
@@ -280,16 +280,16 @@ function ClientSearchCard({
   return (
     <View style={[styles.card, styles.searchCard]}>
       <Text style={styles.cardTitle}>Accès compte client</Text>
-      <Text style={styles.cardText}>Entrez l’ID TaKo permanent du client.</Text>
+      <Text style={styles.cardText}>Entrez l’ID numérique permanent du client.</Text>
 
       <View style={styles.inputBox}>
         <Ionicons name="id-card-outline" size={24} color="#7B8798" />
         <TextInput
-          placeholder="Ex: TAKO-000001"
+          placeholder="Ex: 1000000001"
           placeholderTextColor="#8B95A5"
           value={clientId}
           onChangeText={setClientId}
-          autoCapitalize="characters"
+          keyboardType="number-pad"
           style={styles.input}
         />
       </View>
@@ -312,7 +312,7 @@ function ClientDetails({ client, balance, trips, notifications }: { client: any;
         </View>
         <View style={styles.clientPill}>
           <Ionicons name="finger-print" size={18} color={TAKO_BLUE} />
-          <Text style={styles.clientPillText}>{client?.id || 'TAKO-ID'}</Text>
+          <Text style={styles.clientPillText}>{client?.id || '1000000001'}</Text>
         </View>
       </View>
 

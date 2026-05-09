@@ -9,8 +9,9 @@ import { useStore } from './store';
 export default function QR() {
   const router = useRouter();
   const language = useStore((state: any) => state.language) as Language;
+  const currentUser = useStore((state: any) => state.currentUser);
   const text = translations[language];
-  const userId = "user_123"; // simulé
+  const userId = currentUser?.id || '1000000001';
 
   const data = JSON.stringify({
     userId,
