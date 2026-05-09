@@ -13,7 +13,7 @@ const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
-const NEWS_CARD_WIDTH = 292;
+const NEWS_CARD_WIDTH = 312;
 const NEWS_CARD_GAP = 18;
 const NEWS_CARD_STEP = NEWS_CARD_WIDTH + NEWS_CARD_GAP;
 const NEWS_CARD_COUNT = 4;
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     paddingHorizontal: 24,
     paddingTop: 8,
-    paddingBottom: 150,
+    paddingBottom: 112,
     marginTop: -18,
   },
   pullIcon: {
@@ -873,11 +873,11 @@ const styles = StyleSheet.create({
   newsRow: {
     gap: NEWS_CARD_GAP,
     paddingRight: 28,
-    marginBottom: 28,
+    marginBottom: 0,
   },
   newsCard: {
     width: NEWS_CARD_WIDTH,
-    height: 132,
+    height: 168,
     borderRadius: 8,
     padding: 18,
     justifyContent: 'center',
@@ -905,23 +905,23 @@ const styles = StyleSheet.create({
   },
   newsCardTitle: {
     color: 'white',
-    fontSize: 23,
+    fontSize: 25,
     fontWeight: '900',
   },
   newsCardText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     marginTop: 8,
   },
   newsCardTitleDark: {
     color: '#061F68',
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '900',
   },
   newsCardTextDark: {
     color: '#061F68',
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     marginTop: 8,
   },
