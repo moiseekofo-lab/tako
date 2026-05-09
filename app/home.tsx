@@ -34,6 +34,7 @@ export default function Home() {
   const newsDragX = useRef(new Animated.Value(0)).current;
   const menuTranslateX = useRef(new Animated.Value(380)).current;
   const webHeroTouchStartY = useRef<number | null>(null);
+  const newsTouchStartX = useRef<number | null>(null);
   const isNewsTouched = useRef(false);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const balance = useStore((state: any) => state.balance);
@@ -236,7 +237,9 @@ export default function Home() {
 
   const newsPanResponder = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 10 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gesture) => Math.abs(gesture.dx) > 6 && Math.abs(gesture.dx) > Math.abs(gesture.dy),
+      onPanResponderTerminationRequest: () => false,
       onPanResponderGrant: () => {
         isNewsTouched.current = true;
         newsDragX.stopAnimation();
@@ -274,6 +277,60 @@ export default function Home() {
       },
     })
   ).current;
+
+  const getTouchPageX = (event: any) => {
+    const nativeEvent = event?.nativeEvent ?? event;
+    const touch = nativeEvent?.touches?.[0] ?? nativeEvent?.changedTouches?.[0];
+    return touch?.pageX ?? nativeEvent?.pageX ?? nativeEvent?.locationX ?? null;
+  };
+
+  const startNewsTouch = (event: any) => {
+    isNewsTouched.current = true;
+    newsTouchStartX.current = getTouchPageX(event);
+    newsDragX.stopAnimation();
+  };
+
+  const moveNewsTouch = (event: any) => {
+    if (Platform.OS !== 'web' || newsTouchStartX.current === null) {
+      return;
+    }
+
+    const currentX = getTouchPageX(event);
+    if (currentX === null) {
+      return;
+    }
+
+    const distance = currentX - newsTouchStartX.current;
+    newsDragX.setValue(Math.max(Math.min(distance, 56), -56));
+  };
+
+  const endNewsTouch = (event: any) => {
+    if (Platform.OS !== 'web' || newsTouchStartX.current === null) {
+      isNewsTouched.current = false;
+      return;
+    }
+
+    const currentX = getTouchPageX(event) ?? newsTouchStartX.current;
+    const distance = currentX - newsTouchStartX.current;
+    newsTouchStartX.current = null;
+
+    if (distance <= -34) {
+      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
+    }
+
+    if (distance >= 34) {
+      setActiveNewsIndex((currentIndex) => (currentIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT);
+    }
+
+    Animated.spring(newsDragX, {
+      toValue: 0,
+      damping: 14,
+      stiffness: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      isNewsTouched.current = false;
+    });
+  };
 
   const menuItems = [
     { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
@@ -491,12 +548,10 @@ export default function Home() {
 
           <View
             style={styles.newsCarousel3d}
-            onTouchStart={() => {
-              isNewsTouched.current = true;
-            }}
-            onTouchEnd={() => {
-              isNewsTouched.current = false;
-            }}
+            onTouchStart={startNewsTouch}
+            onTouchMove={moveNewsTouch}
+            onTouchEnd={endNewsTouch}
+            onTouchCancel={endNewsTouch}
             {...newsPanResponder.panHandlers}>
             <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
               {renderNewsCardContent((activeNewsIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT)}
