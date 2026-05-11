@@ -48,11 +48,37 @@ const globalStyles = `
 
   body {
     overflow-x: hidden;
+    overflow-y: scroll;
+    scrollbar-width: auto !important;
+    scrollbar-color: #061F68 #EAF3FF !important;
   }
 
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
+    scrollbar-width: auto !important;
+    scrollbar-color: #061F68 #EAF3FF !important;
+  }
+
+  *::-webkit-scrollbar {
+    width: 14px !important;
+    height: 14px !important;
+    display: block !important;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: #EAF3FF !important;
+    border-radius: 12px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #061F68 !important;
+    border: 3px solid #EAF3FF;
+    border-radius: 12px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #139DFF !important;
   }
 
   input,

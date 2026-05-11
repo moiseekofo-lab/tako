@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { approveUser, createInternalRecharge, findClientById, getPendingUsers } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -10,6 +10,13 @@ const TAKO_BLUE = '#061F68';
 const TAKO_ACTION = '#139DFF';
 const TAKO_GREEN = '#09D457';
 const PAGE_BG = '#F5F8FF';
+const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
+  ? ({
+      overflowY: 'scroll',
+      scrollbarWidth: 'auto',
+      scrollbarColor: `${TAKO_BLUE} #EAF3FF`,
+    } as any)
+  : null;
 
 type AdminSection = 'dashboard' | 'clients' | 'drivers' | 'agents' | 'transactions' | 'settings';
 
@@ -214,6 +221,7 @@ export default function Admin() {
         </View>
 
         <ScrollView
+          style={[styles.contentScroller, WEB_SCROLLBAR_STYLE]}
           contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]}
           showsVerticalScrollIndicator
           persistentScrollbar
@@ -699,6 +707,9 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
     flexDirection: 'row',
+  },
+  contentScroller: {
+    flex: 1,
   },
   mobileShell: {
     flexDirection: 'column',
