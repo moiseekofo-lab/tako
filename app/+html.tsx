@@ -36,6 +36,7 @@ const globalStyles = `
   body,
   #root {
     width: 100%;
+    height: 100%;
     min-height: 100%;
     margin: 0;
     background: #F5F8FF;
@@ -47,16 +48,20 @@ const globalStyles = `
   }
 
   body {
-    overflow-x: hidden;
-    overflow-y: scroll;
-    scrollbar-width: auto !important;
-    scrollbar-color: rgba(120, 130, 150, 0.34) transparent !important;
+    overflow: hidden;
+  }
+
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
 
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
-    scrollbar-width: auto !important;
+    scrollbar-width: thin !important;
     scrollbar-color: rgba(120, 130, 150, 0.34) transparent !important;
   }
 
@@ -93,3 +98,4 @@ const globalStyles = `
     font: inherit;
   }
 `;
+
