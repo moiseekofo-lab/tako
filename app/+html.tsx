@@ -50,35 +50,35 @@ const globalStyles = `
     overflow-x: hidden;
     overflow-y: scroll;
     scrollbar-width: auto !important;
-    scrollbar-color: #061F68 #EAF3FF !important;
+    scrollbar-color: rgba(6, 31, 104, 0.42) transparent !important;
   }
 
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     scrollbar-width: auto !important;
-    scrollbar-color: #061F68 #EAF3FF !important;
+    scrollbar-color: rgba(6, 31, 104, 0.42) transparent !important;
   }
 
   *::-webkit-scrollbar {
-    width: 14px !important;
-    height: 14px !important;
+    width: 7px !important;
+    height: 7px !important;
     display: block !important;
   }
 
   *::-webkit-scrollbar-track {
-    background: #EAF3FF !important;
-    border-radius: 12px;
+    background: transparent !important;
   }
 
   *::-webkit-scrollbar-thumb {
-    background: #061F68 !important;
-    border: 3px solid #EAF3FF;
-    border-radius: 12px;
+    background: rgba(6, 31, 104, 0.42) !important;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    border-radius: 999px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: #139DFF !important;
+    background: rgba(6, 31, 104, 0.72) !important;
   }
 
   input,

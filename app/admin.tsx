@@ -13,8 +13,8 @@ const PAGE_BG = '#F5F8FF';
 const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
       overflowY: 'scroll',
-      scrollbarWidth: 'auto',
-      scrollbarColor: `${TAKO_BLUE} #EAF3FF`,
+      scrollbarWidth: 'thin',
+      scrollbarColor: `rgba(6, 31, 104, 0.42) transparent`,
     } as any)
   : null;
 
