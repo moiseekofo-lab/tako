@@ -2,7 +2,6 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import NfcManager, { NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { TakoLogo } from '../components/tako-logo';
 import { createInternalRecharge } from '../services/api';
 import { useStore } from './store';
@@ -10,6 +9,7 @@ import { useStore } from './store';
 const TAKO_BLUE = '#061F68';
 const TAKO_ACTION = '#139DFF';
 const TAKO_GREEN = '#09D457';
+type NfcTag = { id?: string; type?: string } | null;
 
 export default function Agent() {
   const router = useRouter();
@@ -32,32 +32,57 @@ export default function Agent() {
   }, [isAuthenticated, router]);
 
   useEffect(() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+
+    let mounted = true;
+    let manager: any = null;
+
+    const startNfc = async () => {
+      try {
+        const module = await import('react-native-nfc-manager');
+        manager = module.default;
+        const supported = await manager.isSupported();
+        if (mounted && supported) {
+          await manager.start();
+        }
+      } catch {
+        manager = null;
+      }
+    };
+
+    startNfc();
+
+    return () => {
+      mounted = false;
+      manager?.cancelTechnologyRequest?.().catch?.(() => {});
+    };
+  }, []);
+
+  useEffect(() => {
     if (params.clientId) {
       setClientId(String(params.clientId));
       setCardId('');
     }
   }, [params.clientId]);
 
-  useEffect(() => {
-    NfcManager.isSupported()
-      .then((supported) => {
-        if (supported) {
-          return NfcManager.start();
-        }
-        return null;
-      })
-      .catch(() => {});
-
-    return () => {
-      NfcManager.cancelTechnologyRequest().catch(() => {});
-    };
-  }, []);
-
-  const getCardId = (tag: TagEvent | null) => tag?.id || tag?.type || '';
+  const getCardId = (tag: NfcTag) => tag?.id || tag?.type || '';
 
   const readNfcCard = async () => {
+    let manager: { cancelTechnologyRequest?: () => Promise<void> } | null = null;
+
     try {
+      if (Platform.OS === 'web') {
+        Alert.alert('NFC indisponible', 'La lecture NFC fonctionne sur l’application mobile installée.');
+        return;
+      }
+
       setIsReadingNfc(true);
+      const module = await import('react-native-nfc-manager');
+      const NfcManager = module.default;
+      const { NfcTech } = module;
+      manager = NfcManager;
       await NfcManager.requestTechnology(NfcTech.Ndef, {
         alertMessage: 'Approchez la carte du passager',
       });
@@ -76,7 +101,7 @@ export default function Agent() {
       Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
     } finally {
       setIsReadingNfc(false);
-      NfcManager.cancelTechnologyRequest().catch(() => {});
+      manager?.cancelTechnologyRequest?.().catch(() => {});
     }
   };
 
