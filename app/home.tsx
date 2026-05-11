@@ -44,6 +44,8 @@ export default function Home() {
   const setNfcCardBlocked = useStore((state: any) => state.setNfcCardBlocked);
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
+  const clearSession = useStore((state: any) => state.clearSession);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const setDriverTripInfo = useStore((state: any) => state.setDriverTripInfo);
   const unreadNotifications = useStore(
@@ -70,6 +72,12 @@ export default function Home() {
     hour: '2-digit',
     minute: '2-digit',
   });
+
+  useEffect(() => {
+    if (isWeb && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, isWeb, router]);
 
   useEffect(() => {
     AsyncStorage.getItem(NFC_CARD_ID_KEY).then((storedCardId) => {
@@ -637,7 +645,10 @@ export default function Home() {
                 <TouchableOpacity
                   style={styles.menuItem}
                   activeOpacity={0.78}
-                  onPress={() => router.replace('/login' as any)}>
+                  onPress={() => {
+                    clearSession();
+                    router.replace('/login' as any);
+                  }}>
                   <MaterialCommunityIcons name="logout" size={30} color="#139DFF" />
                   <View style={styles.menuTextBox}>
                     <Text style={styles.menuItemTitle}>{text.logout}</Text>
@@ -661,7 +672,12 @@ export default function Home() {
       <View style={[styles.webShell, !isWeb && styles.mobileShell]}>
       <View style={styles.header}>
         <TakoLogo />
-        <TouchableOpacity style={styles.logoutIcon} onPress={() => router.replace('/login')}>
+        <TouchableOpacity
+          style={styles.logoutIcon}
+          onPress={() => {
+            clearSession();
+            router.replace('/login');
+          }}>
           <Ionicons name="log-out-outline" size={25} color="#061F68" />
         </TouchableOpacity>
       </View>

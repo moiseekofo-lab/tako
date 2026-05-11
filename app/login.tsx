@@ -327,6 +327,12 @@ export default function Login() {
         }
         return;
       }
+
+      if (Platform.OS === 'web') {
+        setIsLoggingIn(false);
+        Alert.alert('Erreur', error?.message || 'Connexion impossible.');
+        return;
+      }
     }
 
     if (rememberAccess && guessedName) {

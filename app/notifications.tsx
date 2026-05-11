@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore, type TransactionNotification } from './store';
 
@@ -31,13 +31,19 @@ export default function Notifications() {
   const notifications = useStore((state: any) => state.notifications) as TransactionNotification[];
   const markNotificationsRead = useStore((state: any) => state.markNotificationsRead);
   const language = useStore((state: any) => state.language) as Language;
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const text = translations[language];
   const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+      return;
+    }
+
     markNotificationsRead();
-  }, [markNotificationsRead]);
+  }, [isAuthenticated, markNotificationsRead, router]);
 
   const refreshPage = () => {
     setRefreshing(true);

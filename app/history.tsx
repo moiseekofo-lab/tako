@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Platform, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { translations, type Language } from './i18n';
 import { useStore, type TripHistoryItem } from './store';
 
@@ -17,6 +17,7 @@ const formatDate = (date: string, locale: string) =>
 export default function History() {
   const router = useRouter();
   const language = useStore((state: any) => state.language) as Language;
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const text = translations[language];
   const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
@@ -26,6 +27,12 @@ export default function History() {
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 750);
   };
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, router]);
 
   return (
     <View style={styles.screen}>

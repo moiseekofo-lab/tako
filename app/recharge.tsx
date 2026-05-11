@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -30,7 +30,14 @@ export default function Recharge() {
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const text = translations[language];
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, router]);
 
   const handleInternalRecharge = () => {
     router.push({

@@ -37,6 +37,7 @@ export type CurrentUser = {
 
 type StoreState = {
   language: Language;
+  isAuthenticated: boolean;
   currentUser: CurrentUser;
   balance: number;
   nfcCardId: string | null;
@@ -46,6 +47,7 @@ type StoreState = {
   driverTripInfo: DriverTripInfo;
   setLanguage: (language: Language) => void;
   setCurrentUser: (user: CurrentUser) => void;
+  clearSession: () => void;
   setBalance: (amount: number) => void;
   setDriverTripInfo: (info: DriverTripInfo) => void;
   increaseBalance: (amount: number) => void;
@@ -58,6 +60,7 @@ type StoreState = {
 
 export const useStore = create<StoreState>((set) => ({
   language: 'fr',
+  isAuthenticated: false,
   currentUser: {
     id: '1000000001',
     fullName: 'Client TaKo',
@@ -90,8 +93,21 @@ export const useStore = create<StoreState>((set) => ({
     }),
   setCurrentUser: (user) =>
     set({
+      isAuthenticated: true,
       currentUser: user,
       balance: Number(user.balance ?? 0),
+    }),
+  clearSession: () =>
+    set({
+      isAuthenticated: false,
+      currentUser: {
+        id: '1000000001',
+        fullName: 'Client TaKo',
+        email: 'client@tako.app',
+        phone: '',
+        birthDate: '',
+      },
+      balance: 0,
     }),
   setBalance: (amount) =>
     set({

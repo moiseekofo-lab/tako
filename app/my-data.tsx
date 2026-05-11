@@ -21,6 +21,7 @@ export default function MyData() {
   const router = useRouter();
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const text = translations[language];
   const [email, setEmail] = useState(currentUser.email);
@@ -30,6 +31,12 @@ export default function MyData() {
   const scrollRef = useRef<ScrollView>(null);
   const phoneFieldY = useRef(0);
   const phoneFocused = useRef(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, router]);
 
   const scrollToPhoneField = (delay = 120) => {
     setTimeout(() => {

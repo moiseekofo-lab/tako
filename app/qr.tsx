@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { TakoLogo } from '../components/tako-logo';
 import { translations, type Language } from './i18n';
@@ -11,9 +12,16 @@ export default function QR() {
   const params = useLocalSearchParams<{ mode?: string }>();
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const text = translations[language];
   const userId = currentUser?.id || '1000000001';
   const isInternalRecharge = params.mode === 'recharge';
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, router]);
 
   const data = JSON.stringify({
     type: isInternalRecharge ? 'internal_recharge' : 'transport_payment',

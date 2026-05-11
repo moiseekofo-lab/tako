@@ -15,11 +15,19 @@ export default function Agent() {
   const router = useRouter();
   const params = useLocalSearchParams<{ clientId?: string }>();
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
+  const clearSession = useStore((state: any) => state.clearSession);
   const [clientId, setClientId] = useState(String(params.clientId || ''));
   const [amount, setAmount] = useState('');
   const [cardId, setCardId] = useState('');
   const [isReadingNfc, setIsReadingNfc] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+    }
+  }, [isAuthenticated, router]);
 
   useEffect(() => {
     if (params.clientId) {
@@ -105,7 +113,13 @@ export default function Agent() {
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <TakoLogo />
-          <TouchableOpacity style={styles.logoutButton} activeOpacity={0.85} onPress={() => router.replace('/login' as any)}>
+          <TouchableOpacity
+            style={styles.logoutButton}
+            activeOpacity={0.85}
+            onPress={() => {
+              clearSession();
+              router.replace('/login' as any);
+            }}>
             <Ionicons name="log-out-outline" size={21} color={TAKO_BLUE} />
           </TouchableOpacity>
         </View>

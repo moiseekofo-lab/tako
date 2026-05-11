@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import NfcManager, { NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { TakoLogo } from '../components/tako-logo';
 import { saveNfcCard } from '../services/api';
@@ -17,9 +17,15 @@ export default function ClientNfcActivation() {
 
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const setNfcCardId = useStore((state: any) => state.setNfcCardId);
 
   useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+      return undefined;
+    }
+
     const startNfc = async () => {
       try {
         const supported = await NfcManager.isSupported();
@@ -43,7 +49,7 @@ export default function ClientNfcActivation() {
     return () => {
       NfcManager.cancelTechnologyRequest().catch(() => {});
     };
-  }, []);
+  }, [isAuthenticated, router, setNfcCardId]);
 
   const getCardId = (tag: TagEvent | null) => {
     if (!tag) {

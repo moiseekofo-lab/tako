@@ -49,6 +49,8 @@ export default function Admin() {
   const { width } = useWindowDimensions();
   const isNarrow = width < 760;
   const currentUser = useStore((state: any) => state.currentUser);
+  const isAuthenticated = useStore((state: any) => state.isAuthenticated);
+  const clearSession = useStore((state: any) => state.clearSession);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const notifications = useStore((state: any) => state.notifications) as TransactionNotification[];
   const balance = useStore((state: any) => state.balance);
@@ -88,8 +90,13 @@ export default function Admin() {
   };
 
   useEffect(() => {
+    if (Platform.OS === 'web' && !isAuthenticated) {
+      router.replace('/login' as any);
+      return;
+    }
+
     loadPendingUsers();
-  }, []);
+  }, [isAuthenticated, router]);
 
   const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
@@ -105,6 +112,7 @@ export default function Admin() {
   const logout = () => {
     setSelectedClient(null);
     setClientId('');
+    clearSession();
     router.replace('/login' as any);
   };
 
