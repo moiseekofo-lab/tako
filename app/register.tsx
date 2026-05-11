@@ -181,7 +181,12 @@ export default function Register() {
 
       console.log('USER CREATED:', user);
 
-      Alert.alert('Compte créé !', `Votre ID client est ${user.id}. Vous pouvez l’utiliser avec votre mot de passe.`);
+      Alert.alert(
+        'Compte créé !',
+        result?.accountEmailSent
+          ? 'Vos informations de compte ont été envoyées par email.'
+          : 'Votre compte a été créé. Vérifiez votre email pour les informations du compte.'
+      );
       router.replace('/login' as any);
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible de créer le compte.');

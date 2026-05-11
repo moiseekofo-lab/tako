@@ -113,6 +113,67 @@ async function sendVerificationEmail(contact, code, purpose) {
   return true;
 }
 
+async function sendAccountCreatedEmail(user) {
+  if (!sendGridApiKey || !sendGridFromEmail || !user?.email) {
+    return false;
+  }
+
+  const roleLabel =
+    user.role === 'agent' ? 'Agent' : user.role === 'chauffeur' ? 'Chauffeur' : 'Passager';
+  const statusText =
+    user.status === 'pending'
+      ? 'Votre compte est en attente de validation par l’administrateur.'
+      : 'Votre compte est actif. Vous pouvez vous connecter avec votre ID ou votre email.';
+  const subject = 'Votre compte TaKo a été créé';
+  const text = `Bonjour ${user.full_name},\n\nVotre compte TaKo a été créé.\n\nID TaKo : ${user.id}\nType de compte : ${roleLabel}\nStatut : ${user.status}\n\n${statusText}\n\nConservez cet email. Votre ID peut servir à vous connecter et à récupérer votre compte.\n\nTaKo`;
+  const html = `
+    <div style="font-family:Arial,sans-serif;color:#202836;line-height:1.55">
+      <h2 style="color:#061F68">Votre compte TaKo a été créé</h2>
+      <p>Bonjour ${user.full_name},</p>
+      <p>Voici vos informations de compte :</p>
+      <div style="border:1px solid #D7E0EF;border-radius:14px;padding:16px;background:#F5F8FF">
+        <p style="margin:0 0 8px"><strong>ID TaKo :</strong> <span style="color:#139DFF;font-size:20px;font-weight:800">${user.id}</span></p>
+        <p style="margin:0 0 8px"><strong>Type de compte :</strong> ${roleLabel}</p>
+        <p style="margin:0"><strong>Statut :</strong> ${user.status}</p>
+      </div>
+      <p>${statusText}</p>
+      <p style="color:#6b7280">Conservez cet email. Votre ID peut servir à vous connecter et à récupérer votre compte.</p>
+    </div>
+  `;
+
+  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${sendGridApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      personalizations: [
+        {
+          to: [{ email: user.email }],
+          subject,
+        },
+      ],
+      from: {
+        email: sendGridFromEmail,
+        name: sendGridFromName,
+      },
+      content: [
+        { type: 'text/plain', value: text },
+        { type: 'text/html', value: html },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    console.error('SendGrid account email failed:', response.status, errorText);
+    return false;
+  }
+
+  return true;
+}
+
 function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
   const hash = crypto.pbkdf2Sync(String(password), salt, 100000, 64, 'sha512').toString('hex');
   return `${salt}:${hash}`;
@@ -500,10 +561,12 @@ async function handleRequest(request, response) {
       `,
       [id, fullName, email, phone, birthDate, hashPassword(password), role, status],
     );
+    const accountEmailSent = await sendAccountCreatedEmail(result.rows[0]);
 
     sendJson(response, 201, {
       ok: true,
       user: publicUser(result.rows[0]),
+      accountEmailSent,
     });
     return;
   }
