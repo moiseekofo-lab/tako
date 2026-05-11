@@ -651,6 +651,50 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/agents/') && url.pathname.endsWith('/recharge')) {
+    const body = await readJson(request);
+    const agentId = decodeURIComponent(url.pathname.replace('/admin/agents/', '').replace('/recharge', '')).trim();
+    const amount = Number(body.amount);
+
+    if (!agentId || !Number.isFinite(amount) || amount <= 0) {
+      sendJson(response, 400, { ok: false, error: 'ID agent et montant obligatoires' });
+      return;
+    }
+
+    const agentResult = await query(
+      `
+        UPDATE users
+        SET balance = balance + $2, updated_at = NOW()
+        WHERE id = $1 AND role = 'agent' AND status = 'active'
+        RETURNING *;
+      `,
+      [agentId, amount],
+    );
+
+    const agent = agentResult.rows[0];
+    if (!agent) {
+      sendJson(response, 404, { ok: false, error: 'Agent actif introuvable' });
+      return;
+    }
+
+    const rechargeId = `agent_float_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const paymentResult = await query(
+      `
+        INSERT INTO payments (id, amount, method, client_id, driver_id, bus_plate, route, status, created_at)
+        VALUES ($1, $2, 'agent_float_recharge', NULL, $3, NULL, 'Crédit agent administrateur', 'accepted', NOW())
+        RETURNING id, amount, method, driver_id, status, created_at;
+      `,
+      [rechargeId, amount, agentId],
+    );
+
+    sendJson(response, 201, {
+      ok: true,
+      agent: publicUser(agent),
+      recharge: paymentResult.rows[0],
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/clients/nfc-card') {
     const body = await readJson(request);
     const clientId = String(body.clientId || '').trim();
@@ -888,6 +932,37 @@ async function handleRequest(request, response) {
       return;
     }
 
+    let updatedAgent = null;
+    if (agentId && agentId !== 'ADMIN') {
+      const agentResult = await query('SELECT * FROM users WHERE id = $1 AND role = $2 AND status = $3 LIMIT 1;', [
+        agentId,
+        'agent',
+        'active',
+      ]);
+      const agent = agentResult.rows[0];
+
+      if (!agent) {
+        sendJson(response, 403, { ok: false, error: 'Compte agent invalide ou non validé' });
+        return;
+      }
+
+      if (Number(agent.balance || 0) < amount) {
+        sendJson(response, 402, { ok: false, error: 'Solde agent insuffisant. Contactez l’administrateur.' });
+        return;
+      }
+
+      const debitResult = await query(
+        `
+          UPDATE users
+          SET balance = balance - $2, updated_at = NOW()
+          WHERE id = $1
+          RETURNING *;
+        `,
+        [agentId, amount],
+      );
+      updatedAgent = debitResult.rows[0];
+    }
+
     const rechargeId = `rch_internal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     const paymentResult = await query(
       `
@@ -920,6 +995,7 @@ async function handleRequest(request, response) {
       ok: true,
       recharge: paymentResult.rows[0],
       client: publicUser(updatedUser.rows[0]),
+      agent: publicUser(updatedAgent),
       notification,
     });
     return;

@@ -17,6 +17,8 @@ export default function Agent() {
   const currentUser = useStore((state: any) => state.currentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const clearSession = useStore((state: any) => state.clearSession);
+  const balance = useStore((state: any) => state.balance);
+  const setBalance = useStore((state: any) => state.setBalance);
   const [clientId, setClientId] = useState(String(params.clientId || ''));
   const [amount, setAmount] = useState('');
   const [cardId, setCardId] = useState('');
@@ -100,6 +102,9 @@ export default function Agent() {
       setAmount('');
       setCardId('');
       setClientId(result?.client?.id || cleanClientId);
+      if (result?.agent?.balance !== undefined) {
+        setBalance(Number(result.agent.balance || 0));
+      }
       Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${result?.client?.id || cleanClientId}.`);
     } catch (error) {
       Alert.alert('Recharge impossible', error instanceof Error ? error.message : 'Vérifiez le compte ou la carte.');
@@ -127,6 +132,18 @@ export default function Agent() {
         <Text style={styles.kicker}>Mode agent</Text>
         <Text style={styles.title}>Recharge interne</Text>
         <Text style={styles.subtitle}>Scannez le QR, lisez la carte NFC ou saisissez l’ID du passager.</Text>
+
+        <View style={styles.agentBalanceCard}>
+          <View>
+            <Text style={styles.agentLabel}>ID agent</Text>
+            <Text style={styles.agentValue}>{currentUser?.id || 'AGENT'}</Text>
+          </View>
+          <View style={styles.agentBalanceBox}>
+            <Text style={styles.agentLabel}>Solde disponible</Text>
+            <Text style={styles.agentBalance}>{balance} FC</Text>
+          </View>
+          <Text style={styles.agentHint}>Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.</Text>
+        </View>
 
         <View style={styles.card}>
           <TouchableOpacity
@@ -246,6 +263,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D7E0EF',
     padding: 18,
+  },
+  agentBalanceCard: {
+    borderRadius: 18,
+    backgroundColor: TAKO_BLUE,
+    padding: 18,
+    marginBottom: 18,
+    gap: 14,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 4,
+  },
+  agentBalanceBox: {
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.18)',
+    paddingTop: 14,
+  },
+  agentLabel: {
+    color: 'rgba(255,255,255,0.72)',
+    fontSize: 12,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+  },
+  agentValue: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  agentBalance: {
+    color: TAKO_GREEN,
+    fontSize: 27,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  agentHint: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 13,
+    fontWeight: '700',
+    lineHeight: 19,
   },
   scanButton: {
     height: 62,

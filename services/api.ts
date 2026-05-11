@@ -100,6 +100,12 @@ export function approveUser(userId: string) {
   return postJson(`/admin/users/${encodeURIComponent(userId)}/approve`, {});
 }
 
+export function rechargeAgent(agentId: string, amount: number) {
+  return postJson(`/admin/agents/${encodeURIComponent(agentId)}/recharge`, {
+    amount,
+  });
+}
+
 export function saveNfcCard(clientId: string, cardId: string) {
   return postJson('/clients/nfc-card', {
     clientId,

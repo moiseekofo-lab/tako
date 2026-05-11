@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { approveUser, createInternalRecharge, findClientById, getPendingUsers } from '../services/api';
+import { approveUser, createInternalRecharge, findClientById, getPendingUsers, rechargeAgent } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -59,7 +59,10 @@ export default function Admin() {
   const [clientId, setClientId] = useState('');
   const [rechargeClientId, setRechargeClientId] = useState(String(params.clientId || ''));
   const [rechargeAmount, setRechargeAmount] = useState('');
+  const [agentRechargeId, setAgentRechargeId] = useState('');
+  const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
   const [pendingAgents, setPendingAgents] = useState<any[]>([]);
@@ -176,6 +179,31 @@ export default function Admin() {
     }
   };
 
+  const confirmAgentRecharge = async () => {
+    const cleanAgentId = agentRechargeId.trim();
+    const value = Number.parseInt(agentRechargeAmount, 10);
+
+    if (!cleanAgentId || !Number.isFinite(value) || value <= 0) {
+      Alert.alert('Informations obligatoires', 'Entrez l’ID de l’agent et le montant à lui envoyer.');
+      return;
+    }
+
+    try {
+      setAgentRechargeLoading(true);
+      const result = await rechargeAgent(cleanAgentId, value);
+      setAgentRechargeAmount('');
+      Alert.alert(
+        'Agent rechargé',
+        `${value} FC ajouté au compte agent ${result?.agent?.id || cleanAgentId}. Solde agent : ${result?.agent?.balance ?? 'mis à jour'} FC.`
+      );
+      setActiveSection('agents');
+    } catch (error) {
+      Alert.alert('Recharge agent impossible', error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.');
+    } finally {
+      setAgentRechargeLoading(false);
+    }
+  };
+
   const refreshPage = () => {
     setRefreshing(true);
     loadPendingUsers().finally(() => setRefreshing(false));
@@ -275,6 +303,14 @@ export default function Admin() {
                 approvingUserId={approvingUserId}
                 approve={approvePendingUser}
               />
+              <AgentRechargeCard
+                agentId={agentRechargeId}
+                setAgentId={setAgentRechargeId}
+                amount={agentRechargeAmount}
+                setAmount={setAgentRechargeAmount}
+                loading={agentRechargeLoading}
+                confirm={confirmAgentRecharge}
+              />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -342,6 +378,14 @@ export default function Admin() {
                 approvingUserId={approvingUserId}
                 approve={approvePendingUser}
               />
+              <AgentRechargeCard
+                agentId={agentRechargeId}
+                setAgentId={setAgentRechargeId}
+                amount={agentRechargeAmount}
+                setAmount={setAgentRechargeAmount}
+                loading={agentRechargeLoading}
+                confirm={confirmAgentRecharge}
+              />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -355,8 +399,10 @@ export default function Admin() {
                 <Text style={styles.cardTitle}>Compte agent</Text>
                 <ChecklistItem label="Inscription agent disponible" done />
                 <ChecklistItem label="Validation administrateur obligatoire" done />
+                <ChecklistItem label="Solde agent crédité uniquement par administrateur" done />
                 <ChecklistItem label="Recharge par QR client" done />
                 <ChecklistItem label="Recharge par carte NFC dans le mode agent" done />
+                <ChecklistItem label="Remise espèce en fin de journée" done />
               </View>
             </View>
           ) : null}
@@ -555,6 +601,60 @@ function InternalRechargeCard({
       <TouchableOpacity style={styles.successButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
         {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={22} color="white" />}
         <Text style={styles.primaryButtonText}>Confirmer la recharge</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function AgentRechargeCard({
+  agentId,
+  setAgentId,
+  amount,
+  setAmount,
+  loading,
+  confirm,
+}: {
+  agentId: string;
+  setAgentId: (value: string) => void;
+  amount: string;
+  setAmount: (value: string) => void;
+  loading: boolean;
+  confirm: () => void;
+}) {
+  return (
+    <View style={[styles.card, styles.internalRechargeCard]}>
+      <Text style={styles.cardTitle}>Créditer un agent</Text>
+      <Text style={styles.cardText}>
+        Envoyez un solde à l’agent. Chaque recharge client débitera ce solde, puis l’agent remettra l’espèce en fin de journée.
+      </Text>
+
+      <View style={styles.inputBox}>
+        <Ionicons name="person-circle-outline" size={24} color="#7B8798" />
+        <TextInput
+          placeholder="ID agent"
+          placeholderTextColor="#8B95A5"
+          value={agentId}
+          onChangeText={setAgentId}
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+      </View>
+
+      <View style={styles.inputBox}>
+        <Text style={styles.currencyLabel}>FC</Text>
+        <TextInput
+          placeholder="Montant à envoyer"
+          placeholderTextColor="#8B95A5"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+      </View>
+
+      <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
+        {loading ? <ActivityIndicator color="white" /> : <Ionicons name="wallet-outline" size={22} color="white" />}
+        <Text style={styles.primaryButtonText}>Envoyer au compte agent</Text>
       </TouchableOpacity>
     </View>
   );
