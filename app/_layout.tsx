@@ -56,5 +56,25 @@ if (!globalState.__takoFontPatchApplied) {
 }
 
 export default function Layout() {
-  return <Stack screenOptions={{ headerShown: false }} />;
+  return (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="index" />
+      <Stack.Screen name="login" />
+      <Stack.Screen name="register" />
+      <Stack.Screen name="home" />
+      <Stack.Screen name="admin" />
+      <Stack.Screen name="agent" />
+      <Stack.Screen name="qr" />
+      <Stack.Screen name="scan" />
+      <Stack.Screen name="nfc" />
+      <Stack.Screen name="recharge" />
+      <Stack.Screen name="internal-recharge-scan" />
+      <Stack.Screen name="client-nfc" />
+      <Stack.Screen name="my-data" />
+      <Stack.Screen name="history" />
+      <Stack.Screen name="notifications" />
+      <Stack.Screen name="privacy" />
+      <Stack.Screen name="(tabs)" />
+    </Stack>
+  );
 }
