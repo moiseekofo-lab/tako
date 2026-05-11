@@ -14,7 +14,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { registerAccount, requestVerificationCode } from '../services/api';
+import { registerAccount, requestVerificationCode, verifyVerificationCode } from '../services/api';
 import { useStore } from './store';
 
 export default function Register() {
@@ -35,6 +35,7 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
 
   const generateClientId = () => `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
@@ -109,18 +110,31 @@ export default function Register() {
     }
   };
 
-  const handleConfirmCode = () => {
-    if (!verificationCode.trim()) {
+  const handleConfirmCode = async () => {
+    const cleanCode = verificationCode.trim();
+    if (!cleanCode) {
       Alert.alert('Code manquant', 'Entrez le code reçu puis réessayez.');
       return;
     }
 
-    if (sentCode && verificationCode.trim() !== sentCode) {
+    if (sentCode && cleanCode !== sentCode) {
       Alert.alert('Code incorrect', 'Vérifiez le code reçu puis réessayez.');
       return;
     }
 
-    setStep('profile');
+    try {
+      setIsVerifyingCode(true);
+      const result = await verifyVerificationCode(verifiedContact, cleanCode, 'register');
+      if (!result?.verified && !sentCode) {
+        Alert.alert('Code incorrect', 'Vérifiez le code reçu puis réessayez.');
+        return;
+      }
+      setStep('profile');
+    } catch (error: any) {
+      Alert.alert('Code incorrect', error?.message || 'Vérifiez le code reçu puis réessayez.');
+    } finally {
+      setIsVerifyingCode(false);
+    }
   };
 
   const handleRegister = async () => {
@@ -242,8 +256,8 @@ export default function Register() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleConfirmCode}>
-                <Text style={styles.btnText}>Confirmer</Text>
+              <TouchableOpacity style={styles.btn} activeOpacity={0.9} disabled={isVerifyingCode} onPress={handleConfirmCode}>
+                <Text style={styles.btnText}>{isVerifyingCode ? 'Vérification...' : 'Confirmer'}</Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.textButton} activeOpacity={0.85} onPress={handleSendCode}>

@@ -54,6 +54,14 @@ export function requestVerificationCode(contact: string, purpose: 'register' | '
   });
 }
 
+export function verifyVerificationCode(contact: string, code: string, purpose: 'register' | 'reset') {
+  return postJson('/auth/verify-code', {
+    contact,
+    code,
+    purpose,
+  });
+}
+
 export function registerAccount(params: {
   contact: string;
   code: string;

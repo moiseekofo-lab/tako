@@ -374,7 +374,7 @@ async function createNotification({ clientId, title, message, amount = null, typ
   return result.rows[0];
 }
 
-async function verifyStoredCode(contact, code, purpose) {
+async function verifyStoredCode(contact, code, purpose, consume = true) {
   const cleanContact = normalizeContact(contact);
   const result = await query(
     `
@@ -393,7 +393,9 @@ async function verifyStoredCode(contact, code, purpose) {
     throw error;
   }
 
-  await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [cleanContact, purpose]);
+  if (consume) {
+    await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [cleanContact, purpose]);
+  }
 }
 
 async function handleRequest(request, response) {
@@ -448,6 +450,24 @@ async function handleRequest(request, response) {
       message: emailSent ? 'Code envoyé par email' : 'Code généré',
       delivery: emailSent ? 'email' : 'demo',
       ...(emailSent ? {} : { code }),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/auth/verify-code') {
+    const body = await readJson(request);
+    const contact = normalizeContact(body.contact);
+    const purpose = String(body.purpose || 'register');
+
+    if (!contact || !body.code) {
+      sendJson(response, 400, { ok: false, error: 'Contact et code obligatoires' });
+      return;
+    }
+
+    await verifyStoredCode(contact, body.code, purpose, false);
+    sendJson(response, 200, {
+      ok: true,
+      verified: true,
     });
     return;
   }
