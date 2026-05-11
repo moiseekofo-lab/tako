@@ -27,6 +27,10 @@ export default function Register() {
   const [sentCode, setSentCode] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [showBirthSelector, setShowBirthSelector] = useState(false);
+  const [birthDay, setBirthDay] = useState(1);
+  const [birthMonth, setBirthMonth] = useState(1);
+  const [birthYear, setBirthYear] = useState(new Date().getFullYear() - 18);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -35,6 +39,46 @@ export default function Register() {
 
   const generateClientId = () => `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
   const isEmail = (value: string) => value.includes('@');
+  const minBirthYear = new Date().getFullYear() - 100;
+  const maxBirthYear = new Date().getFullYear() - 12;
+  const monthLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
+  const padDate = (value: number) => String(value).padStart(2, '0');
+  const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
+  const formatBirthDate = (day: number, month: number, year: number) => `${padDate(day)}/${padDate(month)}/${year}`;
+  const applyBirthDate = (day: number, month: number, year: number) => {
+    setBirthDay(day);
+    setBirthMonth(month);
+    setBirthYear(year);
+    setBirthDate(formatBirthDate(day, month, year));
+  };
+  const updateBirthDate = (part: 'day' | 'month' | 'year', direction: 1 | -1) => {
+    let nextDay = birthDay;
+    let nextMonth = birthMonth;
+    let nextYear = birthYear;
+
+    if (part === 'day') {
+      const maxDay = getDaysInMonth(birthMonth, birthYear);
+      nextDay = birthDay + direction;
+      if (nextDay > maxDay) nextDay = 1;
+      if (nextDay < 1) nextDay = maxDay;
+    }
+
+    if (part === 'month') {
+      nextMonth = birthMonth + direction;
+      if (nextMonth > 12) nextMonth = 1;
+      if (nextMonth < 1) nextMonth = 12;
+      nextDay = Math.min(nextDay, getDaysInMonth(nextMonth, birthYear));
+    }
+
+    if (part === 'year') {
+      nextYear = birthYear + direction;
+      if (nextYear > maxBirthYear) nextYear = minBirthYear;
+      if (nextYear < minBirthYear) nextYear = maxBirthYear;
+      nextDay = Math.min(nextDay, getDaysInMonth(birthMonth, nextYear));
+    }
+
+    applyBirthDate(nextDay, nextMonth, nextYear);
+  };
   const isValidContact = (value: string) => {
     const cleanValue = value.trim();
     return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
@@ -226,16 +270,43 @@ export default function Register() {
               />
             </View>
 
-            <View style={styles.inputBox}>
+            <Pressable
+              style={styles.inputBox}
+              onPress={() => {
+                if (!birthDate) {
+                  applyBirthDate(birthDay, birthMonth, birthYear);
+                }
+                setShowBirthSelector((value) => !value);
+              }}>
               <Ionicons name="calendar" size={26} color="#87909F" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Date de naissance"
-                placeholderTextColor="#87909F"
-                value={birthDate}
-                onChangeText={setBirthDate}
-                style={styles.input}
-              />
-            </View>
+              <Text style={[styles.dateValueText, !birthDate && styles.datePlaceholder]}>
+                {birthDate || 'Date de naissance'}
+              </Text>
+              <Ionicons name={showBirthSelector ? 'chevron-up' : 'chevron-down'} size={22} color="#87909F" />
+            </Pressable>
+
+            {showBirthSelector ? (
+              <View style={styles.dateSelector}>
+                <DateColumn
+                  label="Jour"
+                  value={padDate(birthDay)}
+                  increase={() => updateBirthDate('day', 1)}
+                  decrease={() => updateBirthDate('day', -1)}
+                />
+                <DateColumn
+                  label="Mois"
+                  value={monthLabels[birthMonth - 1]}
+                  increase={() => updateBirthDate('month', 1)}
+                  decrease={() => updateBirthDate('month', -1)}
+                />
+                <DateColumn
+                  label="Année"
+                  value={String(birthYear)}
+                  increase={() => updateBirthDate('year', 1)}
+                  decrease={() => updateBirthDate('year', -1)}
+                />
+              </View>
+            ) : null}
 
             <View style={styles.inputBox}>
               <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
@@ -245,6 +316,10 @@ export default function Register() {
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                textContentType="none"
                 style={styles.input}
               />
               <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
@@ -260,6 +335,10 @@ export default function Register() {
                 secureTextEntry={!showConfirmPassword}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                autoCapitalize="none"
+                autoCorrect={false}
+                autoComplete="off"
+                textContentType="none"
                 style={styles.input}
               />
               <Pressable onPress={() => setShowConfirmPassword((value) => !value)} hitSlop={10}>
@@ -303,6 +382,31 @@ export default function Register() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+function DateColumn({
+  label,
+  value,
+  increase,
+  decrease,
+}: {
+  label: string;
+  value: string;
+  increase: () => void;
+  decrease: () => void;
+}) {
+  return (
+    <View style={styles.dateColumn}>
+      <Text style={styles.dateLabel}>{label}</Text>
+      <TouchableOpacity style={styles.dateArrow} activeOpacity={0.75} onPress={increase}>
+        <Ionicons name="chevron-up" size={18} color="#061F68" />
+      </TouchableOpacity>
+      <Text style={styles.dateValue}>{value}</Text>
+      <TouchableOpacity style={styles.dateArrow} activeOpacity={0.75} onPress={decrease}>
+        <Ionicons name="chevron-down" size={18} color="#061F68" />
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -402,6 +506,55 @@ const styles = StyleSheet.create({
     color: '#202836',
     fontSize: 16,
     fontWeight: '500',
+  },
+  dateValueText: {
+    flex: 1,
+    color: '#202836',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  datePlaceholder: {
+    color: '#87909F',
+    fontWeight: '500',
+  },
+  dateSelector: {
+    flexDirection: 'row',
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    borderRadius: 14,
+    backgroundColor: '#FBFCFF',
+    padding: 10,
+    marginTop: -4,
+    marginBottom: 14,
+  },
+  dateColumn: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#E4EAF3',
+    paddingVertical: 8,
+  },
+  dateLabel: {
+    color: '#87909F',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  dateArrow: {
+    width: 32,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  dateValue: {
+    color: '#061F68',
+    fontSize: 16,
+    fontWeight: '900',
+    marginVertical: 2,
   },
   label: {
     color: '#061F68',
