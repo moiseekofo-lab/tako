@@ -778,6 +778,49 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'GET' && url.pathname.startsWith('/agents/')) {
+    const agentId = decodeURIComponent(url.pathname.replace('/agents/', '')).trim();
+    const result = await query(
+      `
+        SELECT *
+        FROM users
+        WHERE id = $1 AND role = 'agent'
+        LIMIT 1;
+      `,
+      [agentId],
+    );
+
+    const agent = result.rows[0];
+    if (!agent) {
+      sendJson(response, 404, { ok: false, error: 'Compte agent introuvable' });
+      return;
+    }
+
+    const statsResult = await query(
+      `
+        SELECT
+          COUNT(*)::int AS transaction_count,
+          COALESCE(SUM(amount), 0)::numeric AS volume,
+          MAX(created_at) AS last_activity
+        FROM payments
+        WHERE driver_id = $1
+          AND method IN ('internal_recharge', 'agent_float_recharge');
+      `,
+      [agentId],
+    );
+
+    sendJson(response, 200, {
+      ok: true,
+      agent: publicUser(agent),
+      stats: {
+        transactionCount: Number(statsResult.rows[0]?.transaction_count || 0),
+        volume: Number(statsResult.rows[0]?.volume || 0),
+        lastActivity: statsResult.rows[0]?.last_activity || null,
+      },
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/clients/nfc-card') {
     const body = await readJson(request);
     const clientId = String(body.clientId || '').trim();

@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { createInternalRecharge } from '../services/api';
+import { createInternalRecharge, getAgentAccount } from '../services/api';
 import { useStore } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -19,11 +19,15 @@ export default function Agent() {
   const clearSession = useStore((state: any) => state.clearSession);
   const balance = useStore((state: any) => state.balance);
   const setBalance = useStore((state: any) => state.setBalance);
+  const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const [clientId, setClientId] = useState(String(params.clientId || ''));
   const [amount, setAmount] = useState('');
   const [cardId, setCardId] = useState('');
   const [isReadingNfc, setIsReadingNfc] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [refreshingBalance, setRefreshingBalance] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
 
   useEffect(() => {
     if (Platform.OS === 'web' && !isAuthenticated) {
@@ -66,6 +70,37 @@ export default function Agent() {
       setCardId('');
     }
   }, [params.clientId]);
+
+  const refreshAgentAccount = async (silent = false) => {
+    const agentId = currentUser?.id;
+    if (!agentId || agentId === '1000000001') {
+      return;
+    }
+
+    try {
+      if (!silent) {
+        setRefreshingBalance(true);
+      }
+      const result = await getAgentAccount(agentId);
+      if (result?.agent) {
+        setCurrentUser(result.agent);
+        setBalance(Number(result.agent.balance || 0));
+        setLastSync(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+      }
+    } catch {
+      // Le compte reste utilisable même si le réseau tombe pendant quelques secondes.
+    } finally {
+      if (!silent) {
+        setRefreshingBalance(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    refreshAgentAccount(true);
+    const interval = setInterval(() => refreshAgentAccount(true), 3000);
+    return () => clearInterval(interval);
+  }, [currentUser?.id]);
 
   const getCardId = (tag: NfcTag) => tag?.id || tag?.type || '';
 
@@ -129,8 +164,10 @@ export default function Agent() {
       setClientId(result?.client?.id || cleanClientId);
       if (result?.agent?.balance !== undefined) {
         setBalance(Number(result.agent.balance || 0));
+        setCurrentUser(result.agent);
       }
-      Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${result?.client?.id || cleanClientId}.`);
+      setLastSync(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+      Alert.alert('Crédit envoyé', `${value} FC ajouté au compte ${result?.client?.id || cleanClientId}.`);
     } catch (error) {
       Alert.alert('Recharge impossible', error instanceof Error ? error.message : 'Vérifiez le compte ou la carte.');
     } finally {
@@ -144,15 +181,53 @@ export default function Agent() {
         <View style={styles.header}>
           <TakoLogo />
           <TouchableOpacity
-            style={styles.logoutButton}
+            style={styles.menuButton}
             activeOpacity={0.85}
-            onPress={() => {
-              clearSession();
-              router.replace('/login' as any);
-            }}>
-            <Ionicons name="log-out-outline" size={21} color={TAKO_BLUE} />
+            onPress={() => setMenuOpen((value) => !value)}>
+            <Ionicons name={menuOpen ? 'close' : 'menu'} size={24} color={TAKO_BLUE} />
           </TouchableOpacity>
         </View>
+
+        {menuOpen ? (
+          <View style={styles.menuCard}>
+            <View style={styles.menuUserRow}>
+              <View style={styles.menuAvatar}>
+                <Ionicons name="person" size={22} color="white" />
+              </View>
+              <View style={styles.menuUserText}>
+                <Text style={styles.menuName}>{currentUser?.fullName || 'Agent TaKo'}</Text>
+                <Text style={styles.menuMeta}>{currentUser?.email || currentUser?.phone || currentUser?.id}</Text>
+              </View>
+            </View>
+
+            <View style={styles.menuInfoGrid}>
+              <View style={styles.menuInfoItem}>
+                <Text style={styles.menuInfoLabel}>ID agent</Text>
+                <Text style={styles.menuInfoValue}>{currentUser?.id || 'AGENT'}</Text>
+              </View>
+              <View style={styles.menuInfoItem}>
+                <Text style={styles.menuInfoLabel}>Solde</Text>
+                <Text style={styles.menuInfoValue}>{balance} FC</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity style={styles.menuRefreshButton} activeOpacity={0.85} disabled={refreshingBalance} onPress={() => refreshAgentAccount(false)}>
+              {refreshingBalance ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="refresh" size={19} color={TAKO_BLUE} />}
+              <Text style={styles.menuRefreshText}>{refreshingBalance ? 'Actualisation...' : 'Actualiser mes données'}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuLogoutButton}
+              activeOpacity={0.85}
+              onPress={() => {
+                clearSession();
+                router.replace('/login' as any);
+              }}>
+              <Ionicons name="log-out-outline" size={20} color="white" />
+              <Text style={styles.menuLogoutText}>Déconnexion</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
 
         <Text style={styles.kicker}>Mode agent</Text>
         <Text style={styles.title}>Recharge interne</Text>
@@ -167,7 +242,10 @@ export default function Agent() {
             <Text style={styles.agentLabel}>Solde disponible</Text>
             <Text style={styles.agentBalance}>{balance} FC</Text>
           </View>
-          <Text style={styles.agentHint}>Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.</Text>
+          <Text style={styles.agentHint}>
+            Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.
+            {lastSync ? ` Dernière actualisation : ${lastSync}.` : ''}
+          </Text>
         </View>
 
         <View style={styles.card}>
@@ -252,7 +330,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 34,
   },
-  logoutButton: {
+  menuButton: {
     width: 48,
     height: 48,
     borderRadius: 12,
@@ -261,6 +339,102 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'white',
+  },
+  menuCard: {
+    borderRadius: 18,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    padding: 16,
+    marginTop: -18,
+    marginBottom: 24,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  menuUserRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 14,
+  },
+  menuAvatar: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    backgroundColor: TAKO_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  menuUserText: {
+    flex: 1,
+  },
+  menuName: {
+    color: TAKO_BLUE,
+    fontSize: 17,
+    fontWeight: '900',
+  },
+  menuMeta: {
+    color: '#667085',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  menuInfoGrid: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 12,
+  },
+  menuInfoItem: {
+    flex: 1,
+    borderRadius: 12,
+    backgroundColor: '#F5F8FF',
+    padding: 12,
+  },
+  menuInfoLabel: {
+    color: '#7B8798',
+    fontSize: 11,
+    fontWeight: '900',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  menuInfoValue: {
+    color: TAKO_BLUE,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  menuRefreshButton: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#EAF3FF',
+    borderWidth: 1,
+    borderColor: '#BBDFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  menuRefreshText: {
+    color: TAKO_BLUE,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  menuLogoutButton: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: TAKO_BLUE,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  menuLogoutText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '900',
   },
   kicker: {
     color: TAKO_ACTION,

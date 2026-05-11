@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { approveUser, createInternalRecharge, findClientById, getPendingUsers, rechargeAgent } from '../services/api';
+import { approveUser, createInternalRecharge, findClientById, getAgentAccount, getPendingUsers, rechargeAgent } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -63,7 +63,10 @@ export default function Admin() {
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
   const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
+  const [agentLookupLoading, setAgentLookupLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
+  const [trackedAgent, setTrackedAgent] = useState<any>(null);
+  const [trackedAgentStats, setTrackedAgentStats] = useState<any>(null);
   const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
   const [pendingAgents, setPendingAgents] = useState<any[]>([]);
   const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
@@ -192,15 +195,42 @@ export default function Admin() {
       setAgentRechargeLoading(true);
       const result = await rechargeAgent(cleanAgentId, value);
       setAgentRechargeAmount('');
+      if (result?.agent) {
+        setTrackedAgent(result.agent);
+        setTrackedAgentStats(null);
+      }
       Alert.alert(
-        'Agent rechargé',
-        `${value} FC ajouté au compte agent ${result?.agent?.id || cleanAgentId}. Solde agent : ${result?.agent?.balance ?? 'mis à jour'} FC.`
+        'Crédit envoyé',
+        `${value} FC envoyé au compte agent ${result?.agent?.id || cleanAgentId}. Solde : ${result?.agent?.balance ?? 'mis à jour'} FC.`
       );
       setActiveSection('agents');
     } catch (error) {
       Alert.alert('Recharge agent impossible', error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.');
     } finally {
       setAgentRechargeLoading(false);
+    }
+  };
+
+  const findAgentAccount = async () => {
+    const cleanAgentId = agentRechargeId.trim();
+
+    if (!cleanAgentId) {
+      Alert.alert('ID obligatoire', 'Entrez l’ID de l’agent à suivre.');
+      return;
+    }
+
+    try {
+      setAgentLookupLoading(true);
+      const result = await getAgentAccount(cleanAgentId);
+      setTrackedAgent(result?.agent || null);
+      setTrackedAgentStats(result?.stats || null);
+      setActiveSection('agents');
+    } catch (error) {
+      setTrackedAgent(null);
+      setTrackedAgentStats(null);
+      Alert.alert('Compte agent introuvable', error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.');
+    } finally {
+      setAgentLookupLoading(false);
     }
   };
 
@@ -310,7 +340,10 @@ export default function Admin() {
                 setAmount={setAgentRechargeAmount}
                 loading={agentRechargeLoading}
                 confirm={confirmAgentRecharge}
+                lookupLoading={agentLookupLoading}
+                lookup={findAgentAccount}
               />
+              <AgentAccountCard agent={trackedAgent} stats={trackedAgentStats} />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -385,7 +418,10 @@ export default function Admin() {
                 setAmount={setAgentRechargeAmount}
                 loading={agentRechargeLoading}
                 confirm={confirmAgentRecharge}
+                lookupLoading={agentLookupLoading}
+                lookup={findAgentAccount}
               />
+              <AgentAccountCard agent={trackedAgent} stats={trackedAgentStats} />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -613,6 +649,8 @@ function AgentRechargeCard({
   setAmount,
   loading,
   confirm,
+  lookupLoading,
+  lookup,
 }: {
   agentId: string;
   setAgentId: (value: string) => void;
@@ -620,6 +658,8 @@ function AgentRechargeCard({
   setAmount: (value: string) => void;
   loading: boolean;
   confirm: () => void;
+  lookupLoading: boolean;
+  lookup: () => void;
 }) {
   return (
     <View style={[styles.card, styles.internalRechargeCard]}>
@@ -640,6 +680,11 @@ function AgentRechargeCard({
         />
       </View>
 
+      <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.9} disabled={lookupLoading} onPress={lookup}>
+        {lookupLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="analytics-outline" size={22} color={TAKO_BLUE} />}
+        <Text style={styles.secondaryButtonText}>Suivre le compte agent</Text>
+      </TouchableOpacity>
+
       <View style={styles.inputBox}>
         <Text style={styles.currencyLabel}>FC</Text>
         <TextInput
@@ -656,6 +701,39 @@ function AgentRechargeCard({
         {loading ? <ActivityIndicator color="white" /> : <Ionicons name="wallet-outline" size={22} color="white" />}
         <Text style={styles.primaryButtonText}>Envoyer au compte agent</Text>
       </TouchableOpacity>
+    </View>
+  );
+}
+
+function AgentAccountCard({ agent, stats }: { agent: any; stats: any }) {
+  const displayBalance = Number(agent?.balance || 0);
+  const lastActivity = stats?.lastActivity ? formatDate(stats.lastActivity) : 'Aucune activité';
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeaderRow}>
+        <View>
+          <Text style={styles.cardTitle}>Suivi compte agent</Text>
+          <Text style={styles.cardText}>Consultez le solde et l’activité de l’agent en temps réel.</Text>
+        </View>
+        <View style={styles.clientPill}>
+          <Ionicons name="radio-outline" size={16} color={TAKO_BLUE} />
+          <Text style={styles.clientPillText}>Instantané</Text>
+        </View>
+      </View>
+
+      {!agent ? (
+        <EmptyState icon="person-circle-outline" title="Aucun agent sélectionné" text="Entrez l’ID agent puis cliquez sur suivre." />
+      ) : (
+        <View style={styles.detailsGrid}>
+          <InfoItem icon="person-outline" label="Agent" value={agent.fullName || 'Agent TaKo'} />
+          <InfoItem icon="finger-print-outline" label="ID agent" value={agent.id} />
+          <InfoItem icon="shield-checkmark-outline" label="Statut" value={agent.status === 'active' ? 'Actif' : 'En attente'} />
+          <InfoItem icon="wallet-outline" label="Solde agent" value={`${displayBalance} FC`} />
+          <InfoItem icon="swap-horizontal-outline" label="Transactions" value={`${stats?.transactionCount || 0}`} />
+          <InfoItem icon="time-outline" label="Dernière activité" value={lastActivity} />
+        </View>
+      )}
     </View>
   );
 }

@@ -114,6 +114,10 @@ export function rechargeAgent(agentId: string, amount: number) {
   });
 }
 
+export function getAgentAccount(agentId: string) {
+  return requestJson(`/agents/${encodeURIComponent(agentId)}`);
+}
+
 export function saveNfcCard(clientId: string, cardId: string) {
   return postJson('/clients/nfc-card', {
     clientId,
