@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { createInternalRecharge, findClientById } from '../services/api';
+import { approveUser, createInternalRecharge, findClientById, getPendingUsers } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -11,12 +11,13 @@ const TAKO_ACTION = '#139DFF';
 const TAKO_GREEN = '#09D457';
 const PAGE_BG = '#F5F8FF';
 
-type AdminSection = 'dashboard' | 'clients' | 'drivers' | 'transactions' | 'settings';
+type AdminSection = 'dashboard' | 'clients' | 'drivers' | 'agents' | 'transactions' | 'settings';
 
 const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: 'dashboard', label: 'Tableau de bord', icon: 'grid-outline' },
   { key: 'clients', label: 'Clients', icon: 'people-outline' },
   { key: 'drivers', label: 'Chauffeurs', icon: 'bus-outline' },
+  { key: 'agents', label: 'Agents', icon: 'person-add-outline' },
   { key: 'transactions', label: 'Transactions', icon: 'receipt-outline' },
   { key: 'settings', label: 'Paramètres', icon: 'settings-outline' },
 ];
@@ -52,6 +53,9 @@ export default function Admin() {
   const [rechargeLoading, setRechargeLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
+  const [pendingAgents, setPendingAgents] = useState<any[]>([]);
+  const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
+  const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -61,6 +65,24 @@ export default function Admin() {
       setActiveSection('clients');
     }
   }, [params.clientId]);
+
+  const loadPendingUsers = async () => {
+    try {
+      const [agentsResult, driversResult] = await Promise.all([
+        getPendingUsers('agent'),
+        getPendingUsers('chauffeur'),
+      ]);
+      setPendingAgents(agentsResult?.users || []);
+      setPendingDrivers(driversResult?.users || []);
+    } catch {
+      setPendingAgents([]);
+      setPendingDrivers([]);
+    }
+  };
+
+  useEffect(() => {
+    loadPendingUsers();
+  }, []);
 
   const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
@@ -141,7 +163,20 @@ export default function Admin() {
 
   const refreshPage = () => {
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 750);
+    loadPendingUsers().finally(() => setRefreshing(false));
+  };
+
+  const approvePendingUser = async (userId: string) => {
+    try {
+      setApprovingUserId(userId);
+      const result = await approveUser(userId);
+      Alert.alert('Compte validé', `${result?.user?.fullName || 'Le compte'} peut maintenant se connecter.`);
+      await loadPendingUsers();
+    } catch (error) {
+      Alert.alert('Validation impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setApprovingUserId(null);
+    }
   };
 
   return (
@@ -217,6 +252,12 @@ export default function Admin() {
           {activeSection === 'dashboard' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
+              <PendingApprovalsCard
+                title="Agents en attente"
+                users={pendingAgents}
+                approvingUserId={approvingUserId}
+                approve={approvePendingUser}
+              />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -254,6 +295,12 @@ export default function Admin() {
 
           {activeSection === 'drivers' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
+              <PendingApprovalsCard
+                title="Chauffeurs en attente"
+                users={pendingDrivers}
+                approvingUserId={approvingUserId}
+                approve={approvePendingUser}
+              />
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
                 route={driverTripInfo.route}
@@ -266,6 +313,33 @@ export default function Admin() {
                 <ChecklistItem label="Trajet enregistré" done={!!driverTripInfo.route} />
                 <ChecklistItem label="Montant enregistré" done={!!driverTripInfo.amount} />
                 <ChecklistItem label="QR et NFC disponibles" done />
+              </View>
+            </View>
+          ) : null}
+
+          {activeSection === 'agents' ? (
+            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
+              <PendingApprovalsCard
+                title="Agents en attente"
+                users={pendingAgents}
+                approvingUserId={approvingUserId}
+                approve={approvePendingUser}
+              />
+              <InternalRechargeCard
+                clientId={rechargeClientId}
+                setClientId={setRechargeClientId}
+                amount={rechargeAmount}
+                setAmount={setRechargeAmount}
+                loading={rechargeLoading}
+                confirm={confirmInternalRecharge}
+                scan={() => router.push('/internal-recharge-scan' as any)}
+              />
+              <View style={styles.card}>
+                <Text style={styles.cardTitle}>Compte agent</Text>
+                <ChecklistItem label="Inscription agent disponible" done />
+                <ChecklistItem label="Validation administrateur obligatoire" done />
+                <ChecklistItem label="Recharge par QR client" done />
+                <ChecklistItem label="Recharge par carte NFC dans le mode agent" done />
               </View>
             </View>
           ) : null}
@@ -360,6 +434,52 @@ function ClientSearchCard({
         <Ionicons name="search" size={22} color="white" />
         <Text style={styles.primaryButtonText}>Voir le compte client</Text>
       </TouchableOpacity>
+    </View>
+  );
+}
+
+function PendingApprovalsCard({
+  title,
+  users,
+  approvingUserId,
+  approve,
+}: {
+  title: string;
+  users: any[];
+  approvingUserId: string | null;
+  approve: (userId: string) => void;
+}) {
+  return (
+    <View style={[styles.card, styles.fullCard]}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      <Text style={styles.cardText}>Validez les comptes avant qu’ils puissent accéder à leur mode.</Text>
+
+      {users.length === 0 ? (
+        <EmptyState icon="checkmark-done-outline" title="Aucune demande" text="Les nouveaux comptes apparaîtront ici." />
+      ) : (
+        users.map((user) => (
+          <View key={user.id} style={styles.pendingRow}>
+            <View style={styles.pendingIcon}>
+              <Ionicons name={user.role === 'agent' ? 'person-add-outline' : 'bus-outline'} size={22} color={TAKO_BLUE} />
+            </View>
+            <View style={styles.pendingInfo}>
+              <Text style={styles.pendingName}>{user.fullName}</Text>
+              <Text style={styles.pendingMeta}>{user.email || user.phone || user.id}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.pendingButton}
+              activeOpacity={0.9}
+              disabled={approvingUserId === user.id}
+              onPress={() => approve(user.id)}>
+              {approvingUserId === user.id ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text style={styles.pendingButtonText}>Valider</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        ))
+      )}
     </View>
   );
 }
@@ -904,6 +1024,51 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: TAKO_BLUE,
     fontSize: 15,
+    fontWeight: '900',
+  },
+  pendingRow: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+    paddingVertical: 10,
+  },
+  pendingIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#EAF3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pendingInfo: {
+    flex: 1,
+  },
+  pendingName: {
+    color: TAKO_BLUE,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  pendingMeta: {
+    color: '#6B7280',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  pendingButton: {
+    minWidth: 88,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: TAKO_GREEN,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 12,
+  },
+  pendingButtonText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: '900',
   },
   currencyLabel: {

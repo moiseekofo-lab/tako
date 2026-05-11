@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 
 export default function InternalRechargeScan() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ returnTo?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
 
@@ -26,7 +27,7 @@ export default function InternalRechargeScan() {
       }
 
       router.replace({
-        pathname: '/admin',
+        pathname: params.returnTo === 'agent' ? '/agent' : '/admin',
         params: { clientId },
       } as any);
     } catch {

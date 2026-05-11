@@ -20,7 +20,7 @@ import { useStore } from './store';
 export default function Register() {
   const router = useRouter();
   const [step, setStep] = useState<'contact' | 'code' | 'profile'>('contact');
-  const [role, setRole] = useState<'passager' | 'chauffeur'>('passager');
+  const [role, setRole] = useState<'passager' | 'chauffeur' | 'agent'>('passager');
   const [fullName, setFullName] = useState('');
   const [contact, setContact] = useState('');
   const [verifiedContact, setVerifiedContact] = useState('');
@@ -109,7 +109,7 @@ export default function Register() {
         phone,
         birthDate: birthDate.trim(),
         role,
-        status: role === 'chauffeur' ? 'pending' : 'active',
+        status: role === 'chauffeur' || role === 'agent' ? 'pending' : 'active',
       };
 
       setCurrentUser({
@@ -287,6 +287,14 @@ export default function Register() {
               </TouchableOpacity>
             </View>
 
+            <TouchableOpacity
+              style={[styles.roleBtn, styles.agentRoleBtn, role === 'agent' && styles.active]}
+              activeOpacity={0.85}
+              onPress={() => setRole('agent')}>
+              <MaterialCommunityIcons name="account-tie" size={31} color={role === 'agent' ? 'white' : '#061F68'} />
+              <Text style={[styles.roleText, role === 'agent' && styles.activeRoleText]}>Agent</Text>
+            </TouchableOpacity>
+
               <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleRegister}>
                 <Text style={styles.btnText}>Créer</Text>
               </TouchableOpacity>
@@ -426,6 +434,9 @@ const styles = StyleSheet.create({
     color: '#061F68',
     fontSize: 15,
     fontWeight: '800',
+  },
+  agentRoleBtn: {
+    marginTop: 10,
   },
   activeRoleText: {
     color: 'white',

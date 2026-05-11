@@ -470,7 +470,7 @@ async function handleRequest(request, response) {
     const id = await generateUniqueClientId();
     const email = contact.includes('@') ? contact : null;
     const phone = contact.includes('@') ? null : contact;
-    const status = role === 'chauffeur' ? 'pending' : 'active';
+    const status = role === 'chauffeur' || role === 'agent' ? 'pending' : 'active';
 
     const result = await query(
       `
@@ -494,6 +494,11 @@ async function handleRequest(request, response) {
 
     if (!user || !verifyPassword(body.password, user.password_hash)) {
       sendJson(response, 401, { ok: false, error: 'Identifiants incorrects' });
+      return;
+    }
+
+    if ((user.role === 'chauffeur' || user.role === 'agent') && user.status !== 'active') {
+      sendJson(response, 403, { ok: false, error: 'Votre compte est en attente de validation administrateur' });
       return;
     }
 
@@ -592,6 +597,57 @@ async function handleRequest(request, response) {
         nfcCardBlocked: Boolean(user.nfc_blocked),
       },
     });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/admin/users/pending') {
+    const role = String(url.searchParams.get('role') || '').trim();
+    const params = [];
+    let roleFilter = '';
+
+    if (role) {
+      params.push(role);
+      roleFilter = 'AND role = $1';
+    }
+
+    const result = await query(
+      `
+        SELECT *
+        FROM users
+        WHERE status = 'pending'
+          AND role IN ('chauffeur', 'agent')
+          ${roleFilter}
+        ORDER BY created_at DESC
+        LIMIT 100;
+      `,
+      params,
+    );
+
+    sendJson(response, 200, {
+      ok: true,
+      users: result.rows.map(publicUser),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/users/') && url.pathname.endsWith('/approve')) {
+    const userId = decodeURIComponent(url.pathname.replace('/admin/users/', '').replace('/approve', '')).trim();
+    const result = await query(
+      `
+        UPDATE users
+        SET status = 'active', updated_at = NOW()
+        WHERE id = $1 AND role IN ('chauffeur', 'agent')
+        RETURNING *;
+      `,
+      [userId],
+    );
+
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Compte à valider introuvable' });
+      return;
+    }
+
+    sendJson(response, 200, { ok: true, user: publicUser(result.rows[0]) });
     return;
   }
 
@@ -810,12 +866,18 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/admin/recharges/internal') {
     const body = await readJson(request);
-    const clientId = String(body.clientId || '').trim();
+    let clientId = String(body.clientId || '').trim();
+    const cardId = String(body.cardId || '').trim();
     const amount = Number(body.amount);
     const agentId = String(body.agentId || 'ADMIN').trim();
 
+    if (!clientId && cardId) {
+      const cardOwner = await query('SELECT client_id FROM nfc_cards WHERE card_id = $1 LIMIT 1;', [cardId]);
+      clientId = cardOwner.rows[0]?.client_id || '';
+    }
+
     if (!clientId || !Number.isFinite(amount) || amount <= 0) {
-      sendJson(response, 400, { ok: false, error: 'ID client et montant obligatoires' });
+      sendJson(response, 400, { ok: false, error: 'ID client ou carte NFC, et montant obligatoires' });
       return;
     }
 

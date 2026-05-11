@@ -1,7 +1,7 @@
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 type PaymentMethod = 'qr' | 'nfc';
-type UserRole = 'passager' | 'chauffeur' | 'admin';
+type UserRole = 'passager' | 'chauffeur' | 'agent' | 'admin';
 
 async function requestJson(path: string, options: RequestInit = {}) {
   if (!API_URL) {
@@ -91,6 +91,15 @@ export function findClientById(clientId: string) {
   return requestJson(`/admin/clients/${encodeURIComponent(clientId)}`);
 }
 
+export function getPendingUsers(role?: 'chauffeur' | 'agent') {
+  const query = role ? `?role=${encodeURIComponent(role)}` : '';
+  return requestJson(`/admin/users/pending${query}`);
+}
+
+export function approveUser(userId: string) {
+  return postJson(`/admin/users/${encodeURIComponent(userId)}/approve`, {});
+}
+
 export function saveNfcCard(clientId: string, cardId: string) {
   return postJson('/clients/nfc-card', {
     clientId,
@@ -126,7 +135,8 @@ export function initiateMobileMoneyRecharge(params: {
 }
 
 export function createInternalRecharge(params: {
-  clientId: string;
+  clientId?: string;
+  cardId?: string;
   amount: number;
   agentId?: string;
 }) {

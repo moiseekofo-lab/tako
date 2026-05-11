@@ -294,6 +294,11 @@ export default function Login() {
           setClientName(result.user.fullName.split(' ')[0] || result.user.fullName);
         }
 
+        if (result.user.role === 'agent') {
+          router.replace('/agent' as any);
+          return;
+        }
+
         router.replace({
           pathname: '/home',
           params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : 'passager' },
