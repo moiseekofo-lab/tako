@@ -50,19 +50,19 @@ const globalStyles = `
     overflow-x: hidden;
     overflow-y: scroll;
     scrollbar-width: auto !important;
-    scrollbar-color: rgba(6, 31, 104, 0.24) transparent !important;
+    scrollbar-color: rgba(120, 130, 150, 0.34) transparent !important;
   }
 
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     scrollbar-width: auto !important;
-    scrollbar-color: rgba(6, 31, 104, 0.24) transparent !important;
+    scrollbar-color: rgba(120, 130, 150, 0.34) transparent !important;
   }
 
   *::-webkit-scrollbar {
-    width: 4px !important;
-    height: 4px !important;
+    width: 5px !important;
+    height: 5px !important;
     display: block !important;
   }
 
@@ -71,14 +71,13 @@ const globalStyles = `
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(6, 31, 104, 0.24) !important;
-    border: 1px solid transparent;
-    background-clip: padding-box;
+    background: rgba(120, 130, 150, 0.34) !important;
+    border: 0;
     border-radius: 999px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(6, 31, 104, 0.48) !important;
+    background: rgba(120, 130, 150, 0.52) !important;
   }
 
   *::-webkit-scrollbar-button {
