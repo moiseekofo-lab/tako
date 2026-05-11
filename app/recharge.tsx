@@ -32,6 +32,35 @@ export default function Recharge() {
   const currentUser = useStore((state: any) => state.currentUser);
   const text = translations[language];
 
+  const handleInternalRecharge = () => {
+    const value = Number.parseInt(amount, 10);
+
+    if (!Number.isFinite(value) || value <= 0) {
+      Alert.alert(text.error, text.enterRechargeAmount);
+      return;
+    }
+
+    increaseBalance(value);
+    addNotification({
+      title: text.rechargeSuccess,
+      message: text.rechargeMessage(value, text.internalRecharge),
+      amount: value,
+      type: 'recharge',
+    });
+    setAmount('');
+    setWalletId('');
+    Alert.alert(text.rechargeSuccess, text.rechargeMessage(value, text.internalRecharge), [
+      {
+        text: 'OK',
+        onPress: () =>
+          router.replace({
+            pathname: '/home',
+            params: { role: 'passager' },
+          } as any),
+      },
+    ]);
+  };
+
   const handleRecharge = async (provider: string) => {
     const value = Number.parseInt(amount, 10);
     const cleanWalletId = walletId.trim();
@@ -164,6 +193,21 @@ export default function Recharge() {
             />
           </View>
 
+          <TouchableOpacity
+            style={styles.internalButton}
+            activeOpacity={0.88}
+            disabled={Boolean(loadingProvider)}
+            onPress={handleInternalRecharge}>
+            <View style={styles.internalIcon}>
+              <MaterialCommunityIcons name="wallet-plus" size={25} color="#061F68" />
+            </View>
+            <View style={styles.internalTextBox}>
+              <Text style={styles.internalTitle}>{text.internalRecharge}</Text>
+              <Text style={styles.internalHint}>{text.internalRechargeHint}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={24} color="#061F68" />
+          </TouchableOpacity>
+
           <View style={styles.providerGrid}>
             {providers.map((provider) => (
               <TouchableOpacity
@@ -272,6 +316,40 @@ const styles = StyleSheet.create({
   providerGrid: {
     marginTop: 10,
     gap: 12,
+  },
+  internalButton: {
+    minHeight: 72,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 14,
+    backgroundColor: '#EAF4FF',
+    borderWidth: 1,
+    borderColor: '#BBDFFF',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  internalIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  internalTextBox: {
+    flex: 1,
+  },
+  internalTitle: {
+    color: '#061F68',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  internalHint: {
+    color: '#667085',
+    fontSize: 13,
+    fontWeight: '700',
+    marginTop: 2,
   },
   providerButton: {
     height: 68,
