@@ -50,19 +50,19 @@ const globalStyles = `
     overflow-x: hidden;
     overflow-y: scroll;
     scrollbar-width: auto !important;
-    scrollbar-color: rgba(6, 31, 104, 0.42) transparent !important;
+    scrollbar-color: rgba(6, 31, 104, 0.24) transparent !important;
   }
 
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
     scrollbar-width: auto !important;
-    scrollbar-color: rgba(6, 31, 104, 0.42) transparent !important;
+    scrollbar-color: rgba(6, 31, 104, 0.24) transparent !important;
   }
 
   *::-webkit-scrollbar {
-    width: 7px !important;
-    height: 7px !important;
+    width: 4px !important;
+    height: 4px !important;
     display: block !important;
   }
 
@@ -71,14 +71,20 @@ const globalStyles = `
   }
 
   *::-webkit-scrollbar-thumb {
-    background: rgba(6, 31, 104, 0.42) !important;
-    border: 2px solid transparent;
+    background: rgba(6, 31, 104, 0.24) !important;
+    border: 1px solid transparent;
     background-clip: padding-box;
     border-radius: 999px;
   }
 
   *::-webkit-scrollbar-thumb:hover {
-    background: rgba(6, 31, 104, 0.72) !important;
+    background: rgba(6, 31, 104, 0.48) !important;
+  }
+
+  *::-webkit-scrollbar-button {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
   }
 
   input,

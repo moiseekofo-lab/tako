@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { approveUser, createInternalRecharge, findClientById, getPendingUsers } from '../services/api';
@@ -14,7 +14,7 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
       overflowY: 'scroll',
       scrollbarWidth: 'thin',
-      scrollbarColor: `rgba(6, 31, 104, 0.42) transparent`,
+      scrollbarColor: `rgba(6, 31, 104, 0.24) transparent`,
     } as any)
   : null;
 
@@ -46,6 +46,7 @@ const formatDate = (date?: string) => {
 export default function Admin() {
   const router = useRouter();
   const params = useLocalSearchParams<{ clientId?: string }>();
+  const scrollRef = useRef<ScrollView>(null);
   const { width } = useWindowDimensions();
   const isNarrow = width < 760;
   const currentUser = useStore((state: any) => state.currentUser);
@@ -186,6 +187,13 @@ export default function Admin() {
     }
   };
 
+  const scrollDown = () => {
+    scrollRef.current?.scrollTo({
+      y: 720,
+      animated: true,
+    });
+  };
+
   return (
     <View style={styles.page}>
       <View style={[styles.shell, isNarrow && styles.mobileShell]}>
@@ -221,6 +229,7 @@ export default function Admin() {
         </View>
 
         <ScrollView
+          ref={scrollRef}
           style={[styles.contentScroller, WEB_SCROLLBAR_STYLE]}
           contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]}
           showsVerticalScrollIndicator
@@ -396,6 +405,10 @@ export default function Admin() {
             </View>
           ) : null}
         </ScrollView>
+
+        <TouchableOpacity style={styles.scrollHint} activeOpacity={0.75} onPress={scrollDown}>
+          <Ionicons name="chevron-down" size={14} color={TAKO_BLUE} />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -710,6 +723,23 @@ const styles = StyleSheet.create({
   },
   contentScroller: {
     flex: 1,
+  },
+  scrollHint: {
+    position: 'absolute',
+    right: 6,
+    top: '50%',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 1,
+    borderColor: 'rgba(6,31,104,0.16)',
+    backgroundColor: 'rgba(255,255,255,0.86)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#061F68',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
   },
   mobileShell: {
     flexDirection: 'column',
