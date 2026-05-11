@@ -215,7 +215,8 @@ export default function Admin() {
 
         <ScrollView
           contentContainerStyle={[styles.content, isNarrow && styles.mobileContent]}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
+          persistentScrollbar
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor={TAKO_BLUE} colors={[TAKO_BLUE]} />
           }>
