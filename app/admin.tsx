@@ -64,6 +64,7 @@ export default function Admin() {
   const [rechargeLoading, setRechargeLoading] = useState(false);
   const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
   const [agentLookupLoading, setAgentLookupLoading] = useState(false);
+  const [agentFeedback, setAgentFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [trackedAgent, setTrackedAgent] = useState<any>(null);
   const [trackedAgentStats, setTrackedAgentStats] = useState<any>(null);
@@ -185,27 +186,39 @@ export default function Admin() {
   const confirmAgentRecharge = async () => {
     const cleanAgentId = agentRechargeId.trim();
     const value = Number.parseInt(agentRechargeAmount, 10);
+    setAgentFeedback(null);
 
     if (!cleanAgentId || !Number.isFinite(value) || value <= 0) {
-      Alert.alert('Informations obligatoires', 'Entrez l’ID de l’agent et le montant à lui envoyer.');
+      const message = 'Entrez l’ID de l’agent et le montant à lui envoyer.';
+      setAgentFeedback({ type: 'error', message });
+      Alert.alert('Informations obligatoires', message);
       return;
     }
 
     try {
       setAgentRechargeLoading(true);
       const result = await rechargeAgent(cleanAgentId, value);
+      if (!result?.agent) {
+        throw new Error('Agent actif introuvable. Vérifiez l’ID agent.');
+      }
       setAgentRechargeAmount('');
       if (result?.agent) {
         setTrackedAgent(result.agent);
         setTrackedAgentStats(null);
       }
+      setAgentFeedback({
+        type: 'success',
+        message: `Crédit envoyé : ${value} FC au compte agent ${result.agent.id}. Solde : ${result.agent.balance} FC.`,
+      });
       Alert.alert(
         'Crédit envoyé',
-        `${value} FC envoyé au compte agent ${result?.agent?.id || cleanAgentId}. Solde : ${result?.agent?.balance ?? 'mis à jour'} FC.`
+        `${value} FC envoyé au compte agent ${result.agent.id}. Solde : ${result.agent.balance} FC.`
       );
       setActiveSection('agents');
     } catch (error) {
-      Alert.alert('Recharge agent impossible', error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.');
+      const message = error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.';
+      setAgentFeedback({ type: 'error', message });
+      Alert.alert('Recharge agent impossible', message);
     } finally {
       setAgentRechargeLoading(false);
     }
@@ -213,22 +226,31 @@ export default function Admin() {
 
   const findAgentAccount = async () => {
     const cleanAgentId = agentRechargeId.trim();
+    setAgentFeedback(null);
 
     if (!cleanAgentId) {
-      Alert.alert('ID obligatoire', 'Entrez l’ID de l’agent à suivre.');
+      const message = 'Entrez l’ID de l’agent à suivre.';
+      setAgentFeedback({ type: 'error', message });
+      Alert.alert('ID obligatoire', message);
       return;
     }
 
     try {
       setAgentLookupLoading(true);
       const result = await getAgentAccount(cleanAgentId);
+      if (!result?.agent) {
+        throw new Error('Compte agent introuvable.');
+      }
       setTrackedAgent(result?.agent || null);
       setTrackedAgentStats(result?.stats || null);
+      setAgentFeedback({ type: 'success', message: `Compte agent trouvé : ${result.agent.fullName || result.agent.id}.` });
       setActiveSection('agents');
     } catch (error) {
       setTrackedAgent(null);
       setTrackedAgentStats(null);
-      Alert.alert('Compte agent introuvable', error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.');
+      const message = error instanceof Error ? error.message : 'Vérifiez l’ID de l’agent.';
+      setAgentFeedback({ type: 'error', message });
+      Alert.alert('Compte agent introuvable', message);
     } finally {
       setAgentLookupLoading(false);
     }
@@ -342,6 +364,7 @@ export default function Admin() {
                 confirm={confirmAgentRecharge}
                 lookupLoading={agentLookupLoading}
                 lookup={findAgentAccount}
+                feedback={agentFeedback}
               />
               <AgentAccountCard agent={trackedAgent} stats={trackedAgentStats} />
               <InternalRechargeCard
@@ -420,6 +443,7 @@ export default function Admin() {
                 confirm={confirmAgentRecharge}
                 lookupLoading={agentLookupLoading}
                 lookup={findAgentAccount}
+                feedback={agentFeedback}
               />
               <AgentAccountCard agent={trackedAgent} stats={trackedAgentStats} />
               <InternalRechargeCard
@@ -651,6 +675,7 @@ function AgentRechargeCard({
   confirm,
   lookupLoading,
   lookup,
+  feedback,
 }: {
   agentId: string;
   setAgentId: (value: string) => void;
@@ -660,6 +685,7 @@ function AgentRechargeCard({
   confirm: () => void;
   lookupLoading: boolean;
   lookup: () => void;
+  feedback: { type: 'success' | 'error'; message: string } | null;
 }) {
   return (
     <View style={[styles.card, styles.internalRechargeCard]}>
@@ -684,6 +710,19 @@ function AgentRechargeCard({
         {lookupLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="analytics-outline" size={22} color={TAKO_BLUE} />}
         <Text style={styles.secondaryButtonText}>Suivre le compte agent</Text>
       </TouchableOpacity>
+
+      {feedback ? (
+        <View style={[styles.feedbackBox, feedback.type === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
+          <Ionicons
+            name={feedback.type === 'error' ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+            size={20}
+            color={feedback.type === 'error' ? '#B42318' : '#087B35'}
+          />
+          <Text style={[styles.feedbackText, feedback.type === 'error' ? styles.feedbackErrorText : styles.feedbackSuccessText]}>
+            {feedback.message}
+          </Text>
+        </View>
+      ) : null}
 
       <View style={styles.inputBox}>
         <Text style={styles.currencyLabel}>FC</Text>
@@ -1314,6 +1353,37 @@ const styles = StyleSheet.create({
     color: '#087B35',
     fontSize: 16,
     fontWeight: '900',
+  },
+  feedbackBox: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 18,
+  },
+  feedbackSuccess: {
+    backgroundColor: '#E9FFF1',
+    borderWidth: 1,
+    borderColor: '#BAF0C8',
+  },
+  feedbackError: {
+    backgroundColor: '#FFF1F0',
+    borderWidth: 1,
+    borderColor: '#FFCDC9',
+  },
+  feedbackText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  feedbackSuccessText: {
+    color: '#087B35',
+  },
+  feedbackErrorText: {
+    color: '#B42318',
   },
   clientPill: {
     flexDirection: 'row',

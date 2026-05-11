@@ -5,7 +5,7 @@ type UserRole = 'passager' | 'chauffeur' | 'agent' | 'admin';
 
 async function requestJson(path: string, options: RequestInit = {}) {
   if (!API_URL) {
-    return null;
+    throw new Error('Serveur API non configuré. Vérifiez EXPO_PUBLIC_API_URL.');
   }
 
   const response = await fetch(`${API_URL}${path}`, {
