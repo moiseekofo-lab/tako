@@ -32,6 +32,7 @@ export type CurrentUser = {
   email: string;
   phone: string;
   birthDate: string;
+  balance?: number;
 };
 
 type StoreState = {
@@ -45,6 +46,7 @@ type StoreState = {
   driverTripInfo: DriverTripInfo;
   setLanguage: (language: Language) => void;
   setCurrentUser: (user: CurrentUser) => void;
+  setBalance: (amount: number) => void;
   setDriverTripInfo: (info: DriverTripInfo) => void;
   increaseBalance: (amount: number) => void;
   setNfcCardId: (cardId: string) => void;
@@ -89,6 +91,11 @@ export const useStore = create<StoreState>((set) => ({
   setCurrentUser: (user) =>
     set({
       currentUser: user,
+      balance: Number(user.balance ?? 0),
+    }),
+  setBalance: (amount) =>
+    set({
+      balance: amount,
     }),
   setDriverTripInfo: (info) =>
     set({

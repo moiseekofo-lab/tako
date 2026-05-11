@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { TakoLogo } from '../components/tako-logo';
@@ -8,12 +8,16 @@ import { useStore } from './store';
 
 export default function QR() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ mode?: string }>();
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
   const text = translations[language];
   const userId = currentUser?.id || '1000000001';
+  const isInternalRecharge = params.mode === 'recharge';
 
   const data = JSON.stringify({
+    type: isInternalRecharge ? 'internal_recharge' : 'transport_payment',
+    clientId: userId,
     userId,
   });
 
@@ -26,8 +30,10 @@ export default function QR() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>{text.myQrCode}</Text>
-      <Text style={styles.subtitle}>{text.showQrDriver}</Text>
+      <Text style={styles.title}>{isInternalRecharge ? text.internalRecharge : text.myQrCode}</Text>
+      <Text style={styles.subtitle}>
+        {isInternalRecharge ? text.internalRechargeQrHint : text.showQrDriver}
+      </Text>
 
       <View style={styles.qrBox}>
         <QRCode value={data} size={220} />

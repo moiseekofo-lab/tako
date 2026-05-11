@@ -118,6 +118,7 @@ export default function Register() {
         email: user.email,
         phone: user.phone,
         birthDate: user.birthDate,
+        balance: user.balance,
       });
 
       console.log('USER CREATED:', user);

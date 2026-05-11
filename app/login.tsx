@@ -286,6 +286,7 @@ export default function Login() {
           email: result.user.email,
           phone: result.user.phone,
           birthDate: result.user.birthDate,
+          balance: result.user.balance,
         });
 
         if (rememberAccess) {
@@ -310,6 +311,7 @@ export default function Login() {
               email: adminResult.user.email,
               phone: adminResult.user.phone,
               birthDate: adminResult.user.birthDate,
+              balance: adminResult.user.balance,
             });
             router.replace('/admin' as any);
             return;
@@ -336,6 +338,7 @@ export default function Login() {
         email: isClientId ? 'client@tako.app' : cleanFallbackLogin,
         phone: '',
         birthDate: '',
+        balance: 0,
       });
     }
 

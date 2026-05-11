@@ -1,9 +1,9 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { findClientById } from '../services/api';
+import { createInternalRecharge, findClientById } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -37,6 +37,7 @@ const formatDate = (date?: string) => {
 
 export default function Admin() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ clientId?: string }>();
   const { width } = useWindowDimensions();
   const isNarrow = width < 760;
   const currentUser = useStore((state: any) => state.currentUser);
@@ -46,9 +47,20 @@ export default function Admin() {
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [clientId, setClientId] = useState('');
+  const [rechargeClientId, setRechargeClientId] = useState(String(params.clientId || ''));
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const [rechargeLoading, setRechargeLoading] = useState(false);
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
   const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    if (params.clientId) {
+      setRechargeClientId(String(params.clientId));
+      setClientId(String(params.clientId));
+      setActiveSection('clients');
+    }
+  }, [params.clientId]);
 
   const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
@@ -93,6 +105,38 @@ export default function Admin() {
 
     setSelectedClient(currentUser);
     setActiveSection('clients');
+  };
+
+  const confirmInternalRecharge = async () => {
+    const cleanClientId = rechargeClientId.trim();
+    const value = Number.parseInt(rechargeAmount, 10);
+
+    if (!cleanClientId || !Number.isFinite(value) || value <= 0) {
+      Alert.alert('Informations obligatoires', 'Entrez l’ID du client et le montant.');
+      return;
+    }
+
+    try {
+      setRechargeLoading(true);
+      const result = await createInternalRecharge({
+        clientId: cleanClientId,
+        amount: value,
+        agentId: currentUser?.id || 'ADMIN',
+      });
+
+      if (result?.client) {
+        setSelectedClient(result.client);
+        setClientId(cleanClientId);
+      }
+
+      setRechargeAmount('');
+      Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${cleanClientId}.`);
+      setActiveSection('clients');
+    } catch (error) {
+      Alert.alert('Recharge impossible', error instanceof Error ? error.message : 'Vérifiez l’ID du client.');
+    } finally {
+      setRechargeLoading(false);
+    }
   };
 
   const refreshPage = () => {
@@ -173,6 +217,15 @@ export default function Admin() {
           {activeSection === 'dashboard' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
+              <InternalRechargeCard
+                clientId={rechargeClientId}
+                setClientId={setRechargeClientId}
+                amount={rechargeAmount}
+                setAmount={setRechargeAmount}
+                loading={rechargeLoading}
+                confirm={confirmInternalRecharge}
+                scan={() => router.push('/internal-recharge-scan' as any)}
+              />
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
                 route={driverTripInfo.route}
@@ -186,6 +239,15 @@ export default function Admin() {
           {activeSection === 'clients' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
+              <InternalRechargeCard
+                clientId={rechargeClientId}
+                setClientId={setRechargeClientId}
+                amount={rechargeAmount}
+                setAmount={setRechargeAmount}
+                loading={rechargeLoading}
+                confirm={confirmInternalRecharge}
+                scan={() => router.push('/internal-recharge-scan' as any)}
+              />
               <ClientDetails client={activeClient} balance={balance} trips={trips.length} notifications={notifications.length} />
             </View>
           ) : null}
@@ -302,7 +364,68 @@ function ClientSearchCard({
   );
 }
 
+function InternalRechargeCard({
+  clientId,
+  setClientId,
+  amount,
+  setAmount,
+  loading,
+  confirm,
+  scan,
+}: {
+  clientId: string;
+  setClientId: (value: string) => void;
+  amount: string;
+  setAmount: (value: string) => void;
+  loading: boolean;
+  confirm: () => void;
+  scan: () => void;
+}) {
+  return (
+    <View style={[styles.card, styles.internalRechargeCard]}>
+      <Text style={styles.cardTitle}>Recharge interne</Text>
+      <Text style={styles.cardText}>Scannez le QR du client ou entrez son ID, puis confirmez le montant.</Text>
+
+      <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.9} onPress={scan}>
+        <Ionicons name="qr-code-outline" size={22} color={TAKO_BLUE} />
+        <Text style={styles.secondaryButtonText}>Scanner le QR client</Text>
+      </TouchableOpacity>
+
+      <View style={styles.inputBox}>
+        <Ionicons name="finger-print" size={24} color="#7B8798" />
+        <TextInput
+          placeholder="ID client"
+          placeholderTextColor="#8B95A5"
+          value={clientId}
+          onChangeText={setClientId}
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+      </View>
+
+      <View style={styles.inputBox}>
+        <Text style={styles.currencyLabel}>FC</Text>
+        <TextInput
+          placeholder="Montant"
+          placeholderTextColor="#8B95A5"
+          value={amount}
+          onChangeText={setAmount}
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+      </View>
+
+      <TouchableOpacity style={styles.successButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
+        {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={22} color="white" />}
+        <Text style={styles.primaryButtonText}>Confirmer la recharge</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
 function ClientDetails({ client, balance, trips, notifications }: { client: any; balance: number; trips: number; notifications: number }) {
+  const displayedBalance = Number(client?.balance ?? balance ?? 0);
+
   return (
     <View style={[styles.card, styles.fullCard]}>
       <View style={styles.cardHeaderRow}>
@@ -321,7 +444,7 @@ function ClientDetails({ client, balance, trips, notifications }: { client: any;
         <InfoItem icon="mail-outline" label="Email" value={client?.email || 'Non renseigné'} />
         <InfoItem icon="call-outline" label="Téléphone" value={client?.phone || 'Non renseigné'} />
         <InfoItem icon="calendar-outline" label="Naissance" value={client?.birthDate || 'Non renseignée'} />
-        <InfoItem icon="wallet-outline" label="Solde" value={`${balance} FC`} />
+        <InfoItem icon="wallet-outline" label="Solde" value={`${displayedBalance} FC`} />
         <InfoItem icon="bus-outline" label="Trajets" value={`${trips}`} />
         <InfoItem icon="notifications-outline" label="Notifications" value={`${notifications}`} />
       </View>
@@ -712,6 +835,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 4,
     borderTopColor: TAKO_ACTION,
   },
+  internalRechargeCard: {
+    borderTopWidth: 4,
+    borderTopColor: TAKO_GREEN,
+  },
   fullCard: {
     flexBasis: '100%',
   },
@@ -761,6 +888,28 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 8,
     backgroundColor: TAKO_BLUE,
+  },
+  secondaryButton: {
+    height: 52,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BBDFFF',
+    backgroundColor: '#EAF3FF',
+    marginBottom: 14,
+  },
+  secondaryButtonText: {
+    color: TAKO_BLUE,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  currencyLabel: {
+    color: TAKO_BLUE,
+    fontSize: 17,
+    fontWeight: '900',
   },
   successButton: {
     height: 56,

@@ -808,6 +808,61 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/recharges/internal') {
+    const body = await readJson(request);
+    const clientId = String(body.clientId || '').trim();
+    const amount = Number(body.amount);
+    const agentId = String(body.agentId || 'ADMIN').trim();
+
+    if (!clientId || !Number.isFinite(amount) || amount <= 0) {
+      sendJson(response, 400, { ok: false, error: 'ID client et montant obligatoires' });
+      return;
+    }
+
+    const clientResult = await query('SELECT * FROM users WHERE id = $1 LIMIT 1;', [clientId]);
+    const client = clientResult.rows[0];
+    if (!client) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+
+    const rechargeId = `rch_internal_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const paymentResult = await query(
+      `
+        INSERT INTO payments (id, amount, method, client_id, driver_id, bus_plate, route, status, created_at)
+        VALUES ($1, $2, 'internal_recharge', $3, $4, NULL, 'Recharge interne', 'accepted', NOW())
+        RETURNING id, amount, method, client_id, status, created_at;
+      `,
+      [rechargeId, amount, clientId, agentId],
+    );
+
+    const updatedUser = await query(
+      `
+        UPDATE users
+        SET balance = balance + $2, updated_at = NOW()
+        WHERE id = $1
+        RETURNING *;
+      `,
+      [clientId, amount],
+    );
+
+    const notification = await createNotification({
+      clientId,
+      title: 'Recharge interne confirmée',
+      message: `${amount} FC ajouté par un agent TaKo.`,
+      amount,
+      type: 'recharge',
+    });
+
+    sendJson(response, 201, {
+      ok: true,
+      recharge: paymentResult.rows[0],
+      client: publicUser(updatedUser.rows[0]),
+      notification,
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/payments') {
     const body = await readJson(request);
     const amount = Number(body.amount);

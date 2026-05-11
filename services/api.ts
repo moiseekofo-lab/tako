@@ -125,6 +125,14 @@ export function initiateMobileMoneyRecharge(params: {
   return postJson('/recharges/mobile-money', params);
 }
 
+export function createInternalRecharge(params: {
+  clientId: string;
+  amount: number;
+  agentId?: string;
+}) {
+  return postJson('/admin/recharges/internal', params);
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

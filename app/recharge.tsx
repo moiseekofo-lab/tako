@@ -33,32 +33,10 @@ export default function Recharge() {
   const text = translations[language];
 
   const handleInternalRecharge = () => {
-    const value = Number.parseInt(amount, 10);
-
-    if (!Number.isFinite(value) || value <= 0) {
-      Alert.alert(text.error, text.enterRechargeAmount);
-      return;
-    }
-
-    increaseBalance(value);
-    addNotification({
-      title: text.rechargeSuccess,
-      message: text.rechargeMessage(value, text.internalRecharge),
-      amount: value,
-      type: 'recharge',
-    });
-    setAmount('');
-    setWalletId('');
-    Alert.alert(text.rechargeSuccess, text.rechargeMessage(value, text.internalRecharge), [
-      {
-        text: 'OK',
-        onPress: () =>
-          router.replace({
-            pathname: '/home',
-            params: { role: 'passager' },
-          } as any),
-      },
-    ]);
+    router.push({
+      pathname: '/qr',
+      params: { mode: 'recharge' },
+    } as any);
   };
 
   const handleRecharge = async (provider: string) => {
