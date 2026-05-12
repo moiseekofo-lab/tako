@@ -17,6 +17,7 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
       scrollbarColor: `rgba(120, 130, 150, 0.34) transparent`,
     } as any)
   : null;
+type NfcTag = { id?: string; type?: string } | null;
 
 type AdminSection = 'dashboard' | 'clients' | 'drivers' | 'agents' | 'transactions' | 'settings';
 
@@ -59,9 +60,11 @@ export default function Admin() {
   const [clientId, setClientId] = useState('');
   const [rechargeClientId, setRechargeClientId] = useState(String(params.clientId || ''));
   const [rechargeAmount, setRechargeAmount] = useState('');
+  const [rechargeCardId, setRechargeCardId] = useState('');
   const [agentRechargeId, setAgentRechargeId] = useState('');
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [isReadingNfc, setIsReadingNfc] = useState(false);
   const [rechargeFeedback, setRechargeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [clientLookupLoading, setClientLookupLoading] = useState(false);
   const [clientFeedback, setClientFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -80,10 +83,40 @@ export default function Admin() {
   useEffect(() => {
     if (params.clientId) {
       setRechargeClientId(String(params.clientId));
+      setRechargeCardId('');
       setClientId(String(params.clientId));
       setActiveSection('clients');
     }
   }, [params.clientId]);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      return undefined;
+    }
+
+    let mounted = true;
+    let manager: any = null;
+
+    const startNfc = async () => {
+      try {
+        const module = await import('react-native-nfc-manager');
+        manager = module.default;
+        const supported = await manager.isSupported();
+        if (mounted && supported) {
+          await manager.start();
+        }
+      } catch {
+        manager = null;
+      }
+    };
+
+    startNfc();
+
+    return () => {
+      mounted = false;
+      manager?.cancelTechnologyRequest?.().catch?.(() => {});
+    };
+  }, []);
 
   const loadPendingUsers = async () => {
     try {
@@ -158,13 +191,53 @@ export default function Admin() {
     }
   };
 
+  const getCardId = (tag: NfcTag) => tag?.id || tag?.type || '';
+
+  const readAdminNfcCard = async () => {
+    let manager: { cancelTechnologyRequest?: () => Promise<void> } | null = null;
+
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('NFC indisponible', 'La lecture NFC fonctionne sur l’application mobile installée.');
+        return;
+      }
+
+      setIsReadingNfc(true);
+      const module = await import('react-native-nfc-manager');
+      const NfcManager = module.default;
+      const { NfcTech } = module;
+      manager = NfcManager;
+      await NfcManager.requestTechnology(NfcTech.Ndef, {
+        alertMessage: 'Approchez la carte du client',
+      });
+      const tag = await NfcManager.getTag();
+      const nextCardId = getCardId(tag);
+
+      if (!nextCardId) {
+        Alert.alert('Carte non reconnue', "Impossible de lire l'identifiant NFC.");
+        return;
+      }
+
+      setRechargeCardId(nextCardId);
+      setRechargeClientId('');
+      setRechargeFeedback({ type: 'success', message: 'Carte NFC lue. Ajoutez le montant puis confirmez.' });
+      Alert.alert('Carte lue', 'Ajoutez le montant puis confirmez la recharge.');
+    } catch {
+      Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
+    } finally {
+      setIsReadingNfc(false);
+      manager?.cancelTechnologyRequest?.().catch(() => {});
+    }
+  };
+
   const confirmInternalRecharge = async () => {
     const cleanClientId = rechargeClientId.trim();
+    const cleanCardId = rechargeCardId.trim();
     const value = Number.parseInt(rechargeAmount, 10);
     setRechargeFeedback(null);
 
-    if (!cleanClientId || !Number.isFinite(value) || value <= 0) {
-      const message = 'Entrez l’ID du client et le montant.';
+    if ((!cleanClientId && !cleanCardId) || !Number.isFinite(value) || value <= 0) {
+      const message = 'Entrez l’ID du client, scannez la carte NFC, puis ajoutez le montant.';
       setRechargeFeedback({ type: 'error', message });
       Alert.alert('Informations obligatoires', message);
       return;
@@ -173,7 +246,8 @@ export default function Admin() {
     try {
       setRechargeLoading(true);
       const result = await createInternalRecharge({
-        clientId: cleanClientId,
+        clientId: cleanClientId || undefined,
+        cardId: cleanCardId || undefined,
         amount: value,
         agentId: 'ADMIN',
       });
@@ -183,12 +257,14 @@ export default function Admin() {
       }
 
       setSelectedClient(result.client);
-      setClientId(cleanClientId);
+      setClientId(result.client.id || cleanClientId);
+      setRechargeClientId(result.client.id || cleanClientId);
       setClientFeedback({ type: 'success', message: `Compte client trouvé : ${result.client.fullName || result.client.id}.` });
 
       setRechargeAmount('');
-      setRechargeFeedback({ type: 'success', message: `Recharge confirmée : ${value} FC ajouté au compte ${cleanClientId}.` });
-      Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${cleanClientId}.`);
+      setRechargeCardId('');
+      setRechargeFeedback({ type: 'success', message: `Recharge confirmée : ${value} FC ajouté au compte ${result.client.id || cleanClientId}.` });
+      Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${result.client.id || cleanClientId}.`);
       setActiveSection('clients');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Vérifiez l’ID du client.';
@@ -392,11 +468,15 @@ export default function Admin() {
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
+                cardId={rechargeCardId}
+                clearCardId={() => setRechargeCardId('')}
                 amount={rechargeAmount}
                 setAmount={setRechargeAmount}
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                nfcLoading={isReadingNfc}
+                readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
               />
               <DriverCard driverStatus={driverStatus} approve={approve} />
@@ -421,11 +501,15 @@ export default function Admin() {
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
+                cardId={rechargeCardId}
+                clearCardId={() => setRechargeCardId('')}
                 amount={rechargeAmount}
                 setAmount={setRechargeAmount}
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                nfcLoading={isReadingNfc}
+                readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
               />
               <ClientDetails client={activeClient} balance={balance} trips={trips.length} notifications={notifications.length} />
@@ -479,11 +563,15 @@ export default function Admin() {
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
+                cardId={rechargeCardId}
+                clearCardId={() => setRechargeCardId('')}
                 amount={rechargeAmount}
                 setAmount={setRechargeAmount}
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                nfcLoading={isReadingNfc}
+                readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
               />
               <View style={styles.card}>
@@ -658,31 +746,51 @@ function PendingApprovalsCard({
 function InternalRechargeCard({
   clientId,
   setClientId,
+  cardId,
+  clearCardId,
   amount,
   setAmount,
   loading,
   confirm,
   scan,
+  nfcLoading,
+  readNfc,
   feedback,
 }: {
   clientId: string;
   setClientId: (value: string) => void;
+  cardId: string;
+  clearCardId: () => void;
   amount: string;
   setAmount: (value: string) => void;
   loading: boolean;
   confirm: () => void;
   scan: () => void;
+  nfcLoading: boolean;
+  readNfc: () => void;
   feedback: { type: 'success' | 'error'; message: string } | null;
 }) {
   return (
     <View style={[styles.card, styles.internalRechargeCard]}>
       <Text style={styles.cardTitle}>Recharge interne</Text>
-      <Text style={styles.cardText}>Scannez le QR du client ou entrez son ID, puis confirmez le montant.</Text>
+      <Text style={styles.cardText}>Scannez le QR, lisez la carte NFC ou entrez l’ID du client, puis confirmez le montant.</Text>
 
       <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.9} onPress={scan}>
         <Ionicons name="qr-code-outline" size={22} color={TAKO_BLUE} />
         <Text style={styles.secondaryButtonText}>Scanner le QR client</Text>
       </TouchableOpacity>
+
+      <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={nfcLoading} onPress={readNfc}>
+        {nfcLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={23} color={TAKO_BLUE} />}
+        <Text style={styles.secondaryButtonText}>{nfcLoading ? 'Lecture NFC...' : 'Lire carte NFC'}</Text>
+      </TouchableOpacity>
+
+      {!!cardId && (
+        <View style={styles.cardReadBox}>
+          <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
+          <Text style={styles.cardReadText}>Carte lue : {cardId}</Text>
+        </View>
+      )}
 
       <View style={styles.inputBox}>
         <Ionicons name="finger-print" size={24} color="#7B8798" />
@@ -690,7 +798,12 @@ function InternalRechargeCard({
           placeholder="ID client"
           placeholderTextColor="#8B95A5"
           value={clientId}
-          onChangeText={setClientId}
+          onChangeText={(value) => {
+            setClientId(value);
+            if (value.trim()) {
+              clearCardId();
+            }
+          }}
           keyboardType="number-pad"
           style={styles.input}
         />
@@ -1332,6 +1445,37 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: TAKO_BLUE,
     fontSize: 15,
+    fontWeight: '900',
+  },
+  nfcButton: {
+    height: 52,
+    flexDirection: 'row',
+    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BBDFFF',
+    backgroundColor: '#F6FAFF',
+    marginBottom: 14,
+  },
+  cardReadBox: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#BAF0C8',
+    backgroundColor: '#E9FFF1',
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    marginBottom: 14,
+  },
+  cardReadText: {
+    flex: 1,
+    color: '#087B35',
+    fontSize: 13,
     fontWeight: '900',
   },
   pendingRow: {
