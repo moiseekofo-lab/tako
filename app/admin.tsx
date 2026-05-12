@@ -62,6 +62,8 @@ export default function Admin() {
   const [agentRechargeId, setAgentRechargeId] = useState('');
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [clientLookupLoading, setClientLookupLoading] = useState(false);
+  const [clientFeedback, setClientFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
   const [agentLookupLoading, setAgentLookupLoading] = useState(false);
   const [agentFeedback, setAgentFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -109,7 +111,7 @@ export default function Admin() {
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
   const rechargeTransactions = notifications.filter((item) => item.type === 'recharge').length;
-  const activeClient = selectedClient || currentUser;
+  const activeClient = selectedClient;
 
   const approve = () => {
     setDriverStatus('Actif');
@@ -125,30 +127,34 @@ export default function Admin() {
 
   const findClient = async () => {
     const cleanClientId = clientId.trim();
+    setClientFeedback(null);
     if (!cleanClientId) {
-      Alert.alert('ID obligatoire', 'Entrez l’ID du client.');
+      const message = 'Entrez l’ID du client.';
+      setSelectedClient(null);
+      setClientFeedback({ type: 'error', message });
+      Alert.alert('ID obligatoire', message);
       return;
     }
 
     try {
+      setClientLookupLoading(true);
       const result = await findClientById(cleanClientId);
-      if (result?.client) {
-        setSelectedClient(result.client);
-        setActiveSection('clients');
-        return;
+      if (!result?.client) {
+        throw new Error('Client introuvable.');
       }
-    } catch {
-      // Le mode local reste disponible si le backend n’est pas joignable.
-    }
 
-    if (!currentUser?.id || cleanClientId !== currentUser.id) {
+      setSelectedClient(result.client);
+      setRechargeClientId(result.client.id || cleanClientId);
+      setClientFeedback({ type: 'success', message: `Compte client trouvé : ${result.client.fullName || result.client.id}.` });
+      setActiveSection('clients');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Aucun compte client trouvé avec cet ID.';
       setSelectedClient(null);
-      Alert.alert('Client introuvable', 'Aucun compte client trouvé avec cet ID.');
-      return;
+      setClientFeedback({ type: 'error', message });
+      Alert.alert('Client introuvable', message);
+    } finally {
+      setClientLookupLoading(false);
     }
-
-    setSelectedClient(currentUser);
-    setActiveSection('clients');
   };
 
   const confirmInternalRecharge = async () => {
@@ -348,7 +354,13 @@ export default function Admin() {
 
           {activeSection === 'dashboard' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
+              <ClientSearchCard
+                clientId={clientId}
+                setClientId={setClientId}
+                findClient={findClient}
+                loading={clientLookupLoading}
+                feedback={clientFeedback}
+              />
               <PendingApprovalsCard
                 title="Agents en attente"
                 users={pendingAgents}
@@ -388,7 +400,13 @@ export default function Admin() {
 
           {activeSection === 'clients' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <ClientSearchCard clientId={clientId} setClientId={setClientId} findClient={findClient} />
+              <ClientSearchCard
+                clientId={clientId}
+                setClientId={setClientId}
+                findClient={findClient}
+                loading={clientLookupLoading}
+                feedback={clientFeedback}
+              />
               <InternalRechargeCard
                 clientId={rechargeClientId}
                 setClientId={setRechargeClientId}
@@ -531,10 +549,14 @@ function ClientSearchCard({
   clientId,
   setClientId,
   findClient,
+  loading,
+  feedback,
 }: {
   clientId: string;
   setClientId: (value: string) => void;
   findClient: () => void;
+  loading: boolean;
+  feedback: { type: 'success' | 'error'; message: string } | null;
 }) {
   return (
     <View style={[styles.card, styles.searchCard]}>
@@ -553,8 +575,21 @@ function ClientSearchCard({
         />
       </View>
 
-      <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} onPress={findClient}>
-        <Ionicons name="search" size={22} color="white" />
+      {feedback ? (
+        <View style={[styles.feedbackBox, feedback.type === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
+          <Ionicons
+            name={feedback.type === 'error' ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+            size={20}
+            color={feedback.type === 'error' ? '#B42318' : '#087B35'}
+          />
+          <Text style={[styles.feedbackText, feedback.type === 'error' ? styles.feedbackErrorText : styles.feedbackSuccessText]}>
+            {feedback.message}
+          </Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} disabled={loading} onPress={findClient}>
+        {loading ? <ActivityIndicator color="white" /> : <Ionicons name="search" size={22} color="white" />}
         <Text style={styles.primaryButtonText}>Voir le compte client</Text>
       </TouchableOpacity>
     </View>
@@ -778,6 +813,14 @@ function AgentAccountCard({ agent, stats }: { agent: any; stats: any }) {
 }
 
 function ClientDetails({ client, balance, trips, notifications }: { client: any; balance: number; trips: number; notifications: number }) {
+  if (!client) {
+    return (
+      <View style={[styles.card, styles.fullCard]}>
+        <EmptyState icon="id-card-outline" title="Aucun client sélectionné" text="Entrez l’ID du client puis cliquez sur voir le compte client." />
+      </View>
+    );
+  }
+
   const displayedBalance = Number(client?.balance ?? balance ?? 0);
 
   return (

@@ -661,6 +661,7 @@ async function handleRequest(request, response) {
         FROM users u
         LEFT JOIN nfc_cards c ON c.client_id = u.id
         WHERE LOWER(u.id) = LOWER($1)
+          AND u.role = 'passager'
         LIMIT 1;
       `,
       [clientId],
