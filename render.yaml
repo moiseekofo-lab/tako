@@ -1,5 +1,19 @@
 services:
   - type: web
+    name: tako-1
+    runtime: static
+    buildCommand: npm ci && npm run build:web
+    staticPublishPath: dist
+    autoDeploy: true
+    envVars:
+      - key: EXPO_PUBLIC_API_URL
+        value: https://tako-8whp.onrender.com
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
     name: tako-api
     runtime: node
     plan: free
