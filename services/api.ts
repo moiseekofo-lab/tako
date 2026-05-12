@@ -99,6 +99,22 @@ export function findClientById(clientId: string) {
   return requestJson(`/admin/clients/${encodeURIComponent(clientId)}`);
 }
 
+export function getClientProfile(clientId: string) {
+  return requestJson(`/clients/${encodeURIComponent(clientId)}`);
+}
+
+export function updateClientByAdmin(
+  clientId: string,
+  params: {
+    fullName: string;
+    email: string;
+    phone: string;
+    birthDate: string;
+  },
+) {
+  return postJson(`/admin/clients/${encodeURIComponent(clientId)}/update`, params);
+}
+
 export function getPendingUsers(role?: 'chauffeur' | 'agent') {
   const query = role ? `?role=${encodeURIComponent(role)}` : '';
   return requestJson(`/admin/users/pending${query}`);

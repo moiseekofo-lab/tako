@@ -684,6 +684,94 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/clients/') && url.pathname.endsWith('/update')) {
+    const clientId = decodeURIComponent(url.pathname.replace('/admin/clients/', '').replace('/update', '')).trim();
+    const body = await readJson(request);
+    const fullName = String(body.fullName || '').trim();
+    const email = String(body.email || '').trim().toLowerCase();
+    const phone = String(body.phone || '').trim();
+    const birthDate = String(body.birthDate || '').trim();
+
+    if (!clientId || !fullName || !birthDate) {
+      sendJson(response, 400, { ok: false, error: 'ID, nom complet et date de naissance obligatoires' });
+      return;
+    }
+
+    if (email) {
+      const existingEmail = await query(
+        `SELECT id FROM users WHERE LOWER(email) = LOWER($1) AND id <> $2 LIMIT 1;`,
+        [email, clientId],
+      );
+      if (existingEmail.rowCount) {
+        sendJson(response, 409, { ok: false, error: 'Cette adresse email est déjà utilisée' });
+        return;
+      }
+    }
+
+    if (phone) {
+      const existingPhone = await query(
+        `SELECT id FROM users WHERE phone = $1 AND id <> $2 LIMIT 1;`,
+        [phone, clientId],
+      );
+      if (existingPhone.rowCount) {
+        sendJson(response, 409, { ok: false, error: 'Ce numéro est déjà utilisé' });
+        return;
+      }
+    }
+
+    const result = await query(
+      `
+        UPDATE users
+        SET full_name = $2,
+            email = NULLIF($3, ''),
+            phone = NULLIF($4, ''),
+            birth_date = $5,
+            updated_at = NOW()
+        WHERE id = $1
+          AND role = 'passager'
+        RETURNING *;
+      `,
+      [clientId, fullName, email, phone, birthDate],
+    );
+
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+
+    await createNotification({
+      clientId,
+      title: 'Données mises à jour',
+      message: 'Vos informations personnelles ont été mises à jour par l’administrateur.',
+      type: 'recharge',
+    });
+
+    sendJson(response, 200, { ok: true, client: publicUser(result.rows[0]) });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname.startsWith('/clients/') && !url.pathname.includes('/nfc-card')) {
+    const clientId = decodeURIComponent(url.pathname.replace('/clients/', '')).trim();
+    const result = await query(
+      `
+        SELECT *
+        FROM users
+        WHERE id = $1
+          AND role = 'passager'
+        LIMIT 1;
+      `,
+      [clientId],
+    );
+
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+
+    sendJson(response, 200, { ok: true, client: publicUser(result.rows[0]) });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname === '/admin/users/pending') {
     const role = String(url.searchParams.get('role') || '').trim();
     const params = [];

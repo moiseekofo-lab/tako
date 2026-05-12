@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { approveUser, createInternalRecharge, findClientById, getAgentAccount, getPendingUsers, rechargeAgent } from '../services/api';
+import { approveUser, createInternalRecharge, findClientById, getAgentAccount, getPendingUsers, rechargeAgent, updateClientByAdmin } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -67,6 +67,7 @@ export default function Admin() {
   const [isReadingNfc, setIsReadingNfc] = useState(false);
   const [rechargeFeedback, setRechargeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [clientLookupLoading, setClientLookupLoading] = useState(false);
+  const [clientUpdateLoading, setClientUpdateLoading] = useState(false);
   const [clientFeedback, setClientFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
   const [agentLookupLoading, setAgentLookupLoading] = useState(false);
@@ -188,6 +189,33 @@ export default function Admin() {
       Alert.alert('Client introuvable', message);
     } finally {
       setClientLookupLoading(false);
+    }
+  };
+
+  const updateSelectedClient = async (nextClient: { fullName: string; email: string; phone: string; birthDate: string }) => {
+    if (!selectedClient?.id) {
+      Alert.alert('Client introuvable', 'Sélectionnez d’abord un compte client.');
+      return;
+    }
+
+    try {
+      setClientUpdateLoading(true);
+      const result = await updateClientByAdmin(selectedClient.id, nextClient);
+      if (!result?.client) {
+        throw new Error('Mise à jour non confirmée.');
+      }
+
+      setSelectedClient(result.client);
+      setClientId(result.client.id);
+      setRechargeClientId(result.client.id);
+      setClientFeedback({ type: 'success', message: 'Données client mises à jour.' });
+      Alert.alert('Mise à jour confirmée', 'Les informations du client ont été modifiées.');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossible de modifier ce compte client.';
+      setClientFeedback({ type: 'error', message });
+      Alert.alert('Mise à jour impossible', message);
+    } finally {
+      setClientUpdateLoading(false);
     }
   };
 
@@ -512,7 +540,14 @@ export default function Admin() {
                 readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
               />
-              <ClientDetails client={activeClient} balance={balance} trips={trips.length} notifications={notifications.length} />
+              <ClientDetails
+                client={activeClient}
+                balance={balance}
+                trips={trips.length}
+                notifications={notifications.length}
+                updating={clientUpdateLoading}
+                updateClient={updateSelectedClient}
+              />
             </View>
           ) : null}
 
@@ -953,7 +988,33 @@ function AgentAccountCard({ agent, stats }: { agent: any; stats: any }) {
   );
 }
 
-function ClientDetails({ client, balance, trips, notifications }: { client: any; balance: number; trips: number; notifications: number }) {
+function ClientDetails({
+  client,
+  balance,
+  trips,
+  notifications,
+  updating,
+  updateClient,
+}: {
+  client: any;
+  balance: number;
+  trips: number;
+  notifications: number;
+  updating: boolean;
+  updateClient: (client: { fullName: string; email: string; phone: string; birthDate: string }) => void;
+}) {
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [birthDate, setBirthDate] = useState('');
+
+  useEffect(() => {
+    setFullName(client?.fullName || '');
+    setEmail(client?.email || '');
+    setPhone(client?.phone || '');
+    setBirthDate(client?.birthDate || '');
+  }, [client?.id, client?.fullName, client?.email, client?.phone, client?.birthDate]);
+
   if (!client) {
     return (
       <View style={[styles.card, styles.fullCard]}>
@@ -963,6 +1024,33 @@ function ClientDetails({ client, balance, trips, notifications }: { client: any;
   }
 
   const displayedBalance = Number(client?.balance ?? balance ?? 0);
+  const save = () => {
+    const cleanFullName = fullName.trim();
+    const cleanBirthDate = birthDate.trim();
+
+    if (!cleanFullName || !cleanBirthDate) {
+      Alert.alert('Informations obligatoires', 'Le nom complet et la date de naissance sont obligatoires.');
+      return;
+    }
+
+    Alert.alert(
+      'Confirmer la modification',
+      'Voulez-vous mettre à jour les informations de ce client ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Mettre à jour',
+          onPress: () =>
+            updateClient({
+              fullName: cleanFullName,
+              email: email.trim(),
+              phone: phone.trim(),
+              birthDate: cleanBirthDate,
+            }),
+        },
+      ],
+    );
+  };
 
   return (
     <View style={[styles.card, styles.fullCard]}>
@@ -978,18 +1066,23 @@ function ClientDetails({ client, balance, trips, notifications }: { client: any;
       </View>
 
       <View style={styles.detailsGrid}>
-        <InfoItem icon="person-outline" label="Nom" value={client?.fullName || 'Non renseigné'} />
-        <InfoItem icon="mail-outline" label="Email" value={client?.email || 'Non renseigné'} />
-        <InfoItem icon="call-outline" label="Téléphone" value={client?.phone || 'Non renseigné'} />
-        <InfoItem icon="calendar-outline" label="Naissance" value={client?.birthDate || 'Non renseignée'} />
+        <EditableInfoItem icon="person-outline" label="Nom complet" value={fullName} setValue={setFullName} />
+        <EditableInfoItem icon="mail-outline" label="Email" value={email} setValue={setEmail} keyboardType="email-address" />
+        <EditableInfoItem icon="call-outline" label="Téléphone" value={phone} setValue={setPhone} keyboardType="phone-pad" />
+        <EditableInfoItem icon="calendar-outline" label="Date de naissance" value={birthDate} setValue={setBirthDate} placeholder="JJ/MM/AAAA" />
         <InfoItem icon="wallet-outline" label="Solde" value={`${displayedBalance} FC`} />
         <InfoItem icon="bus-outline" label="Trajets" value={`${trips}`} />
         <InfoItem icon="notifications-outline" label="Notifications" value={`${notifications}`} />
       </View>
 
+      <TouchableOpacity style={styles.successButton} activeOpacity={0.9} disabled={updating} onPress={save}>
+        {updating ? <ActivityIndicator color="white" /> : <Ionicons name="save-outline" size={22} color="white" />}
+        <Text style={styles.primaryButtonText}>Mettre à jour</Text>
+      </TouchableOpacity>
+
       <View style={styles.lockedBox}>
         <Ionicons name="lock-closed-outline" size={21} color={TAKO_BLUE} />
-        <Text style={styles.lockedText}>ID permanent : non modifiable, même par administrateur.</Text>
+        <Text style={styles.lockedText}>ID permanent : non modifiable. Les autres informations verrouillées côté client peuvent être modifiées ici.</Text>
       </View>
     </View>
   );
@@ -1092,6 +1185,40 @@ function EmptyState({ icon, title, text }: { icon: keyof typeof Ionicons.glyphMa
       <Ionicons name={icon} size={44} color={TAKO_ACTION} />
       <Text style={styles.emptyTitle}>{title}</Text>
       <Text style={styles.emptyText}>{text}</Text>
+    </View>
+  );
+}
+
+function EditableInfoItem({
+  icon,
+  label,
+  value,
+  setValue,
+  keyboardType = 'default',
+  placeholder,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  setValue: (value: string) => void;
+  keyboardType?: 'default' | 'email-address' | 'phone-pad';
+  placeholder?: string;
+}) {
+  return (
+    <View style={styles.detailItem}>
+      <Ionicons name={icon} size={22} color={TAKO_ACTION} />
+      <View style={styles.detailTextWrap}>
+        <Text style={styles.detailLabel}>{label}</Text>
+        <TextInput
+          value={value}
+          onChangeText={setValue}
+          placeholder={placeholder || 'Non renseigné'}
+          placeholderTextColor="#8B95A5"
+          keyboardType={keyboardType}
+          autoCapitalize={keyboardType === 'email-address' ? 'none' : 'words'}
+          style={styles.detailInput}
+        />
+      </View>
     </View>
   );
 }
@@ -1644,6 +1771,15 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontSize: 15,
     fontWeight: '900',
+  },
+  detailInput: {
+    minHeight: 34,
+    color: '#1F2937',
+    fontSize: 15,
+    fontWeight: '900',
+    borderBottomWidth: 1,
+    borderBottomColor: '#D7E0EF',
+    paddingVertical: 4,
   },
   lockedBox: {
     flexDirection: 'row',

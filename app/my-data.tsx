@@ -14,6 +14,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { getClientProfile } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -37,6 +38,40 @@ export default function MyData() {
       router.replace('/login' as any);
     }
   }, [isAuthenticated, router]);
+
+  const syncClientProfile = async (silent = true) => {
+    if (!currentUser?.id || currentUser.id === '1000000001') {
+      return;
+    }
+
+    try {
+      if (!silent) {
+        setRefreshing(true);
+      }
+      const result = await getClientProfile(currentUser.id);
+      if (result?.client) {
+        setCurrentUser(result.client);
+        setEmail(result.client.email || '');
+        setPhone(result.client.phone || '');
+      }
+    } catch {
+      // La page garde les données locales si le réseau est momentanément indisponible.
+    } finally {
+      if (!silent) {
+        setRefreshing(false);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !currentUser?.id || currentUser.id === '1000000001') {
+      return undefined;
+    }
+
+    syncClientProfile(true);
+    const interval = setInterval(() => syncClientProfile(true), 3000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated, currentUser?.id]);
 
   const scrollToPhoneField = (delay = 120) => {
     setTimeout(() => {
@@ -74,10 +109,7 @@ export default function MyData() {
   };
 
   const refreshPage = () => {
-    setRefreshing(true);
-    setEmail(currentUser.email);
-    setPhone(currentUser.phone);
-    setTimeout(() => setRefreshing(false), 750);
+    syncClientProfile(false);
   };
 
   return (

@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
+import { getClientProfile, saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -44,6 +44,7 @@ export default function Home() {
   const setNfcCardBlocked = useStore((state: any) => state.setNfcCardBlocked);
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
+  const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const clearSession = useStore((state: any) => state.clearSession);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
@@ -78,6 +79,31 @@ export default function Home() {
       router.replace('/login' as any);
     }
   }, [isAuthenticated, isWeb, router]);
+
+  useEffect(() => {
+    if (!isAuthenticated || role !== 'passager' || !currentUser?.id || currentUser.id === '1000000001') {
+      return undefined;
+    }
+
+    let mounted = true;
+    const syncProfile = async () => {
+      try {
+        const result = await getClientProfile(currentUser.id);
+        if (mounted && result?.client) {
+          setCurrentUser(result.client);
+        }
+      } catch {
+        // L’accueil garde les données locales si le réseau est momentanément indisponible.
+      }
+    };
+
+    syncProfile();
+    const interval = setInterval(syncProfile, 3000);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
+  }, [currentUser?.id, isAuthenticated, role, setCurrentUser]);
 
   useEffect(() => {
     AsyncStorage.getItem(NFC_CARD_ID_KEY).then((storedCardId) => {
