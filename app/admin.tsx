@@ -62,6 +62,7 @@ export default function Admin() {
   const [agentRechargeId, setAgentRechargeId] = useState('');
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
+  const [rechargeFeedback, setRechargeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [clientLookupLoading, setClientLookupLoading] = useState(false);
   const [clientFeedback, setClientFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [agentRechargeLoading, setAgentRechargeLoading] = useState(false);
@@ -160,9 +161,12 @@ export default function Admin() {
   const confirmInternalRecharge = async () => {
     const cleanClientId = rechargeClientId.trim();
     const value = Number.parseInt(rechargeAmount, 10);
+    setRechargeFeedback(null);
 
     if (!cleanClientId || !Number.isFinite(value) || value <= 0) {
-      Alert.alert('Informations obligatoires', 'Entrez l’ID du client et le montant.');
+      const message = 'Entrez l’ID du client et le montant.';
+      setRechargeFeedback({ type: 'error', message });
+      Alert.alert('Informations obligatoires', message);
       return;
     }
 
@@ -171,19 +175,25 @@ export default function Admin() {
       const result = await createInternalRecharge({
         clientId: cleanClientId,
         amount: value,
-        agentId: currentUser?.id || 'ADMIN',
+        agentId: 'ADMIN',
       });
 
-      if (result?.client) {
-        setSelectedClient(result.client);
-        setClientId(cleanClientId);
+      if (!result?.client) {
+        throw new Error('Recharge non confirmée. Vérifiez l’ID du client.');
       }
 
+      setSelectedClient(result.client);
+      setClientId(cleanClientId);
+      setClientFeedback({ type: 'success', message: `Compte client trouvé : ${result.client.fullName || result.client.id}.` });
+
       setRechargeAmount('');
+      setRechargeFeedback({ type: 'success', message: `Recharge confirmée : ${value} FC ajouté au compte ${cleanClientId}.` });
       Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${cleanClientId}.`);
       setActiveSection('clients');
     } catch (error) {
-      Alert.alert('Recharge impossible', error instanceof Error ? error.message : 'Vérifiez l’ID du client.');
+      const message = error instanceof Error ? error.message : 'Vérifiez l’ID du client.';
+      setRechargeFeedback({ type: 'error', message });
+      Alert.alert('Recharge impossible', message);
     } finally {
       setRechargeLoading(false);
     }
@@ -387,6 +397,7 @@ export default function Admin() {
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                feedback={rechargeFeedback}
               />
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
@@ -415,6 +426,7 @@ export default function Admin() {
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                feedback={rechargeFeedback}
               />
               <ClientDetails client={activeClient} balance={balance} trips={trips.length} notifications={notifications.length} />
             </View>
@@ -472,6 +484,7 @@ export default function Admin() {
                 loading={rechargeLoading}
                 confirm={confirmInternalRecharge}
                 scan={() => router.push('/internal-recharge-scan' as any)}
+                feedback={rechargeFeedback}
               />
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Compte agent</Text>
@@ -650,6 +663,7 @@ function InternalRechargeCard({
   loading,
   confirm,
   scan,
+  feedback,
 }: {
   clientId: string;
   setClientId: (value: string) => void;
@@ -658,6 +672,7 @@ function InternalRechargeCard({
   loading: boolean;
   confirm: () => void;
   scan: () => void;
+  feedback: { type: 'success' | 'error'; message: string } | null;
 }) {
   return (
     <View style={[styles.card, styles.internalRechargeCard]}>
@@ -692,6 +707,19 @@ function InternalRechargeCard({
           style={styles.input}
         />
       </View>
+
+      {feedback ? (
+        <View style={[styles.feedbackBox, feedback.type === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
+          <Ionicons
+            name={feedback.type === 'error' ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+            size={20}
+            color={feedback.type === 'error' ? '#B42318' : '#087B35'}
+          />
+          <Text style={[styles.feedbackText, feedback.type === 'error' ? styles.feedbackErrorText : styles.feedbackSuccessText]}>
+            {feedback.message}
+          </Text>
+        </View>
+      ) : null}
 
       <TouchableOpacity style={styles.successButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
         {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={22} color="white" />}
