@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { createInternalRecharge, getAgentAccount } from '../services/api';
+import { activatePrepaidCard, createInternalRecharge, getAgentAccount, requestPrepaidCardCode } from '../services/api';
 import { useStore } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -23,8 +23,14 @@ export default function Agent() {
   const [clientId, setClientId] = useState(String(params.clientId || ''));
   const [amount, setAmount] = useState('');
   const [cardId, setCardId] = useState('');
+  const [prepaidCardId, setPrepaidCardId] = useState('');
+  const [prepaidPhone, setPrepaidPhone] = useState('');
+  const [prepaidCode, setPrepaidCode] = useState('');
   const [isReadingNfc, setIsReadingNfc] = useState(false);
+  const [isReadingPrepaidNfc, setIsReadingPrepaidNfc] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [prepaidLoading, setPrepaidLoading] = useState(false);
+  const [prepaidMessage, setPrepaidMessage] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
@@ -137,6 +143,89 @@ export default function Agent() {
     } finally {
       setIsReadingNfc(false);
       manager?.cancelTechnologyRequest?.().catch(() => {});
+    }
+  };
+
+  const readPrepaidNfcCard = async () => {
+    let manager: { cancelTechnologyRequest?: () => Promise<void> } | null = null;
+
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('NFC indisponible', 'La lecture NFC fonctionne sur l’application mobile installée.');
+        return;
+      }
+
+      setIsReadingPrepaidNfc(true);
+      const module = await import('react-native-nfc-manager');
+      const NfcManager = module.default;
+      const { NfcTech } = module;
+      manager = NfcManager;
+      await NfcManager.requestTechnology(NfcTech.Ndef, {
+        alertMessage: 'Approchez la carte NFC vierge',
+      });
+      const tag = await NfcManager.getTag();
+      const nextCardId = getCardId(tag);
+
+      if (!nextCardId) {
+        Alert.alert('Carte non reconnue', "Impossible de lire l'identifiant NFC.");
+        return;
+      }
+
+      setPrepaidCardId(nextCardId);
+      setPrepaidMessage('Carte NFC vierge lue. Entrez le numéro puis envoyez le code.');
+    } catch {
+      Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
+    } finally {
+      setIsReadingPrepaidNfc(false);
+      manager?.cancelTechnologyRequest?.().catch(() => {});
+    }
+  };
+
+  const sendPrepaidCode = async () => {
+    const cleanPhone = prepaidPhone.trim();
+    if (!cleanPhone) {
+      Alert.alert('Téléphone obligatoire', 'Entrez le numéro de téléphone du client.');
+      return;
+    }
+
+    try {
+      setPrepaidLoading(true);
+      const result = await requestPrepaidCardCode(cleanPhone);
+      setPrepaidMessage(result?.code ? `Code généré : ${result.code}. Entrez-le pour confirmer.` : 'Code envoyé. Entrez le code reçu.');
+    } catch (error) {
+      Alert.alert('Code non envoyé', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setPrepaidLoading(false);
+    }
+  };
+
+  const confirmPrepaidCard = async () => {
+    const cleanPhone = prepaidPhone.trim();
+    const cleanCode = prepaidCode.trim();
+    const cleanCardId = prepaidCardId.trim();
+
+    if (!cleanPhone || !cleanCode || !cleanCardId) {
+      Alert.alert('Informations obligatoires', 'Lisez la carte, entrez le téléphone et le code reçu.');
+      return;
+    }
+
+    try {
+      setPrepaidLoading(true);
+      const result = await activatePrepaidCard({
+        phone: cleanPhone,
+        code: cleanCode,
+        cardId: cleanCardId,
+        operatorId: currentUser?.id || 'AGENT',
+      });
+
+      setPrepaidCode('');
+      setPrepaidCardId('');
+      setPrepaidMessage(`Carte activée pour le compte ${result?.client?.id}.`);
+      Alert.alert('Carte activée', `Carte prépayée associée au compte ${result?.client?.id}.`);
+    } catch (error) {
+      Alert.alert('Activation impossible', error instanceof Error ? error.message : 'Vérifiez le code ou la carte.');
+    } finally {
+      setPrepaidLoading(false);
     }
   };
 
@@ -308,6 +397,61 @@ export default function Agent() {
             <Text style={styles.confirmButtonText}>Confirmer la recharge</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={[styles.card, styles.prepaidCard]}>
+          <Text style={styles.sectionTitle}>Carte prépayée</Text>
+          <Text style={styles.sectionText}>
+            Activez une carte NFC vierge pour un client sans smartphone, avec confirmation par téléphone.
+          </Text>
+
+          <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingPrepaidNfc} onPress={readPrepaidNfcCard}>
+            {isReadingPrepaidNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={25} color={TAKO_BLUE} />}
+            <Text style={styles.nfcButtonText}>{isReadingPrepaidNfc ? 'Lecture NFC...' : 'Lire carte vierge NFC'}</Text>
+          </TouchableOpacity>
+
+          {!!prepaidCardId && (
+            <View style={styles.cardReadBox}>
+              <MaterialCommunityIcons name="credit-card-check" size={21} color={TAKO_GREEN} />
+              <Text style={styles.cardReadText}>Carte vierge lue : {prepaidCardId}</Text>
+            </View>
+          )}
+
+          <View style={styles.inputBox}>
+            <Ionicons name="call-outline" size={24} color="#7B8798" />
+            <TextInput
+              placeholder="Numéro du client"
+              placeholderTextColor="#8B95A5"
+              value={prepaidPhone}
+              onChangeText={setPrepaidPhone}
+              keyboardType="phone-pad"
+              style={styles.input}
+            />
+          </View>
+
+          <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={sendPrepaidCode}>
+            {prepaidLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="send-outline" size={22} color={TAKO_BLUE} />}
+            <Text style={styles.nfcButtonText}>Envoyer le code</Text>
+          </TouchableOpacity>
+
+          <View style={styles.inputBox}>
+            <Ionicons name="keypad-outline" size={24} color="#7B8798" />
+            <TextInput
+              placeholder="Code reçu"
+              placeholderTextColor="#8B95A5"
+              value={prepaidCode}
+              onChangeText={setPrepaidCode}
+              keyboardType="number-pad"
+              style={styles.input}
+            />
+          </View>
+
+          {!!prepaidMessage && <Text style={styles.prepaidMessage}>{prepaidMessage}</Text>}
+
+          <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={confirmPrepaidCard}>
+            {prepaidLoading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={24} color="white" />}
+            <Text style={styles.confirmButtonText}>Activer la carte</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -462,6 +606,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#D7E0EF',
     padding: 18,
+    marginBottom: 18,
+  },
+  prepaidCard: {
+    borderTopWidth: 4,
+    borderTopColor: TAKO_ACTION,
+  },
+  sectionTitle: {
+    color: TAKO_BLUE,
+    fontSize: 23,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  sectionText: {
+    color: '#5C667A',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 20,
+    marginBottom: 14,
   },
   agentBalanceCard: {
     borderRadius: 18,
@@ -551,6 +713,13 @@ const styles = StyleSheet.create({
     color: '#087B35',
     fontSize: 13,
     fontWeight: '900',
+  },
+  prepaidMessage: {
+    color: TAKO_BLUE,
+    fontSize: 13,
+    fontWeight: '900',
+    lineHeight: 19,
+    marginBottom: 8,
   },
   inputBox: {
     height: 62,

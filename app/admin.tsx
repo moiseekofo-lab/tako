@@ -3,7 +3,17 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { approveUser, createInternalRecharge, findClientById, getAgentAccount, getPendingUsers, rechargeAgent, updateClientByAdmin } from '../services/api';
+import {
+  activatePrepaidCard,
+  approveUser,
+  createInternalRecharge,
+  findClientById,
+  getAgentAccount,
+  getPendingUsers,
+  rechargeAgent,
+  requestPrepaidCardCode,
+  updateClientByAdmin,
+} from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
 const TAKO_BLUE = '#061F68';
@@ -61,10 +71,16 @@ export default function Admin() {
   const [rechargeClientId, setRechargeClientId] = useState(String(params.clientId || ''));
   const [rechargeAmount, setRechargeAmount] = useState('');
   const [rechargeCardId, setRechargeCardId] = useState('');
+  const [prepaidCardId, setPrepaidCardId] = useState('');
+  const [prepaidPhone, setPrepaidPhone] = useState('');
+  const [prepaidCode, setPrepaidCode] = useState('');
   const [agentRechargeId, setAgentRechargeId] = useState('');
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
   const [isReadingNfc, setIsReadingNfc] = useState(false);
+  const [isReadingPrepaidNfc, setIsReadingPrepaidNfc] = useState(false);
+  const [prepaidLoading, setPrepaidLoading] = useState(false);
+  const [prepaidFeedback, setPrepaidFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [rechargeFeedback, setRechargeFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [clientLookupLoading, setClientLookupLoading] = useState(false);
   const [clientUpdateLoading, setClientUpdateLoading] = useState(false);
@@ -255,6 +271,109 @@ export default function Admin() {
     } finally {
       setIsReadingNfc(false);
       manager?.cancelTechnologyRequest?.().catch(() => {});
+    }
+  };
+
+  const readPrepaidNfcCard = async () => {
+    let manager: { cancelTechnologyRequest?: () => Promise<void> } | null = null;
+
+    try {
+      if (Platform.OS === 'web') {
+        Alert.alert('NFC indisponible', 'La lecture NFC fonctionne sur l’application mobile installée.');
+        return;
+      }
+
+      setIsReadingPrepaidNfc(true);
+      const module = await import('react-native-nfc-manager');
+      const NfcManager = module.default;
+      const { NfcTech } = module;
+      manager = NfcManager;
+      await NfcManager.requestTechnology(NfcTech.Ndef, {
+        alertMessage: 'Approchez la carte NFC vierge',
+      });
+      const tag = await NfcManager.getTag();
+      const nextCardId = getCardId(tag);
+
+      if (!nextCardId) {
+        Alert.alert('Carte non reconnue', "Impossible de lire l'identifiant NFC.");
+        return;
+      }
+
+      setPrepaidCardId(nextCardId);
+      setPrepaidFeedback({ type: 'success', message: 'Carte NFC vierge lue. Entrez le numéro puis envoyez le code.' });
+    } catch {
+      Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
+    } finally {
+      setIsReadingPrepaidNfc(false);
+      manager?.cancelTechnologyRequest?.().catch(() => {});
+    }
+  };
+
+  const sendPrepaidCode = async () => {
+    const cleanPhone = prepaidPhone.trim();
+    setPrepaidFeedback(null);
+
+    if (!cleanPhone) {
+      const message = 'Entrez le numéro de téléphone du client.';
+      setPrepaidFeedback({ type: 'error', message });
+      Alert.alert('Téléphone obligatoire', message);
+      return;
+    }
+
+    try {
+      setPrepaidLoading(true);
+      const result = await requestPrepaidCardCode(cleanPhone);
+      setPrepaidFeedback({
+        type: 'success',
+        message: result?.code
+          ? `Code généré : ${result.code}. Entrez-le pour confirmer le numéro.`
+          : 'Code envoyé. Entrez le code reçu pour confirmer le numéro.',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossible d’envoyer le code.';
+      setPrepaidFeedback({ type: 'error', message });
+      Alert.alert('Code non envoyé', message);
+    } finally {
+      setPrepaidLoading(false);
+    }
+  };
+
+  const confirmPrepaidCard = async () => {
+    const cleanPhone = prepaidPhone.trim();
+    const cleanCode = prepaidCode.trim();
+    const cleanCardId = prepaidCardId.trim();
+    setPrepaidFeedback(null);
+
+    if (!cleanPhone || !cleanCode || !cleanCardId) {
+      const message = 'Lisez la carte NFC, entrez le téléphone et le code reçu.';
+      setPrepaidFeedback({ type: 'error', message });
+      Alert.alert('Informations obligatoires', message);
+      return;
+    }
+
+    try {
+      setPrepaidLoading(true);
+      const result = await activatePrepaidCard({
+        phone: cleanPhone,
+        code: cleanCode,
+        cardId: cleanCardId,
+        operatorId: currentUser?.id || 'ADMIN',
+      });
+
+      setSelectedClient(result.client);
+      setClientId(result.client.id);
+      setRechargeClientId(result.client.id);
+      setPrepaidCode('');
+      setPrepaidCardId('');
+      setPrepaidFeedback({ type: 'success', message: `Carte activée pour le compte ${result.client.id}.` });
+      Alert.alert('Carte activée', `Carte prépayée associée au compte ${result.client.id}.`);
+      setActiveSection('clients');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Impossible d’activer cette carte.';
+      setPrepaidFeedback({ type: 'error', message });
+      Alert.alert('Activation impossible', message);
+    } finally {
+      setPrepaidLoading(false);
     }
   };
 
@@ -507,6 +626,19 @@ export default function Admin() {
                 readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
               />
+              <PrepaidCardActivationCard
+                phone={prepaidPhone}
+                setPhone={setPrepaidPhone}
+                code={prepaidCode}
+                setCode={setPrepaidCode}
+                cardId={prepaidCardId}
+                readNfc={readPrepaidNfcCard}
+                nfcLoading={isReadingPrepaidNfc}
+                loading={prepaidLoading}
+                sendCode={sendPrepaidCode}
+                confirm={confirmPrepaidCard}
+                feedback={prepaidFeedback}
+              />
               <DriverCard driverStatus={driverStatus} approve={approve} />
               <OperationsCard
                 route={driverTripInfo.route}
@@ -539,6 +671,19 @@ export default function Admin() {
                 nfcLoading={isReadingNfc}
                 readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
+              />
+              <PrepaidCardActivationCard
+                phone={prepaidPhone}
+                setPhone={setPrepaidPhone}
+                code={prepaidCode}
+                setCode={setPrepaidCode}
+                cardId={prepaidCardId}
+                readNfc={readPrepaidNfcCard}
+                nfcLoading={isReadingPrepaidNfc}
+                loading={prepaidLoading}
+                sendCode={sendPrepaidCode}
+                confirm={confirmPrepaidCard}
+                feedback={prepaidFeedback}
               />
               <ClientDetails
                 client={activeClient}
@@ -608,6 +753,19 @@ export default function Admin() {
                 nfcLoading={isReadingNfc}
                 readNfc={readAdminNfcCard}
                 feedback={rechargeFeedback}
+              />
+              <PrepaidCardActivationCard
+                phone={prepaidPhone}
+                setPhone={setPrepaidPhone}
+                code={prepaidCode}
+                setCode={setPrepaidCode}
+                cardId={prepaidCardId}
+                readNfc={readPrepaidNfcCard}
+                nfcLoading={isReadingPrepaidNfc}
+                loading={prepaidLoading}
+                sendCode={sendPrepaidCode}
+                confirm={confirmPrepaidCard}
+                feedback={prepaidFeedback}
               />
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Compte agent</Text>
@@ -950,6 +1108,100 @@ function AgentRechargeCard({
       <TouchableOpacity style={styles.primaryButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
         {loading ? <ActivityIndicator color="white" /> : <Ionicons name="wallet-outline" size={22} color="white" />}
         <Text style={styles.primaryButtonText}>Envoyer au compte agent</Text>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function PrepaidCardActivationCard({
+  phone,
+  setPhone,
+  code,
+  setCode,
+  cardId,
+  readNfc,
+  nfcLoading,
+  loading,
+  sendCode,
+  confirm,
+  feedback,
+}: {
+  phone: string;
+  setPhone: (value: string) => void;
+  code: string;
+  setCode: (value: string) => void;
+  cardId: string;
+  readNfc: () => void;
+  nfcLoading: boolean;
+  loading: boolean;
+  sendCode: () => void;
+  confirm: () => void;
+  feedback: { type: 'success' | 'error'; message: string } | null;
+}) {
+  return (
+    <View style={[styles.card, styles.prepaidCard]}>
+      <Text style={styles.cardTitle}>Carte prépayée</Text>
+      <Text style={styles.cardText}>
+        Pour un client sans smartphone : lisez une carte NFC vierge, confirmez son numéro par code, puis activez la carte.
+      </Text>
+
+      <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={nfcLoading} onPress={readNfc}>
+        {nfcLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={23} color={TAKO_BLUE} />}
+        <Text style={styles.secondaryButtonText}>{nfcLoading ? 'Lecture NFC...' : 'Lire carte vierge NFC'}</Text>
+      </TouchableOpacity>
+
+      {!!cardId && (
+        <View style={styles.cardReadBox}>
+          <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
+          <Text style={styles.cardReadText}>Carte vierge lue : {cardId}</Text>
+        </View>
+      )}
+
+      <View style={styles.inputBox}>
+        <Ionicons name="call-outline" size={24} color="#7B8798" />
+        <TextInput
+          placeholder="Numéro de téléphone"
+          placeholderTextColor="#8B95A5"
+          value={phone}
+          onChangeText={setPhone}
+          keyboardType="phone-pad"
+          style={styles.input}
+        />
+      </View>
+
+      <TouchableOpacity style={styles.secondaryButton} activeOpacity={0.9} disabled={loading} onPress={sendCode}>
+        {loading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="send-outline" size={22} color={TAKO_BLUE} />}
+        <Text style={styles.secondaryButtonText}>Envoyer le code</Text>
+      </TouchableOpacity>
+
+      <View style={styles.inputBox}>
+        <Ionicons name="keypad-outline" size={24} color="#7B8798" />
+        <TextInput
+          placeholder="Code reçu"
+          placeholderTextColor="#8B95A5"
+          value={code}
+          onChangeText={setCode}
+          keyboardType="number-pad"
+          style={styles.input}
+        />
+      </View>
+
+      {feedback ? (
+        <View style={[styles.feedbackBox, feedback.type === 'error' ? styles.feedbackError : styles.feedbackSuccess]}>
+          <Ionicons
+            name={feedback.type === 'error' ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+            size={20}
+            color={feedback.type === 'error' ? '#B42318' : '#087B35'}
+          />
+          <Text style={[styles.feedbackText, feedback.type === 'error' ? styles.feedbackErrorText : styles.feedbackSuccessText]}>
+            {feedback.message}
+          </Text>
+        </View>
+      ) : null}
+
+      <TouchableOpacity style={styles.successButton} activeOpacity={0.9} disabled={loading} onPress={confirm}>
+        {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={22} color="white" />}
+        <Text style={styles.primaryButtonText}>Activer la carte</Text>
       </TouchableOpacity>
     </View>
   );
@@ -1506,6 +1758,10 @@ const styles = StyleSheet.create({
   internalRechargeCard: {
     borderTopWidth: 4,
     borderTopColor: TAKO_GREEN,
+  },
+  prepaidCard: {
+    borderTopWidth: 4,
+    borderTopColor: TAKO_ACTION,
   },
   fullCard: {
     flexBasis: '100%',

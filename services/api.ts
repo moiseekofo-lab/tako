@@ -148,6 +148,21 @@ export function setNfcCardBlocked(clientId: string, blocked: boolean) {
   });
 }
 
+export function requestPrepaidCardCode(phone: string) {
+  return postJson('/prepaid-cards/request-code', {
+    phone,
+  });
+}
+
+export function activatePrepaidCard(params: {
+  phone: string;
+  code: string;
+  cardId: string;
+  operatorId?: string;
+}) {
+  return postJson('/prepaid-cards/activate', params);
+}
+
 export function saveDriverTripSettings(params: {
   driverId?: string;
   busPlate: string;

@@ -533,6 +533,100 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/prepaid-cards/request-code') {
+    const body = await readJson(request);
+    const phone = normalizeContact(body.phone);
+
+    if (!phone || phone.includes('@')) {
+      sendJson(response, 400, { ok: false, error: 'Numéro de téléphone obligatoire' });
+      return;
+    }
+
+    const code = generateCode();
+    await query(
+      `
+        INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at)
+        VALUES ($1, $2, 'prepaid-card', NOW() + INTERVAL '10 minutes', NOW())
+        ON CONFLICT (contact)
+        DO UPDATE SET code = EXCLUDED.code, purpose = EXCLUDED.purpose, expires_at = EXCLUDED.expires_at, created_at = NOW();
+      `,
+      [phone, code],
+    );
+
+    sendJson(response, 200, {
+      ok: true,
+      message: 'Code envoyé au numéro du client',
+      delivery: 'sms-pending',
+      code,
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/prepaid-cards/activate') {
+    const body = await readJson(request);
+    const phone = normalizeContact(body.phone);
+    const code = String(body.code || '').trim();
+    const cardId = String(body.cardId || '').trim();
+
+    if (!phone || phone.includes('@') || !code || !cardId) {
+      sendJson(response, 400, { ok: false, error: 'Téléphone, code et carte NFC obligatoires' });
+      return;
+    }
+
+    await verifyStoredCode(phone, code, 'prepaid-card');
+
+    const cardOwner = await query('SELECT client_id FROM nfc_cards WHERE card_id = $1 LIMIT 1;', [cardId]);
+    if (cardOwner.rowCount) {
+      sendJson(response, 409, { ok: false, error: 'Cette carte NFC est déjà activée' });
+      return;
+    }
+
+    let userResult = await query('SELECT * FROM users WHERE phone = $1 AND role = $2 LIMIT 1;', [phone, 'passager']);
+    let user = userResult.rows[0];
+
+    if (!user) {
+      const id = await generateUniqueClientId();
+      const lastDigits = phone.slice(-4) || id.slice(-4);
+      userResult = await query(
+        `
+          INSERT INTO users (id, full_name, email, phone, birth_date, password_hash, role, status)
+          VALUES ($1, $2, NULL, $3, $4, $5, 'passager', 'active')
+          RETURNING *;
+        `,
+        [id, `Client carte ${lastDigits}`, phone, 'Non renseignée', hashPassword(crypto.randomBytes(18).toString('hex'))],
+      );
+      user = userResult.rows[0];
+    }
+
+    await query(
+      `
+        INSERT INTO nfc_cards (client_id, card_id, blocked, updated_at)
+        VALUES ($1, $2, FALSE, NOW())
+        ON CONFLICT (client_id)
+        DO UPDATE SET card_id = EXCLUDED.card_id, blocked = FALSE, updated_at = NOW();
+      `,
+      [user.id, cardId],
+    );
+
+    await createNotification({
+      clientId: user.id,
+      title: 'Carte prépayée activée',
+      message: 'Votre carte NFC prépayée est prête pour le transport.',
+      type: 'nfc',
+    });
+
+    sendJson(response, 200, {
+      ok: true,
+      client: publicUser(user),
+      card: {
+        clientId: user.id,
+        cardId,
+        blocked: false,
+      },
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/auth/register') {
     const body = await readJson(request);
     const contact = normalizeContact(body.contact);
