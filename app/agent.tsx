@@ -338,119 +338,191 @@ export default function Agent() {
         </View>
 
         <View style={styles.card}>
-          <TouchableOpacity
-            style={styles.scanButton}
-            activeOpacity={0.9}
-            onPress={() =>
-              router.push({
-                pathname: '/internal-recharge-scan',
-                params: { returnTo: 'agent' },
-              } as any)
-            }>
-            <Ionicons name="qr-code-outline" size={24} color="white" />
-            <Text style={styles.scanButtonText}>Scanner QR client</Text>
-          </TouchableOpacity>
+          <Text style={styles.sectionTitle}>Recharger un client</Text>
+          <Text style={styles.sectionText}>Choisissez une seule méthode pour identifier le client, puis ajoutez le montant.</Text>
 
-          <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingNfc} onPress={readNfcCard}>
-            {isReadingNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={25} color={TAKO_BLUE} />}
-            <Text style={styles.nfcButtonText}>{isReadingNfc ? 'Lecture NFC...' : 'Lire carte NFC'}</Text>
-          </TouchableOpacity>
-
-          {!!cardId && (
-            <View style={styles.cardReadBox}>
-              <MaterialCommunityIcons name="credit-card-check" size={21} color={TAKO_GREEN} />
-              <Text style={styles.cardReadText}>Carte lue : {cardId}</Text>
+          <View style={styles.optionBlock}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <Ionicons name="qr-code-outline" size={20} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>Par QR code</Text>
+                <Text style={styles.optionSubtitle}>Scanner le QR du compte client.</Text>
+              </View>
             </View>
-          )}
-
-          <View style={styles.inputBox}>
-            <Ionicons name="finger-print" size={24} color="#7B8798" />
-            <TextInput
-              placeholder="ID du passager"
-              placeholderTextColor="#8B95A5"
-              value={clientId}
-              onChangeText={(value) => {
-                setClientId(value);
-                if (value.trim()) {
-                  setCardId('');
-                }
-              }}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
+            <TouchableOpacity
+              style={styles.scanButton}
+              activeOpacity={0.9}
+              onPress={() =>
+                router.push({
+                  pathname: '/internal-recharge-scan',
+                  params: { returnTo: 'agent' },
+                } as any)
+              }>
+              <Ionicons name="scan-outline" size={22} color="white" />
+              <Text style={styles.scanButtonText}>Scanner QR client</Text>
+            </TouchableOpacity>
           </View>
 
-          <View style={styles.inputBox}>
-            <Text style={styles.currency}>FC</Text>
-            <TextInput
-              placeholder="Montant"
-              placeholderTextColor="#8B95A5"
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
+          <View style={styles.optionBlock}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <MaterialCommunityIcons name="nfc" size={21} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>Par carte NFC</Text>
+                <Text style={styles.optionSubtitle}>Lire la carte du passager.</Text>
+              </View>
+            </View>
+            <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingNfc} onPress={readNfcCard}>
+              {isReadingNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={24} color={TAKO_BLUE} />}
+              <Text style={styles.nfcButtonText}>{isReadingNfc ? 'Lecture NFC...' : 'Lire carte NFC'}</Text>
+            </TouchableOpacity>
+            {!!cardId && (
+              <View style={styles.cardReadBox}>
+                <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
+                <Text style={styles.cardReadText}>Carte lue : {cardId}</Text>
+              </View>
+            )}
           </View>
 
-          <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={loading} onPress={confirmRecharge}>
-            {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={24} color="white" />}
-            <Text style={styles.confirmButtonText}>Confirmer la recharge</Text>
-          </TouchableOpacity>
+          <View style={styles.optionBlock}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <Ionicons name="finger-print" size={20} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>Par ID client</Text>
+                <Text style={styles.optionSubtitle}>Entrer l’ID numérique du client.</Text>
+              </View>
+            </View>
+            <View style={styles.inputBox}>
+              <Ionicons name="person-circle-outline" size={23} color="#7B8798" />
+              <TextInput
+                placeholder="ID du passager"
+                placeholderTextColor="#8B95A5"
+                value={clientId}
+                onChangeText={(value) => {
+                  setClientId(value);
+                  if (value.trim()) {
+                    setCardId('');
+                  }
+                }}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+            </View>
+          </View>
+
+          <View style={[styles.optionBlock, styles.amountBlock]}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <Ionicons name="cash-outline" size={20} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>Montant</Text>
+                <Text style={styles.optionSubtitle}>Saisir le montant reçu en espèces.</Text>
+              </View>
+            </View>
+            <View style={styles.inputBox}>
+              <Text style={styles.currency}>FC</Text>
+              <TextInput
+                placeholder="Montant"
+                placeholderTextColor="#8B95A5"
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+            </View>
+            <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={loading} onPress={confirmRecharge}>
+              {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={23} color="white" />}
+              <Text style={styles.confirmButtonText}>Confirmer la recharge</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <View style={[styles.card, styles.prepaidCard]}>
           <Text style={styles.sectionTitle}>Carte prépayée</Text>
-          <Text style={styles.sectionText}>
-            Activez une carte NFC vierge pour un client sans smartphone, avec confirmation par téléphone.
-          </Text>
+          <Text style={styles.sectionText}>Activez une carte NFC vierge pour un client sans smartphone.</Text>
 
-          <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingPrepaidNfc} onPress={readPrepaidNfcCard}>
-            {isReadingPrepaidNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={25} color={TAKO_BLUE} />}
-            <Text style={styles.nfcButtonText}>{isReadingPrepaidNfc ? 'Lecture NFC...' : 'Lire carte vierge NFC'}</Text>
-          </TouchableOpacity>
-
-          {!!prepaidCardId && (
-            <View style={styles.cardReadBox}>
-              <MaterialCommunityIcons name="credit-card-check" size={21} color={TAKO_GREEN} />
-              <Text style={styles.cardReadText}>Carte vierge lue : {prepaidCardId}</Text>
+          <View style={styles.optionBlock}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <MaterialCommunityIcons name="credit-card-plus-outline" size={21} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>1. Lire la carte</Text>
+                <Text style={styles.optionSubtitle}>Approcher une carte NFC vierge.</Text>
+              </View>
             </View>
-          )}
-
-          <View style={styles.inputBox}>
-            <Ionicons name="call-outline" size={24} color="#7B8798" />
-            <TextInput
-              placeholder="Numéro du client"
-              placeholderTextColor="#8B95A5"
-              value={prepaidPhone}
-              onChangeText={setPrepaidPhone}
-              keyboardType="phone-pad"
-              style={styles.input}
-            />
+            <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingPrepaidNfc} onPress={readPrepaidNfcCard}>
+              {isReadingPrepaidNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={24} color={TAKO_BLUE} />}
+              <Text style={styles.nfcButtonText}>{isReadingPrepaidNfc ? 'Lecture NFC...' : 'Lire carte vierge NFC'}</Text>
+            </TouchableOpacity>
+            {!!prepaidCardId && (
+              <View style={styles.cardReadBox}>
+                <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
+                <Text style={styles.cardReadText}>Carte vierge lue : {prepaidCardId}</Text>
+              </View>
+            )}
           </View>
 
-          <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={sendPrepaidCode}>
-            {prepaidLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="send-outline" size={22} color={TAKO_BLUE} />}
-            <Text style={styles.nfcButtonText}>Envoyer le code</Text>
-          </TouchableOpacity>
-
-          <View style={styles.inputBox}>
-            <Ionicons name="keypad-outline" size={24} color="#7B8798" />
-            <TextInput
-              placeholder="Code reçu"
-              placeholderTextColor="#8B95A5"
-              value={prepaidCode}
-              onChangeText={setPrepaidCode}
-              keyboardType="number-pad"
-              style={styles.input}
-            />
+          <View style={styles.optionBlock}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <Ionicons name="call-outline" size={20} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>2. Confirmer le numéro</Text>
+                <Text style={styles.optionSubtitle}>Un code est envoyé au téléphone du client.</Text>
+              </View>
+            </View>
+            <View style={styles.inputBox}>
+              <Ionicons name="call-outline" size={23} color="#7B8798" />
+              <TextInput
+                placeholder="Numéro du client"
+                placeholderTextColor="#8B95A5"
+                value={prepaidPhone}
+                onChangeText={setPrepaidPhone}
+                keyboardType="phone-pad"
+                style={styles.input}
+              />
+            </View>
+            <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={sendPrepaidCode}>
+              {prepaidLoading ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="send-outline" size={21} color={TAKO_BLUE} />}
+              <Text style={styles.nfcButtonText}>Envoyer le code</Text>
+            </TouchableOpacity>
           </View>
 
-          {!!prepaidMessage && <Text style={styles.prepaidMessage}>{prepaidMessage}</Text>}
-
-          <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={confirmPrepaidCard}>
-            {prepaidLoading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={24} color="white" />}
-            <Text style={styles.confirmButtonText}>Activer la carte</Text>
-          </TouchableOpacity>
+          <View style={[styles.optionBlock, styles.amountBlock]}>
+            <View style={styles.optionHeader}>
+              <View style={styles.optionIcon}>
+                <Ionicons name="keypad-outline" size={20} color={TAKO_BLUE} />
+              </View>
+              <View style={styles.optionTextWrap}>
+                <Text style={styles.optionTitle}>3. Activer la carte</Text>
+                <Text style={styles.optionSubtitle}>Entrer le code reçu puis associer la carte.</Text>
+              </View>
+            </View>
+            <View style={styles.inputBox}>
+              <Ionicons name="keypad-outline" size={23} color="#7B8798" />
+              <TextInput
+                placeholder="Code reçu"
+                placeholderTextColor="#8B95A5"
+                value={prepaidCode}
+                onChangeText={setPrepaidCode}
+                keyboardType="number-pad"
+                style={styles.input}
+              />
+            </View>
+            {!!prepaidMessage && <Text style={styles.prepaidMessage}>{prepaidMessage}</Text>}
+            <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={prepaidLoading} onPress={confirmPrepaidCard}>
+              {prepaidLoading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={23} color="white" />}
+              <Text style={styles.confirmButtonText}>Activer la carte</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -517,7 +589,7 @@ const styles = StyleSheet.create({
   },
   menuName: {
     color: TAKO_BLUE,
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
   },
   menuMeta: {
@@ -625,6 +697,45 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 14,
   },
+  optionBlock: {
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E0E8F4',
+    backgroundColor: '#FBFCFF',
+    padding: 12,
+    marginBottom: 12,
+  },
+  amountBlock: {
+    marginBottom: 0,
+  },
+  optionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 10,
+  },
+  optionIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#EAF3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionTextWrap: {
+    flex: 1,
+  },
+  optionTitle: {
+    color: TAKO_BLUE,
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  optionSubtitle: {
+    color: '#6A7486',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
+  },
   agentBalanceCard: {
     borderRadius: 18,
     backgroundColor: TAKO_BLUE,
@@ -667,22 +778,21 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   scanButton: {
-    height: 62,
+    height: 52,
     borderRadius: 12,
     backgroundColor: TAKO_BLUE,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginBottom: 12,
   },
   scanButtonText: {
     color: 'white',
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
   },
   nfcButton: {
-    height: 60,
+    height: 50,
     borderRadius: 12,
     backgroundColor: '#EAF3FF',
     borderWidth: 1,
@@ -691,11 +801,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginBottom: 14,
   },
   nfcButtonText: {
     color: TAKO_BLUE,
-    fontSize: 17,
+    fontSize: 15,
     fontWeight: '900',
   },
   cardReadBox: {
@@ -722,39 +831,38 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   inputBox: {
-    height: 62,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderRadius: 12,
     backgroundColor: '#F4F5F9',
     paddingHorizontal: 16,
-    marginBottom: 14,
   },
   currency: {
     color: TAKO_BLUE,
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
   input: {
     flex: 1,
     color: '#202836',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '800',
   },
   confirmButton: {
-    height: 66,
+    height: 56,
     borderRadius: 14,
     backgroundColor: TAKO_GREEN,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
-    marginTop: 8,
+    marginTop: 4,
   },
   confirmButtonText: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
 });
