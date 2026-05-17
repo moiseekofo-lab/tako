@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -35,6 +35,8 @@ export default function Register() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSendingCode, setIsSendingCode] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
 
@@ -85,20 +87,38 @@ export default function Register() {
     return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
   };
 
+  useEffect(() => {
+    if (resendCooldown <= 0) {
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setResendCooldown((value) => Math.max(0, value - 1));
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
   const handleSendCode = async () => {
-    const cleanContact = contact.trim();
+    if (isSendingCode || resendCooldown > 0) {
+      return;
+    }
+
+    const cleanContact = (step === 'code' ? verifiedContact : contact).trim();
     if (!isValidContact(cleanContact)) {
       Alert.alert('Information manquante', 'Entrez un email ou un numéro valide pour recevoir le code.');
       return;
     }
 
     try {
+      setIsSendingCode(true);
       const result = await requestVerificationCode(cleanContact, 'register');
       const nextCode = result?.code ? String(result.code) : '';
       setSentCode(nextCode);
       setVerifiedContact(cleanContact);
       setVerificationCode('');
       setStep('code');
+      setResendCooldown(30);
       Alert.alert(
         'Code envoyé',
         nextCode
@@ -107,6 +127,8 @@ export default function Register() {
       );
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
+    } finally {
+      setIsSendingCode(false);
     }
   };
 
@@ -235,8 +257,12 @@ export default function Register() {
                 />
               </View>
 
-              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleSendCode}>
-                <Text style={styles.btnText}>Recevoir le code</Text>
+              <TouchableOpacity
+                style={[styles.btn, isSendingCode && styles.disabledBtn]}
+                activeOpacity={0.9}
+                disabled={isSendingCode}
+                onPress={handleSendCode}>
+                <Text style={styles.btnText}>{isSendingCode ? 'Envoi...' : 'Recevoir le code'}</Text>
               </TouchableOpacity>
             </>
           ) : null}
@@ -265,8 +291,14 @@ export default function Register() {
                 <Text style={styles.btnText}>{isVerifyingCode ? 'Vérification...' : 'Confirmer'}</Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={styles.textButton} activeOpacity={0.85} onPress={handleSendCode}>
-                <Text style={styles.textButtonLabel}>Renvoyer le code</Text>
+              <TouchableOpacity
+                style={styles.textButton}
+                activeOpacity={0.85}
+                disabled={isSendingCode || resendCooldown > 0}
+                onPress={handleSendCode}>
+                <Text style={[styles.textButtonLabel, (isSendingCode || resendCooldown > 0) && styles.disabledTextButtonLabel]}>
+                  {isSendingCode ? 'Envoi...' : resendCooldown > 0 ? ('Renvoyer dans ' + resendCooldown + 's') : 'Renvoyer le code'}
+                </Text>
               </TouchableOpacity>
             </>
           ) : null}
@@ -626,6 +658,9 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '900',
   },
+  disabledBtn: {
+    opacity: 0.65,
+  },
   textButton: {
     alignSelf: 'center',
     paddingVertical: 16,
@@ -636,5 +671,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     textDecorationLine: 'underline',
+  },
+  disabledTextButtonLabel: {
+    color: '#87909F',
   },
 });

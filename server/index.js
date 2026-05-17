@@ -493,6 +493,26 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const recentCode = await query(
+      `
+        SELECT created_at
+        FROM verification_codes
+        WHERE contact = $1
+          AND purpose = $2
+          AND created_at > NOW() - INTERVAL '30 seconds'
+        LIMIT 1;
+      `,
+      [contact, purpose],
+    );
+
+    if (recentCode.rowCount) {
+      sendJson(response, 429, {
+        ok: false,
+        error: 'Code déjà envoyé. Veuillez attendre quelques secondes avant de demander un nouveau code.',
+      });
+      return;
+    }
+
     const code = generateCode();
     await query(
       `
