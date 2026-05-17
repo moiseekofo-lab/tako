@@ -32,6 +32,7 @@ export default function Agent() {
   const [prepaidLoading, setPrepaidLoading] = useState(false);
   const [prepaidMessage, setPrepaidMessage] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<'recharge' | 'prepaid'>('recharge');
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
 
@@ -300,6 +301,30 @@ export default function Agent() {
               </View>
             </View>
 
+            <View style={styles.menuSectionList}>
+              <TouchableOpacity
+                style={[styles.menuSectionButton, activeSection === 'recharge' && styles.menuSectionButtonActive]}
+                activeOpacity={0.85}
+                onPress={() => {
+                  setActiveSection('recharge');
+                  setMenuOpen(false);
+                }}>
+                <Ionicons name="wallet-outline" size={19} color={activeSection === 'recharge' ? 'white' : TAKO_BLUE} />
+                <Text style={[styles.menuSectionText, activeSection === 'recharge' && styles.menuSectionTextActive]}>Recharge client</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuSectionButton, activeSection === 'prepaid' && styles.menuSectionButtonActive]}
+                activeOpacity={0.85}
+                onPress={() => {
+                  setActiveSection('prepaid');
+                  setMenuOpen(false);
+                }}>
+                <MaterialCommunityIcons name="credit-card-plus-outline" size={20} color={activeSection === 'prepaid' ? 'white' : TAKO_BLUE} />
+                <Text style={[styles.menuSectionText, activeSection === 'prepaid' && styles.menuSectionTextActive]}>Carte prépayée</Text>
+              </TouchableOpacity>
+            </View>
+
             <TouchableOpacity style={styles.menuRefreshButton} activeOpacity={0.85} disabled={refreshingBalance} onPress={() => refreshAgentAccount(false)}>
               {refreshingBalance ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="refresh" size={19} color={TAKO_BLUE} />}
               <Text style={styles.menuRefreshText}>{refreshingBalance ? 'Actualisation...' : 'Actualiser mes données'}</Text>
@@ -319,8 +344,12 @@ export default function Agent() {
         ) : null}
 
         <Text style={styles.kicker}>Mode agent</Text>
-        <Text style={styles.title}>Recharge interne</Text>
-        <Text style={styles.subtitle}>Scannez le QR, lisez la carte NFC ou saisissez l’ID du passager.</Text>
+        <Text style={styles.title}>{activeSection === 'prepaid' ? 'Carte prépayée' : 'Recharge interne'}</Text>
+        <Text style={styles.subtitle}>
+          {activeSection === 'prepaid'
+            ? 'Activez une carte NFC vierge depuis une section séparée.'
+            : 'Scannez le QR, lisez la carte NFC ou saisissez l’ID du passager.'}
+        </Text>
 
         <View style={styles.agentBalanceCard}>
           <View>
@@ -337,6 +366,7 @@ export default function Agent() {
           </Text>
         </View>
 
+        {activeSection === 'recharge' ? (
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Recharger un client</Text>
           <Text style={styles.sectionText}>Choisissez une seule méthode pour identifier le client, puis ajoutez le montant.</Text>
@@ -442,7 +472,9 @@ export default function Agent() {
             </TouchableOpacity>
           </View>
         </View>
+        ) : null}
 
+        {activeSection === 'prepaid' ? (
         <View style={[styles.card, styles.prepaidCard]}>
           <Text style={styles.sectionTitle}>Carte prépayée</Text>
           <Text style={styles.sectionText}>Activez une carte NFC vierge pour un client sans smartphone.</Text>
@@ -524,6 +556,7 @@ export default function Agent() {
             </TouchableOpacity>
           </View>
         </View>
+        ) : null}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -620,6 +653,33 @@ const styles = StyleSheet.create({
     color: TAKO_BLUE,
     fontSize: 15,
     fontWeight: '900',
+  },
+  menuSectionList: {
+    gap: 8,
+    marginBottom: 12,
+  },
+  menuSectionButton: {
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#F5F8FF',
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    gap: 10,
+  },
+  menuSectionButtonActive: {
+    backgroundColor: TAKO_BLUE,
+    borderColor: TAKO_BLUE,
+  },
+  menuSectionText: {
+    color: TAKO_BLUE,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  menuSectionTextActive: {
+    color: 'white',
   },
   menuRefreshButton: {
     height: 48,
