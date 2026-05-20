@@ -27,8 +27,8 @@ export default function InternalRechargeScan() {
       }
 
       router.replace({
-        pathname: params.returnTo === 'agent' ? '/agent' : '/admin',
-        params: { clientId },
+        pathname: params.returnTo === 'agent' ? '/agent-recharge-amount' : '/admin',
+        params: params.returnTo === 'agent' ? { clientId, source: 'qr' } : { clientId },
       } as any);
     } catch {
       Alert.alert('QR non valide', 'Scannez le QR de recharge interne du client.', [

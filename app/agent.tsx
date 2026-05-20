@@ -239,19 +239,18 @@ export default function Agent() {
 
   const openRechargeMode = (mode: 'qr' | 'nfc' | 'id') => {
     setActiveSection('recharge');
-    setRechargeMode(mode);
     setAmount('');
     setCardId('');
-    if (mode !== 'qr') {
-      setClientId('');
-    }
 
     if (mode === 'qr') {
       router.push({
         pathname: '/internal-recharge-scan',
         params: { returnTo: 'agent' },
       } as any);
+      return;
     }
+
+    router.push((mode === 'nfc' ? '/agent-recharge-nfc' : '/agent-recharge-id') as any);
   };
 
   const backToRechargeChoices = () => {
