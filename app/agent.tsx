@@ -1,7 +1,8 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { getAgentAccount } from '../services/api';
 import { useStore } from './store';
@@ -20,6 +21,7 @@ export default function Agent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const menuTranslateX = useRef(new Animated.Value(380)).current;
 
   useEffect(() => {
     if (Platform.OS === 'web' && !isAuthenticated) {
@@ -58,6 +60,30 @@ export default function Agent() {
     return () => clearInterval(interval);
   }, [currentUser?.id]);
 
+  const openMenu = () => {
+    setMenuOpen(true);
+    menuTranslateX.setValue(380);
+    Animated.spring(menuTranslateX, {
+      toValue: 0,
+      damping: 20,
+      stiffness: 140,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const closeMenu = () => {
+    Animated.timing(menuTranslateX, {
+      toValue: 380,
+      duration: 220,
+      useNativeDriver: true,
+    }).start(() => setMenuOpen(false));
+  };
+
+  const openMenuRoute = (route: string) => {
+    closeMenu();
+    router.push(route as any);
+  };
+
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -66,74 +92,14 @@ export default function Agent() {
           <TouchableOpacity
             style={styles.menuButton}
             activeOpacity={0.85}
-            onPress={() => setMenuOpen((value) => !value)}>
+            onPress={menuOpen ? closeMenu : openMenu}>
             <Ionicons name={menuOpen ? 'close' : 'menu'} size={24} color={TAKO_BLUE} />
           </TouchableOpacity>
         </View>
 
-        {menuOpen ? (
-          <View style={styles.menuCard}>
-            <View style={styles.menuUserRow}>
-              <View style={styles.menuAvatar}>
-                <Ionicons name="person" size={22} color="white" />
-              </View>
-              <View style={styles.menuUserText}>
-                <Text style={styles.menuName}>{currentUser?.fullName || 'Agent TaKo'}</Text>
-                <Text style={styles.menuMeta}>{currentUser?.email || currentUser?.phone || currentUser?.id}</Text>
-              </View>
-            </View>
-
-            <View style={styles.menuInfoGrid}>
-              <View style={styles.menuInfoItem}>
-                <Text style={styles.menuInfoLabel}>ID agent</Text>
-                <Text style={styles.menuInfoValue}>{currentUser?.id || 'AGENT'}</Text>
-              </View>
-              <View style={styles.menuInfoItem}>
-                <Text style={styles.menuInfoLabel}>Solde</Text>
-                <Text style={styles.menuInfoValue}>{balance} FC</Text>
-              </View>
-            </View>
-
-            <View style={styles.menuSectionList}>
-              <TouchableOpacity
-                style={styles.menuSectionButton}
-                activeOpacity={0.85}
-                onPress={() => {
-                  setMenuOpen(false);
-                  router.push('/agent-recharge-menu' as any);
-                }}>
-                <Ionicons name="wallet-outline" size={24} color={TAKO_BLUE} />
-                <Text style={styles.menuSectionText}>Recharge client</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSectionButton}
-                activeOpacity={0.85}
-                onPress={() => {
-                  setMenuOpen(false);
-                  router.push('/agent-prepaid' as any);
-                }}>
-                <MaterialCommunityIcons name="credit-card-plus-outline" size={25} color={TAKO_BLUE} />
-                <Text style={styles.menuSectionText}>Carte prépayée</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.menuSectionButton}
-                activeOpacity={0.85}
-                onPress={() => {
-                  clearSession();
-                  router.replace('/login' as any);
-                }}>
-                <Ionicons name="log-out-outline" size={24} color={TAKO_BLUE} />
-                <Text style={styles.menuSectionText}>Déconnexion</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : null}
-
         <Text style={styles.kicker}>Mode agent</Text>
         <Text style={styles.title}>Compte agent</Text>
-        <Text style={styles.subtitle}>Choisissez une option dans le menu pour ouvrir une page séparée.</Text>
+        <Text style={styles.subtitle}>Ouvrez le menu pour accéder aux recharges et aux cartes prépayées.</Text>
 
         <View style={styles.agentBalanceCard}>
           <View>
@@ -151,6 +117,79 @@ export default function Agent() {
         </View>
 
       </ScrollView>
+
+      {menuOpen ? (
+        <View style={styles.menuLayer}>
+          <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={closeMenu} />
+          <Animated.View style={[styles.sideMenu, { transform: [{ translateX: menuTranslateX }] }]}>
+            <LinearGradient colors={['#A8F0E8', '#68D3CF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.menuProfile}>
+              <View pointerEvents="none" style={styles.menuProfilePattern}>
+                <View style={[styles.menuPatternMark, styles.menuPatternMarkOne]} />
+                <View style={[styles.menuPatternMark, styles.menuPatternMarkTwo]} />
+                <View style={[styles.menuPatternMark, styles.menuPatternMarkThree]} />
+                <View style={[styles.menuPatternDot, styles.menuPatternDotOne]} />
+                <View style={[styles.menuPatternDot, styles.menuPatternDotTwo]} />
+              </View>
+              <View style={styles.avatarWrap}>
+                <View style={styles.avatarCircle}>
+                  <Ionicons name="person" size={42} color="white" />
+                </View>
+                <View style={styles.editAvatarButton}>
+                  <Ionicons name="pencil" size={16} color="#8B8B8B" />
+                </View>
+              </View>
+              <Text style={styles.profileName}>{String(currentUser?.fullName || 'Agent TaKo').toUpperCase()}</Text>
+              <Text style={styles.profileEmail}>{currentUser?.email || currentUser?.phone || currentUser?.id}</Text>
+            </LinearGradient>
+
+            <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
+              <View style={styles.menuBalanceBox}>
+                <Text style={styles.menuBalanceLabel}>Solde disponible</Text>
+                <Text style={styles.menuBalanceValue}>{balance} FC</Text>
+                <Text style={styles.menuBalanceMeta}>ID agent : {currentUser?.id || 'AGENT'}</Text>
+              </View>
+
+              <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={() => openMenuRoute('/agent-recharge-menu')}>
+                <Ionicons name="wallet-outline" size={30} color="#16C7C0" />
+                <View style={styles.menuTextBox}>
+                  <Text style={styles.menuItemTitle}>Recharge client</Text>
+                  <Text style={styles.menuItemSubtitle}>Par QR code, NFC ou ID client</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={() => openMenuRoute('/agent-prepaid')}>
+                <MaterialCommunityIcons name="credit-card-plus-outline" size={30} color="#16C7C0" />
+                <View style={styles.menuTextBox}>
+                  <Text style={styles.menuItemTitle}>Carte prépayée</Text>
+                  <Text style={styles.menuItemSubtitle}>Activer une carte pour un client sans smartphone</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={closeMenu}>
+                <Ionicons name="person-circle-outline" size={30} color="#16C7C0" />
+                <View style={styles.menuTextBox}>
+                  <Text style={styles.menuItemTitle}>Mes données</Text>
+                  <Text style={styles.menuItemSubtitle}>Compte agent et informations personnelles</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuItem}
+                activeOpacity={0.78}
+                onPress={() => {
+                  clearSession();
+                  router.replace('/login' as any);
+                }}>
+                <Ionicons name="log-out-outline" size={30} color="#16C7C0" />
+                <View style={styles.menuTextBox}>
+                  <Text style={styles.menuItemTitle}>Déconnexion</Text>
+                  <Text style={styles.menuItemSubtitle}>Fermer la session agent</Text>
+                </View>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -181,6 +220,164 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'white',
+  },
+  menuLayer: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 50,
+    elevation: 50,
+  },
+  menuBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.58)',
+  },
+  sideMenu: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    width: '73%',
+    maxWidth: 430,
+    overflow: 'hidden',
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
+    backgroundColor: '#FBF8FF',
+  },
+  menuProfile: {
+    minHeight: 226,
+    justifyContent: 'flex-end',
+    paddingHorizontal: 22,
+    paddingBottom: 24,
+    overflow: 'hidden',
+  },
+  menuProfilePattern: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.28,
+  },
+  menuPatternMark: {
+    position: 'absolute',
+    width: 12,
+    height: 96,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    transform: [{ rotate: '38deg' }],
+  },
+  menuPatternMarkOne: {
+    right: 42,
+    top: 18,
+  },
+  menuPatternMarkTwo: {
+    right: 112,
+    top: -22,
+    height: 74,
+  },
+  menuPatternMarkThree: {
+    left: 26,
+    top: 42,
+    height: 68,
+  },
+  menuPatternDot: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'white',
+  },
+  menuPatternDotOne: {
+    right: 24,
+    top: 128,
+  },
+  menuPatternDotTwo: {
+    right: 88,
+    top: 88,
+  },
+  avatarWrap: {
+    width: 86,
+    height: 86,
+    marginBottom: 16,
+  },
+  avatarCircle: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 4,
+    borderColor: '#09D457',
+    backgroundColor: TAKO_BLUE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editAvatarButton: {
+    position: 'absolute',
+    right: -2,
+    bottom: 3,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  profileName: {
+    color: 'white',
+    fontSize: 19,
+    fontWeight: '700',
+    letterSpacing: 1,
+  },
+  profileEmail: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '500',
+    marginTop: 9,
+  },
+  menuList: {
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 42,
+  },
+  menuBalanceBox: {
+    borderRadius: 16,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#E5EAF4',
+    padding: 14,
+    marginBottom: 12,
+  },
+  menuBalanceLabel: {
+    color: '#8A93A3',
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  menuBalanceValue: {
+    color: TAKO_BLUE,
+    fontSize: 22,
+    fontWeight: '900',
+    marginTop: 4,
+  },
+  menuBalanceMeta: {
+    color: '#8A93A3',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  menuItem: {
+    minHeight: 88,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+  },
+  menuTextBox: {
+    flex: 1,
+  },
+  menuItemTitle: {
+    color: '#151515',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  menuItemSubtitle: {
+    color: '#A2A0A6',
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 6,
   },
   menuCard: {
     borderRadius: 18,
