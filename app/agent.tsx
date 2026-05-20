@@ -122,7 +122,7 @@ export default function Agent() {
         <View style={styles.menuLayer}>
           <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={closeMenu} />
           <Animated.View style={[styles.sideMenu, { transform: [{ translateX: menuTranslateX }] }]}>
-            <LinearGradient colors={['#A8F0E8', '#68D3CF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.menuProfile}>
+            <LinearGradient colors={[TAKO_BLUE, '#0A2D8C']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.menuProfile}>
               <View pointerEvents="none" style={styles.menuProfilePattern}>
                 <View style={[styles.menuPatternMark, styles.menuPatternMarkOne]} />
                 <View style={[styles.menuPatternMark, styles.menuPatternMarkTwo]} />
@@ -150,7 +150,7 @@ export default function Agent() {
               </View>
 
               <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={() => openMenuRoute('/agent-recharge-menu')}>
-                <Ionicons name="wallet-outline" size={30} color="#16C7C0" />
+                <Ionicons name="wallet-outline" size={30} color={TAKO_ACTION} />
                 <View style={styles.menuTextBox}>
                   <Text style={styles.menuItemTitle}>Recharge client</Text>
                   <Text style={styles.menuItemSubtitle}>Par QR code, NFC ou ID client</Text>
@@ -158,18 +158,10 @@ export default function Agent() {
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={() => openMenuRoute('/agent-prepaid')}>
-                <MaterialCommunityIcons name="credit-card-plus-outline" size={30} color="#16C7C0" />
+                <MaterialCommunityIcons name="credit-card-plus-outline" size={30} color={TAKO_ACTION} />
                 <View style={styles.menuTextBox}>
                   <Text style={styles.menuItemTitle}>Carte prépayée</Text>
                   <Text style={styles.menuItemSubtitle}>Activer une carte pour un client sans smartphone</Text>
-                </View>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.menuItem} activeOpacity={0.78} onPress={closeMenu}>
-                <Ionicons name="person-circle-outline" size={30} color="#16C7C0" />
-                <View style={styles.menuTextBox}>
-                  <Text style={styles.menuItemTitle}>Mes données</Text>
-                  <Text style={styles.menuItemSubtitle}>Compte agent et informations personnelles</Text>
                 </View>
               </TouchableOpacity>
 
@@ -180,7 +172,7 @@ export default function Agent() {
                   clearSession();
                   router.replace('/login' as any);
                 }}>
-                <Ionicons name="log-out-outline" size={30} color="#16C7C0" />
+                <Ionicons name="log-out-outline" size={30} color={TAKO_ACTION} />
                 <View style={styles.menuTextBox}>
                   <Text style={styles.menuItemTitle}>Déconnexion</Text>
                   <Text style={styles.menuItemSubtitle}>Fermer la session agent</Text>
@@ -240,7 +232,7 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderTopLeftRadius: 24,
     borderBottomLeftRadius: 24,
-    backgroundColor: '#FBF8FF',
+    backgroundColor: '#F5F8FF',
   },
   menuProfile: {
     minHeight: 226,
@@ -337,7 +329,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#E5EAF4',
+    borderColor: '#D7E0EF',
     padding: 14,
     marginBottom: 12,
   },
@@ -369,14 +361,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   menuItemTitle: {
-    color: '#151515',
+    color: TAKO_BLUE,
     fontSize: 18,
-    fontWeight: '500',
+    fontWeight: '800',
   },
   menuItemSubtitle: {
-    color: '#A2A0A6',
+    color: '#667085',
     fontSize: 14,
-    fontWeight: '500',
+    fontWeight: '600',
     marginTop: 6,
   },
   menuCard: {
