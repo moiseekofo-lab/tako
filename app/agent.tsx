@@ -33,6 +33,7 @@ export default function Agent() {
   const [prepaidMessage, setPrepaidMessage] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<'recharge' | 'prepaid'>('recharge');
+  const [rechargeMode, setRechargeMode] = useState<'choices' | 'qr' | 'nfc' | 'id'>('choices');
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
 
@@ -73,6 +74,8 @@ export default function Agent() {
 
   useEffect(() => {
     if (params.clientId) {
+      setActiveSection('recharge');
+      setRechargeMode('qr');
       setClientId(String(params.clientId));
       setCardId('');
     }
@@ -136,6 +139,7 @@ export default function Agent() {
         return;
       }
 
+      setRechargeMode('nfc');
       setCardId(nextCardId);
       setClientId('');
       Alert.alert('Carte lue', 'Ajoutez le montant puis confirmez la recharge.');
@@ -230,6 +234,29 @@ export default function Agent() {
     }
   };
 
+  const openRechargeMode = (mode: 'qr' | 'nfc' | 'id') => {
+    setActiveSection('recharge');
+    setRechargeMode(mode);
+    setAmount('');
+    setCardId('');
+    if (mode !== 'qr') {
+      setClientId('');
+    }
+
+    if (mode === 'qr') {
+      router.push({
+        pathname: '/internal-recharge-scan',
+        params: { returnTo: 'agent' },
+      } as any);
+    }
+  };
+
+  const backToRechargeChoices = () => {
+    setRechargeMode('choices');
+    setClientId('');
+    setCardId('');
+    setAmount('');
+  };
   const confirmRecharge = async () => {
     const value = Number.parseInt(amount, 10);
     const cleanClientId = clientId.trim();
@@ -257,6 +284,7 @@ export default function Agent() {
         setCurrentUser(result.agent);
       }
       setLastSync(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
+      setRechargeMode('choices');
       Alert.alert('Crédit envoyé', `${value} FC ajouté au compte ${result?.client?.id || cleanClientId}.`);
     } catch (error) {
       Alert.alert('Recharge impossible', error instanceof Error ? error.message : 'Vérifiez le compte ou la carte.');
@@ -368,109 +396,166 @@ export default function Agent() {
 
         {activeSection === 'recharge' ? (
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Recharger un client</Text>
-          <Text style={styles.sectionText}>Choisissez une seule méthode pour identifier le client, puis ajoutez le montant.</Text>
+          {rechargeMode === 'choices' ? (
+            <>
+              <Text style={styles.sectionTitle}>Recharger un client</Text>
+              <Text style={styles.sectionText}>Choisissez comment identifier le client avant d’ajouter le montant.</Text>
 
-          <View style={styles.optionBlock}>
-            <View style={styles.optionHeader}>
-              <View style={styles.optionIcon}>
-                <Ionicons name="qr-code-outline" size={20} color={TAKO_BLUE} />
-              </View>
-              <View style={styles.optionTextWrap}>
-                <Text style={styles.optionTitle}>Par QR code</Text>
-                <Text style={styles.optionSubtitle}>Scanner le QR du compte client.</Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.scanButton}
-              activeOpacity={0.9}
-              onPress={() =>
-                router.push({
-                  pathname: '/internal-recharge-scan',
-                  params: { returnTo: 'agent' },
-                } as any)
-              }>
-              <Ionicons name="scan-outline" size={22} color="white" />
-              <Text style={styles.scanButtonText}>Scanner QR client</Text>
-            </TouchableOpacity>
-          </View>
+              <View style={styles.choiceGrid}>
+                <TouchableOpacity style={styles.choiceButton} activeOpacity={0.9} onPress={() => openRechargeMode('nfc')}>
+                  <View style={styles.choiceIcon}>
+                    <MaterialCommunityIcons name="nfc" size={26} color={TAKO_BLUE} />
+                  </View>
+                  <View style={styles.choiceTextWrap}>
+                    <Text style={styles.choiceTitle}>Par carte NFC</Text>
+                    <Text style={styles.choiceText}>Approcher la carte du client.</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#8B95A5" />
+                </TouchableOpacity>
 
-          <View style={styles.optionBlock}>
-            <View style={styles.optionHeader}>
-              <View style={styles.optionIcon}>
-                <MaterialCommunityIcons name="nfc" size={21} color={TAKO_BLUE} />
-              </View>
-              <View style={styles.optionTextWrap}>
-                <Text style={styles.optionTitle}>Par carte NFC</Text>
-                <Text style={styles.optionSubtitle}>Lire la carte du passager.</Text>
-              </View>
-            </View>
-            <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingNfc} onPress={readNfcCard}>
-              {isReadingNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={24} color={TAKO_BLUE} />}
-              <Text style={styles.nfcButtonText}>{isReadingNfc ? 'Lecture NFC...' : 'Lire carte NFC'}</Text>
-            </TouchableOpacity>
-            {!!cardId && (
-              <View style={styles.cardReadBox}>
-                <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
-                <Text style={styles.cardReadText}>Carte lue : {cardId}</Text>
-              </View>
-            )}
-          </View>
+                <TouchableOpacity style={styles.choiceButton} activeOpacity={0.9} onPress={() => openRechargeMode('qr')}>
+                  <View style={styles.choiceIcon}>
+                    <Ionicons name="qr-code-outline" size={25} color={TAKO_BLUE} />
+                  </View>
+                  <View style={styles.choiceTextWrap}>
+                    <Text style={styles.choiceTitle}>Par QR code</Text>
+                    <Text style={styles.choiceText}>Scanner le QR du compte client.</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#8B95A5" />
+                </TouchableOpacity>
 
-          <View style={styles.optionBlock}>
-            <View style={styles.optionHeader}>
-              <View style={styles.optionIcon}>
-                <Ionicons name="finger-print" size={20} color={TAKO_BLUE} />
+                <TouchableOpacity style={styles.choiceButton} activeOpacity={0.9} onPress={() => openRechargeMode('id')}>
+                  <View style={styles.choiceIcon}>
+                    <Ionicons name="finger-print" size={25} color={TAKO_BLUE} />
+                  </View>
+                  <View style={styles.choiceTextWrap}>
+                    <Text style={styles.choiceTitle}>Par ID client</Text>
+                    <Text style={styles.choiceText}>Saisir l’ID numérique du client.</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#8B95A5" />
+                </TouchableOpacity>
               </View>
-              <View style={styles.optionTextWrap}>
-                <Text style={styles.optionTitle}>Par ID client</Text>
-                <Text style={styles.optionSubtitle}>Entrer l’ID numérique du client.</Text>
+            </>
+          ) : (
+            <>
+              <View style={styles.flowHeader}>
+                <TouchableOpacity style={styles.flowBackButton} activeOpacity={0.85} onPress={backToRechargeChoices}>
+                  <Ionicons name="chevron-back" size={20} color={TAKO_BLUE} />
+                </TouchableOpacity>
+                <View style={styles.flowTitleWrap}>
+                  <Text style={styles.sectionTitle}>
+                    {rechargeMode === 'nfc' ? 'Recharge par carte NFC' : rechargeMode === 'qr' ? 'Recharge par QR code' : 'Recharge par ID client'}
+                  </Text>
+                  <Text style={styles.sectionText}>
+                    {rechargeMode === 'nfc'
+                      ? 'Lisez la carte, ajoutez le montant, puis confirmez.'
+                      : rechargeMode === 'qr'
+                        ? 'Scannez le QR, ajoutez le montant, puis confirmez.'
+                        : 'Entrez l’ID, ajoutez le montant, puis confirmez.'}
+                  </Text>
+                </View>
               </View>
-            </View>
-            <View style={styles.inputBox}>
-              <Ionicons name="person-circle-outline" size={23} color="#7B8798" />
-              <TextInput
-                placeholder="ID du passager"
-                placeholderTextColor="#8B95A5"
-                value={clientId}
-                onChangeText={(value) => {
-                  setClientId(value);
-                  if (value.trim()) {
-                    setCardId('');
-                  }
-                }}
-                keyboardType="number-pad"
-                style={styles.input}
-              />
-            </View>
-          </View>
 
-          <View style={[styles.optionBlock, styles.amountBlock]}>
-            <View style={styles.optionHeader}>
-              <View style={styles.optionIcon}>
-                <Ionicons name="cash-outline" size={20} color={TAKO_BLUE} />
+              {rechargeMode === 'nfc' ? (
+                <View style={styles.optionBlock}>
+                  <View style={styles.optionHeader}>
+                    <View style={styles.optionIcon}>
+                      <MaterialCommunityIcons name="nfc" size={21} color={TAKO_BLUE} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={styles.optionTitle}>Approcher la carte</Text>
+                      <Text style={styles.optionSubtitle}>L’application lit l’identifiant NFC.</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={isReadingNfc} onPress={readNfcCard}>
+                    {isReadingNfc ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={24} color={TAKO_BLUE} />}
+                    <Text style={styles.nfcButtonText}>{isReadingNfc ? 'Lecture NFC...' : 'Lire carte NFC'}</Text>
+                  </TouchableOpacity>
+                  {!!cardId && (
+                    <View style={styles.cardReadBox}>
+                      <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
+                      <Text style={styles.cardReadText}>Carte lue : {cardId}</Text>
+                    </View>
+                  )}
+                </View>
+              ) : null}
+
+              {rechargeMode === 'qr' ? (
+                <View style={styles.optionBlock}>
+                  <View style={styles.optionHeader}>
+                    <View style={styles.optionIcon}>
+                      <Ionicons name="qr-code-outline" size={20} color={TAKO_BLUE} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={styles.optionTitle}>QR du client</Text>
+                      <Text style={styles.optionSubtitle}>{clientId ? `Client détecté : ${clientId}` : 'Scannez le QR du client.'}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity style={styles.scanButton} activeOpacity={0.9} onPress={() => openRechargeMode('qr')}>
+                    <Ionicons name="scan-outline" size={22} color="white" />
+                    <Text style={styles.scanButtonText}>{clientId ? 'Scanner un autre QR' : 'Scanner QR client'}</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : null}
+
+              {rechargeMode === 'id' ? (
+                <View style={styles.optionBlock}>
+                  <View style={styles.optionHeader}>
+                    <View style={styles.optionIcon}>
+                      <Ionicons name="finger-print" size={20} color={TAKO_BLUE} />
+                    </View>
+                    <View style={styles.optionTextWrap}>
+                      <Text style={styles.optionTitle}>ID du client</Text>
+                      <Text style={styles.optionSubtitle}>Entrez l’ID numérique du compte client.</Text>
+                    </View>
+                  </View>
+                  <View style={styles.inputBox}>
+                    <Ionicons name="person-circle-outline" size={23} color="#7B8798" />
+                    <TextInput
+                      placeholder="ID du passager"
+                      placeholderTextColor="#8B95A5"
+                      value={clientId}
+                      onChangeText={(value) => {
+                        setClientId(value);
+                        if (value.trim()) {
+                          setCardId('');
+                        }
+                      }}
+                      keyboardType="number-pad"
+                      style={styles.input}
+                    />
+                  </View>
+                </View>
+              ) : null}
+
+              <View style={[styles.optionBlock, styles.amountBlock]}>
+                <View style={styles.optionHeader}>
+                  <View style={styles.optionIcon}>
+                    <Ionicons name="cash-outline" size={20} color={TAKO_BLUE} />
+                  </View>
+                  <View style={styles.optionTextWrap}>
+                    <Text style={styles.optionTitle}>Montant</Text>
+                    <Text style={styles.optionSubtitle}>Confirmer la recharge en FC.</Text>
+                  </View>
+                </View>
+                <View style={styles.inputBox}>
+                  <Text style={styles.currency}>FC</Text>
+                  <TextInput
+                    placeholder="Montant"
+                    placeholderTextColor="#8B95A5"
+                    value={amount}
+                    onChangeText={setAmount}
+                    keyboardType="number-pad"
+                    style={styles.input}
+                  />
+                </View>
+                <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={loading} onPress={confirmRecharge}>
+                  {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={23} color="white" />}
+                  <Text style={styles.confirmButtonText}>Confirmer la recharge</Text>
+                </TouchableOpacity>
               </View>
-              <View style={styles.optionTextWrap}>
-                <Text style={styles.optionTitle}>Montant</Text>
-                <Text style={styles.optionSubtitle}>Saisir le montant reçu en espèces.</Text>
-              </View>
-            </View>
-            <View style={styles.inputBox}>
-              <Text style={styles.currency}>FC</Text>
-              <TextInput
-                placeholder="Montant"
-                placeholderTextColor="#8B95A5"
-                value={amount}
-                onChangeText={setAmount}
-                keyboardType="number-pad"
-                style={styles.input}
-              />
-            </View>
-            <TouchableOpacity style={styles.confirmButton} activeOpacity={0.9} disabled={loading} onPress={confirmRecharge}>
-              {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={23} color="white" />}
-              <Text style={styles.confirmButtonText}>Confirmer la recharge</Text>
-            </TouchableOpacity>
-          </View>
+            </>
+          )}
         </View>
         ) : null}
 
@@ -756,6 +841,63 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     lineHeight: 20,
     marginBottom: 14,
+  },
+  choiceGrid: {
+    gap: 10,
+  },
+  choiceButton: {
+    minHeight: 74,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: '#E0E8F4',
+    backgroundColor: '#FBFCFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    gap: 12,
+  },
+  choiceIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 14,
+    backgroundColor: '#EAF3FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  choiceTextWrap: {
+    flex: 1,
+  },
+  choiceTitle: {
+    color: TAKO_BLUE,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  choiceText: {
+    color: '#6A7486',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  flowHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    marginBottom: 4,
+  },
+  flowBackButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: '#EAF3FF',
+    borderWidth: 1,
+    borderColor: '#BBDFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  flowTitleWrap: {
+    flex: 1,
   },
   optionBlock: {
     borderRadius: 15,
