@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
@@ -635,7 +636,14 @@ export default function Home() {
           <View style={styles.menuLayer}>
             <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={closeClientMenu} />
             <Animated.View style={[styles.sideMenu, { transform: [{ translateX: menuTranslateX }] }]}>
-              <View style={styles.menuProfile}>
+              <LinearGradient colors={['#A8F0E8', '#68D3CF']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.menuProfile}>
+                <View pointerEvents="none" style={styles.menuProfilePattern}>
+                  <View style={[styles.menuPatternMark, styles.menuPatternMarkOne]} />
+                  <View style={[styles.menuPatternMark, styles.menuPatternMarkTwo]} />
+                  <View style={[styles.menuPatternMark, styles.menuPatternMarkThree]} />
+                  <View style={[styles.menuPatternDot, styles.menuPatternDotOne]} />
+                  <View style={[styles.menuPatternDot, styles.menuPatternDotTwo]} />
+                </View>
                 <View style={styles.avatarWrap}>
                   <View style={styles.avatarCircle}>
                     <Ionicons name="person" size={46} color="white" />
@@ -644,9 +652,9 @@ export default function Home() {
                     <Ionicons name="pencil" size={18} color="#8B8B8B" />
                   </View>
                 </View>
-                <Text style={styles.profileName}>{currentUser.fullName}</Text>
-                <Text style={styles.profileEmail}>{currentUser.email}</Text>
-              </View>
+                <Text style={styles.profileName}>{String(currentUser?.fullName || 'Client TaKo').toUpperCase()}</Text>
+                <Text style={styles.profileEmail}>{currentUser?.email || currentUser?.phone || currentUser?.id}</Text>
+              </LinearGradient>
 
               <ScrollView contentContainerStyle={styles.menuList} showsVerticalScrollIndicator={false}>
                 {menuItems.map((item) => (
@@ -660,7 +668,7 @@ export default function Home() {
                         router.push(item.route as any);
                       }
                     }}>
-                    <MaterialCommunityIcons name={item.icon as any} size={30} color="#139DFF" />
+                    <MaterialCommunityIcons name={item.icon as any} size={30} color="#16C7C0" />
                     <View style={styles.menuTextBox}>
                       <Text style={styles.menuItemTitle}>{item.title}</Text>
                       <Text style={styles.menuItemSubtitle}>{item.subtitle}</Text>
@@ -675,7 +683,7 @@ export default function Home() {
                     clearSession();
                     router.replace('/login' as any);
                   }}>
-                  <MaterialCommunityIcons name="logout" size={30} color="#139DFF" />
+                  <MaterialCommunityIcons name="logout" size={30} color="#16C7C0" />
                   <View style={styles.menuTextBox}>
                     <Text style={styles.menuItemTitle}>{text.logout}</Text>
                   </View>
@@ -1217,36 +1225,78 @@ const styles = StyleSheet.create({
   },
   menuBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.62)',
+    backgroundColor: 'rgba(0,0,0,0.58)',
   },
   sideMenu: {
     position: 'absolute',
     top: 0,
     right: 0,
     bottom: 0,
-    width: '74%',
+    width: '73%',
+    maxWidth: 430,
     overflow: 'hidden',
-    borderTopLeftRadius: 22,
-    borderBottomLeftRadius: 22,
-    backgroundColor: '#F4F5F9',
+    borderTopLeftRadius: 24,
+    borderBottomLeftRadius: 24,
+    backgroundColor: '#FBF8FF',
   },
   menuProfile: {
-    minHeight: 260,
+    minHeight: 226,
     justifyContent: 'flex-end',
-    paddingHorizontal: 24,
-    paddingBottom: 28,
-    backgroundColor: '#061F68',
+    paddingHorizontal: 22,
+    paddingBottom: 24,
+    overflow: 'hidden',
+  },
+  menuProfilePattern: {
+    ...StyleSheet.absoluteFillObject,
+    opacity: 0.28,
+  },
+  menuPatternMark: {
+    position: 'absolute',
+    width: 12,
+    height: 96,
+    borderRadius: 8,
+    backgroundColor: 'white',
+    transform: [{ rotate: '38deg' }],
+  },
+  menuPatternMarkOne: {
+    right: 42,
+    top: 18,
+  },
+  menuPatternMarkTwo: {
+    right: 112,
+    top: -22,
+    height: 74,
+  },
+  menuPatternMarkThree: {
+    left: 26,
+    top: 42,
+    height: 68,
+  },
+  menuPatternDot: {
+    position: 'absolute',
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'white',
+  },
+  menuPatternDotOne: {
+    right: 24,
+    top: 128,
+  },
+  menuPatternDotTwo: {
+    right: 88,
+    top: 88,
   },
   avatarWrap: {
-    width: 95,
-    height: 95,
-    marginBottom: 18,
+    width: 86,
+    height: 86,
+    marginBottom: 16,
   },
   avatarCircle: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    borderWidth: 5,
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    borderWidth: 4,
     borderColor: '#09D457',
     backgroundColor: '#061F68',
     alignItems: 'center',
@@ -1254,50 +1304,50 @@ const styles = StyleSheet.create({
   },
   editAvatarButton: {
     position: 'absolute',
-    right: 0,
-    bottom: 4,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    right: -2,
+    bottom: 3,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
   },
   profileName: {
     color: 'white',
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 19,
+    fontWeight: '700',
     letterSpacing: 1,
   },
   profileEmail: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '500',
-    marginTop: 10,
+    marginTop: 9,
   },
   menuList: {
-    paddingHorizontal: 24,
-    paddingTop: 14,
-    paddingBottom: 34,
+    paddingHorizontal: 22,
+    paddingTop: 18,
+    paddingBottom: 42,
   },
   menuItem: {
-    minHeight: 86,
+    minHeight: 88,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 22,
+    gap: 20,
   },
   menuTextBox: {
     flex: 1,
   },
   menuItemTitle: {
-    color: '#061F68',
-    fontSize: 20,
-    fontWeight: '600',
+    color: '#151515',
+    fontSize: 18,
+    fontWeight: '500',
   },
   menuItemSubtitle: {
-    color: '#9B9B9B',
-    fontSize: 15,
-    fontWeight: '600',
+    color: '#A2A0A6',
+    fontSize: 14,
+    fontWeight: '500',
     marginTop: 6,
   },
   container: {
