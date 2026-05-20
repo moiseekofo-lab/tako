@@ -353,43 +353,43 @@ export default function Agent() {
 
             <View style={styles.menuSectionList}>
               <TouchableOpacity
-                style={[styles.menuSectionButton, activeSection === 'recharge' && styles.menuSectionButtonActive]}
+                style={styles.menuSectionButton}
                 activeOpacity={0.85}
                 onPress={() => {
-                  setActiveSection('recharge');
                   setMenuOpen(false);
+                  router.push('/agent-recharge-menu' as any);
                 }}>
-                <Ionicons name="wallet-outline" size={19} color={activeSection === 'recharge' ? 'white' : TAKO_BLUE} />
-                <Text style={[styles.menuSectionText, activeSection === 'recharge' && styles.menuSectionTextActive]}>Recharge client</Text>
+                <Ionicons name="wallet-outline" size={24} color={TAKO_BLUE} />
+                <Text style={styles.menuSectionText}>Recharge client</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.menuSectionButton, activeSection === 'prepaid' && styles.menuSectionButtonActive]}
+                style={styles.menuSectionButton}
                 activeOpacity={0.85}
                 onPress={() => {
-                  setActiveSection('prepaid');
                   setMenuOpen(false);
+                  router.push('/agent-prepaid' as any);
                 }}>
-                <MaterialCommunityIcons name="credit-card-plus-outline" size={20} color={activeSection === 'prepaid' ? 'white' : TAKO_BLUE} />
-                <Text style={[styles.menuSectionText, activeSection === 'prepaid' && styles.menuSectionTextActive]}>Carte prépayée</Text>
+                <MaterialCommunityIcons name="credit-card-plus-outline" size={25} color={TAKO_BLUE} />
+                <Text style={styles.menuSectionText}>Carte prépayée</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.menuSectionButton} activeOpacity={0.85} disabled={refreshingBalance} onPress={() => refreshAgentAccount(false)}>
+                {refreshingBalance ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="refresh" size={24} color={TAKO_BLUE} />}
+                <Text style={styles.menuSectionText}>{refreshingBalance ? 'Actualisation...' : 'Actualiser'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.menuSectionButton}
+                activeOpacity={0.85}
+                onPress={() => {
+                  clearSession();
+                  router.replace('/login' as any);
+                }}>
+                <Ionicons name="log-out-outline" size={24} color={TAKO_BLUE} />
+                <Text style={styles.menuSectionText}>Déconnexion</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity style={styles.menuRefreshButton} activeOpacity={0.85} disabled={refreshingBalance} onPress={() => refreshAgentAccount(false)}>
-              {refreshingBalance ? <ActivityIndicator color={TAKO_BLUE} /> : <Ionicons name="refresh" size={19} color={TAKO_BLUE} />}
-              <Text style={styles.menuRefreshText}>{refreshingBalance ? 'Actualisation...' : 'Actualiser mes données'}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.menuLogoutButton}
-              activeOpacity={0.85}
-              onPress={() => {
-                clearSession();
-                router.replace('/login' as any);
-              }}>
-              <Ionicons name="log-out-outline" size={20} color="white" />
-              <Text style={styles.menuLogoutText}>Déconnexion</Text>
-            </TouchableOpacity>
           </View>
         ) : null}
 
@@ -756,31 +756,27 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   menuSectionList: {
-    gap: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
     marginBottom: 12,
   },
   menuSectionButton: {
-    height: 48,
-    borderRadius: 12,
+    width: '47%',
+    minHeight: 112,
+    borderRadius: 16,
     backgroundColor: '#F5F8FF',
     borderWidth: 1,
     borderColor: '#D7E0EF',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    gap: 10,
-  },
-  menuSectionButtonActive: {
-    backgroundColor: TAKO_BLUE,
-    borderColor: TAKO_BLUE,
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    padding: 12,
   },
   menuSectionText: {
     color: TAKO_BLUE,
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '900',
-  },
-  menuSectionTextActive: {
-    color: 'white',
+    lineHeight: 17,
   },
   menuRefreshButton: {
     height: 48,
