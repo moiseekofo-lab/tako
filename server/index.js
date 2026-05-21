@@ -1012,6 +1012,18 @@ async function handleRequest(request, response) {
       [agentId],
     );
 
+    const transactionsResult = await query(
+      `
+        SELECT id, amount, method, client_id, route, status, created_at
+        FROM payments
+        WHERE driver_id = $1
+          AND method IN ('internal_recharge', 'agent_float_recharge')
+        ORDER BY created_at DESC
+        LIMIT 20;
+      `,
+      [agentId],
+    );
+
     sendJson(response, 200, {
       ok: true,
       agent: publicUser(agent),
@@ -1020,6 +1032,7 @@ async function handleRequest(request, response) {
         volume: Number(statsResult.rows[0]?.volume || 0),
         lastActivity: statsResult.rows[0]?.last_activity || null,
       },
+      transactions: transactionsResult.rows,
     });
     return;
   }

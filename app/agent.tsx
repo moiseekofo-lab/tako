@@ -10,6 +10,15 @@ import { useStore } from './store';
 const TAKO_BLUE = '#061F68';
 const TAKO_ACTION = '#139DFF';
 
+type AgentTransaction = {
+  id: string;
+  amount: number | string;
+  method: 'internal_recharge' | 'agent_float_recharge' | string;
+  client_id?: string | null;
+  status?: string;
+  created_at?: string;
+};
+
 export default function Agent() {
   const router = useRouter();
   const currentUser = useStore((state: any) => state.currentUser);
@@ -21,6 +30,7 @@ export default function Agent() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [refreshingBalance, setRefreshingBalance] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<AgentTransaction[]>([]);
   const menuTranslateX = useRef(new Animated.Value(380)).current;
 
   useEffect(() => {
@@ -43,6 +53,7 @@ export default function Agent() {
       if (result?.agent) {
         setCurrentUser(result.agent);
         setBalance(Number(result.agent.balance || 0));
+        setTransactions(Array.isArray(result.transactions) ? result.transactions : []);
         setLastSync(new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }));
       }
     } catch {
@@ -84,6 +95,31 @@ export default function Agent() {
     router.push(route as any);
   };
 
+  const formatTransactionDate = (value?: string) => {
+    if (!value) {
+      return '-';
+    }
+
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return date.toLocaleString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  const getTransactionLabel = (transaction: AgentTransaction) =>
+    transaction.method === 'agent_float_recharge'
+      ? 'Crédit administrateur'
+      : transaction.client_id
+        ? `Recharge client ${transaction.client_id}`
+        : 'Recharge client';
+
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
@@ -114,6 +150,46 @@ export default function Agent() {
             Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.
             {lastSync ? ` Dernière actualisation : ${lastSync}.` : ''}
           </Text>
+        </View>
+
+        <View style={styles.historyCard}>
+          <View style={styles.historyHeader}>
+            <View>
+              <Text style={styles.historyTitle}>Historique transactions</Text>
+              <Text style={styles.historySubtitle}>Dernières opérations du compte agent</Text>
+            </View>
+            <View style={styles.historyCountPill}>
+              <Text style={styles.historyCountText}>{transactions.length}</Text>
+            </View>
+          </View>
+
+          {transactions.length === 0 ? (
+            <View style={styles.emptyHistory}>
+              <Ionicons name="receipt-outline" size={30} color={TAKO_ACTION} />
+              <Text style={styles.emptyHistoryTitle}>Aucune transaction</Text>
+              <Text style={styles.emptyHistoryText}>Les crédits administrateur et recharges client apparaîtront ici automatiquement.</Text>
+            </View>
+          ) : (
+            transactions.slice(0, 6).map((transaction) => {
+              const isCredit = transaction.method === 'agent_float_recharge';
+              const amount = Number(transaction.amount || 0);
+
+              return (
+                <View key={transaction.id} style={styles.transactionRow}>
+                  <View style={[styles.transactionIcon, isCredit ? styles.transactionIconCredit : styles.transactionIconDebit]}>
+                    <Ionicons name={isCredit ? 'arrow-down' : 'arrow-up'} size={19} color="white" />
+                  </View>
+                  <View style={styles.transactionBody}>
+                    <Text style={styles.transactionTitle}>{getTransactionLabel(transaction)}</Text>
+                    <Text style={styles.transactionDate}>{formatTransactionDate(transaction.created_at)}</Text>
+                  </View>
+                  <Text style={[styles.transactionAmount, isCredit ? styles.transactionAmountCredit : styles.transactionAmountDebit]}>
+                    {isCredit ? '+' : '-'}{amount} FC
+                  </Text>
+                </View>
+              );
+            })
+          )}
         </View>
 
       </ScrollView>
@@ -516,5 +592,114 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     lineHeight: 19,
+  },
+  historyCard: {
+    borderRadius: 18,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    padding: 16,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.08,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 14,
+  },
+  historyTitle: {
+    color: TAKO_BLUE,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  historySubtitle: {
+    color: '#667085',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 4,
+  },
+  historyCountPill: {
+    minWidth: 38,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EAF4FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
+  },
+  historyCountText: {
+    color: TAKO_ACTION,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  emptyHistory: {
+    borderRadius: 16,
+    backgroundColor: '#F5F8FF',
+    alignItems: 'center',
+    padding: 18,
+  },
+  emptyHistoryTitle: {
+    color: TAKO_BLUE,
+    fontSize: 15,
+    fontWeight: '900',
+    marginTop: 8,
+  },
+  emptyHistoryText: {
+    color: '#667085',
+    fontSize: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  transactionRow: {
+    minHeight: 62,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F7',
+    gap: 11,
+  },
+  transactionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  transactionIconCredit: {
+    backgroundColor: '#09D457',
+  },
+  transactionIconDebit: {
+    backgroundColor: TAKO_ACTION,
+  },
+  transactionBody: {
+    flex: 1,
+  },
+  transactionTitle: {
+    color: TAKO_BLUE,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  transactionDate: {
+    color: '#7B8798',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 3,
+  },
+  transactionAmount: {
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  transactionAmountCredit: {
+    color: '#09A84F',
+  },
+  transactionAmountDebit: {
+    color: TAKO_BLUE,
   },
 });
