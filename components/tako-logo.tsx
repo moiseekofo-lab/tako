@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
     height: 112,
   },
   logoLogin: {
-    height: 76,
+    height: 62,
   },
   logoSmall: {
     height: 64,
@@ -65,9 +65,9 @@ const styles = StyleSheet.create({
     marginRight: 22,
   },
   markLogin: {
-    width: 62,
-    height: 64,
-    marginRight: 11,
+    width: 54,
+    height: 54,
+    marginRight: 10,
   },
   markSmall: {
     width: 68,
@@ -86,11 +86,11 @@ const styles = StyleSheet.create({
     top: 17,
   },
   dotLogin: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
     left: 0,
-    top: 9,
+    top: 10,
   },
   dotSmall: {
     width: 22,
@@ -112,11 +112,11 @@ const styles = StyleSheet.create({
     top: 3,
   },
   slashLogin: {
-    width: 22,
-    height: 49,
+    width: 19,
+    height: 44,
     borderRadius: 13,
-    left: 32,
-    top: 1,
+    left: 28,
+    top: 4,
   },
   slashSmall: {
     width: 24,
@@ -128,7 +128,6 @@ const styles = StyleSheet.create({
   word: {
     color: 'white',
     fontFamily: TAKO_FONT,
-    fontWeight: '600',
     letterSpacing: 0,
     includeFontPadding: true,
   },
@@ -140,7 +139,7 @@ const styles = StyleSheet.create({
     width: 300,
   },
   wordBlockLogin: {
-    width: 178,
+    width: 136,
   },
   wordBlockSmall: {
     width: 154,
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     lineHeight: 66,
   },
   wordLogin: {
-    fontSize: 56,
-    lineHeight: 76,
+    fontSize: 42,
+    lineHeight: 62,
   },
 });
