@@ -5,9 +5,18 @@ type TakoLogoProps = {
   color?: string;
 };
 
+const TAKO_ORANGE = '#FF8B45';
+const TAKO_FONT = Platform.select({
+  ios: 'Alkatra',
+  android: 'Alkatra',
+  web: 'Alkatra, "Segoe UI", Arial, sans-serif',
+  default: 'Alkatra',
+});
+
 export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
   const isLarge = size === 'large';
   const isLogin = size === 'login';
+  const showTagline = isLarge || isLogin;
 
   return (
     <View style={[styles.logo, isLarge ? styles.logoLarge : isLogin ? styles.logoLogin : styles.logoSmall]}>
@@ -19,14 +28,21 @@ export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
           style={[
             styles.slash,
             isLarge ? styles.slashLarge : isLogin ? styles.slashLogin : styles.slashSmall,
-            { backgroundColor: color },
+            { backgroundColor: TAKO_ORANGE },
           ]}
         />
       </View>
 
-      <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall, { color }]}>
-        TaKo
-      </Text>
+      <View style={styles.wordBlock}>
+        <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall, { color }]}>
+          TaKo
+        </Text>
+        {showTagline ? (
+          <Text style={[styles.tagline, isLarge ? styles.taglineLarge : styles.taglineLogin, { color }]}>
+            Accessible, Sécurisé et Rapide
+          </Text>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -38,10 +54,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   logoLarge: {
-    height: 112,
+    height: 122,
   },
   logoLogin: {
-    height: 58,
+    height: 72,
   },
   logoSmall: {
     height: 64,
@@ -117,17 +133,16 @@ const styles = StyleSheet.create({
   },
   word: {
     color: 'white',
-    fontFamily: Platform.select({
-      ios: 'Boordens Street',
-      android: 'Boordens Street',
-      default: 'Boordens Street',
-    }),
+    fontFamily: TAKO_FONT,
     fontWeight: '300',
     letterSpacing: 0,
   },
+  wordBlock: {
+    justifyContent: 'center',
+  },
   wordLarge: {
     fontSize: 84,
-    lineHeight: 94,
+    lineHeight: 86,
   },
   wordSmall: {
     fontSize: 49,
@@ -135,6 +150,26 @@ const styles = StyleSheet.create({
   },
   wordLogin: {
     fontSize: 43,
-    lineHeight: 51,
+    lineHeight: 44,
+  },
+  tagline: {
+    fontFamily: Platform.select({
+      ios: 'System',
+      android: 'Roboto',
+      web: 'Roboto, Arial, sans-serif',
+      default: 'Arial',
+    }),
+    fontWeight: '800',
+    letterSpacing: 0,
+  },
+  taglineLarge: {
+    fontSize: 16,
+    lineHeight: 20,
+    marginTop: -4,
+  },
+  taglineLogin: {
+    fontSize: 10,
+    lineHeight: 13,
+    marginTop: -1,
   },
 });

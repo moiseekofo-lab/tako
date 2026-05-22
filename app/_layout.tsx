@@ -1,3 +1,4 @@
+import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import { Platform, StyleSheet } from 'react-native';
 
@@ -56,6 +57,14 @@ if (!globalState.__takoFontPatchApplied) {
 }
 
 export default function Layout() {
+  const [fontsLoaded] = useFonts({
+    Alkatra: require('../assets/fonts/Alkatra.ttf'),
+  });
+
+  if (!fontsLoaded) {
+    return null;
+  }
+
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="index" />
