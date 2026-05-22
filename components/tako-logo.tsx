@@ -54,10 +54,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   logoLarge: {
-    height: 122,
+    height: 136,
   },
   logoLogin: {
-    height: 72,
+    height: 86,
   },
   logoSmall: {
     height: 64,
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
   },
   markLogin: {
     width: 62,
-    height: 52,
+    height: 64,
     marginRight: 11,
   },
   markSmall: {
@@ -134,23 +134,25 @@ const styles = StyleSheet.create({
   word: {
     color: 'white',
     fontFamily: TAKO_FONT,
-    fontWeight: '300',
+    fontWeight: '600',
     letterSpacing: 0,
+    includeFontPadding: true,
   },
   wordBlock: {
     justifyContent: 'center',
+    paddingTop: 4,
   },
   wordLarge: {
     fontSize: 84,
-    lineHeight: 86,
+    lineHeight: 106,
   },
   wordSmall: {
     fontSize: 49,
-    lineHeight: 56,
+    lineHeight: 66,
   },
   wordLogin: {
-    fontSize: 43,
-    lineHeight: 44,
+    fontSize: 42,
+    lineHeight: 58,
   },
   tagline: {
     fontFamily: Platform.select({
@@ -165,11 +167,11 @@ const styles = StyleSheet.create({
   taglineLarge: {
     fontSize: 16,
     lineHeight: 20,
-    marginTop: -4,
+    marginTop: -10,
   },
   taglineLogin: {
     fontSize: 10,
     lineHeight: 13,
-    marginTop: -1,
+    marginTop: -5,
   },
 });

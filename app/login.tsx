@@ -1159,6 +1159,7 @@ const styles = StyleSheet.create({
     bottom: 9,
     color: 'white',
     fontSize: 18,
+    fontFamily: 'Alkatra',
     fontWeight: '900',
   },
   busDoor: {
