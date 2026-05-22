@@ -16,7 +16,6 @@ const TAKO_FONT = Platform.select({
 export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
   const isLarge = size === 'large';
   const isLogin = size === 'login';
-  const showTagline = isLarge || isLogin;
 
   return (
     <View style={[styles.logo, isLarge ? styles.logoLarge : isLogin ? styles.logoLogin : styles.logoSmall]}>
@@ -37,11 +36,6 @@ export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
         <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall, { color }]}>
           TaKo
         </Text>
-        {showTagline ? (
-          <Text style={[styles.tagline, isLarge ? styles.taglineLarge : styles.taglineLogin, { color }]}>
-            Accessible, Sécurisé et Rapide
-          </Text>
-        ) : null}
       </View>
     </View>
   );
@@ -54,10 +48,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
   },
   logoLarge: {
-    height: 136,
+    height: 112,
   },
   logoLogin: {
-    height: 86,
+    height: 76,
   },
   logoSmall: {
     height: 64,
@@ -140,49 +134,27 @@ const styles = StyleSheet.create({
   },
   wordBlock: {
     justifyContent: 'center',
-    paddingTop: 4,
+    paddingTop: 0,
   },
   wordBlockLarge: {
     width: 300,
   },
   wordBlockLogin: {
-    width: 154,
+    width: 178,
   },
   wordBlockSmall: {
     width: 154,
   },
   wordLarge: {
-    fontSize: 84,
-    lineHeight: 106,
+    fontSize: 92,
+    lineHeight: 112,
   },
   wordSmall: {
     fontSize: 49,
     lineHeight: 66,
   },
   wordLogin: {
-    fontSize: 42,
-    lineHeight: 58,
-  },
-  tagline: {
-    fontFamily: Platform.select({
-      ios: 'System',
-      android: 'Roboto',
-      web: 'Roboto, Arial, sans-serif',
-      default: 'Arial',
-    }),
-    fontWeight: '800',
-    letterSpacing: 0,
-    textAlign: 'center',
-    alignSelf: 'stretch',
-  },
-  taglineLarge: {
-    fontSize: 14,
-    lineHeight: 17,
-    marginTop: -10,
-  },
-  taglineLogin: {
-    fontSize: 8,
-    lineHeight: 10,
-    marginTop: -7,
+    fontSize: 56,
+    lineHeight: 76,
   },
 });
