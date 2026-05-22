@@ -5,7 +5,7 @@ type TakoLogoProps = {
   color?: string;
 };
 
-const TAKO_ORANGE = '#FF8B45';
+const TAKO_ORANGE = '#FFC35C';
 const TAKO_FONT = Platform.select({
   ios: 'Alkatra',
   android: 'Alkatra',
