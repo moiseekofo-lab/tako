@@ -33,7 +33,7 @@ export function TakoLogo({ size = 'small', color = '#061F68' }: TakoLogoProps) {
         />
       </View>
 
-      <View style={styles.wordBlock}>
+      <View style={[styles.wordBlock, isLarge ? styles.wordBlockLarge : isLogin ? styles.wordBlockLogin : styles.wordBlockSmall]}>
         <Text style={[styles.word, isLarge ? styles.wordLarge : isLogin ? styles.wordLogin : styles.wordSmall, { color }]}>
           TaKo
         </Text>
@@ -142,6 +142,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingTop: 4,
   },
+  wordBlockLarge: {
+    width: 300,
+  },
+  wordBlockLogin: {
+    width: 154,
+  },
+  wordBlockSmall: {
+    width: 154,
+  },
   wordLarge: {
     fontSize: 84,
     lineHeight: 106,
@@ -163,15 +172,17 @@ const styles = StyleSheet.create({
     }),
     fontWeight: '800',
     letterSpacing: 0,
+    textAlign: 'center',
+    alignSelf: 'stretch',
   },
   taglineLarge: {
-    fontSize: 16,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 17,
     marginTop: -10,
   },
   taglineLogin: {
-    fontSize: 10,
-    lineHeight: 13,
-    marginTop: -5,
+    fontSize: 8,
+    lineHeight: 10,
+    marginTop: -7,
   },
 });
