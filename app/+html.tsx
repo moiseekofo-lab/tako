@@ -21,6 +21,12 @@ export default function Root({ children }: PropsWithChildren) {
           name="description"
           content="TaKo, paiement transport en RDC par QR, NFC et mobile money."
         />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Alkatra:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon.png" />
         <ScrollViewStyleReset />

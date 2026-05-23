@@ -9,7 +9,7 @@ const TAKO_ORANGE = '#FFC35C';
 const TAKO_FONT = Platform.select({
   ios: 'Alkatra',
   android: 'Alkatra',
-  web: 'Alkatra, "Segoe UI", Arial, sans-serif',
+  web: 'Alkatra',
   default: 'Alkatra',
 });
 
