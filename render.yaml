@@ -1,5 +1,12 @@
 services:
   - type: web
+    name: tako-public
+    runtime: static
+    rootDir: public-site
+    staticPublishPath: .
+    autoDeploy: true
+
+  - type: web
     name: tako-1
     runtime: static
     buildCommand: npm ci && npm run build:web
