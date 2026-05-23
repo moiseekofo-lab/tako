@@ -145,14 +145,17 @@ const styles = StyleSheet.create({
     width: 154,
   },
   wordLarge: {
+    fontFamily: TAKO_FONT,
     fontSize: 92,
     lineHeight: 112,
   },
   wordSmall: {
+    fontFamily: TAKO_FONT,
     fontSize: 49,
     lineHeight: 66,
   },
   wordLogin: {
+    fontFamily: TAKO_FONT,
     fontSize: 42,
     lineHeight: 62,
   },
