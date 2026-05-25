@@ -9,12 +9,17 @@ const adminEmail = (process.env.ADMIN_EMAIL || 'contact@takotransport.online').t
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
 const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
+const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
+const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
+const twilioVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 const maishaPayEndpoint =
   process.env.MAISHA_PAY_ENDPOINT || 'https://marchand.maishapay.online/api/payment/rest/vers1.0/merchant';
 const maishaPayGatewayMode = Number(process.env.MAISHA_PAY_GATEWAY_MODE || 0);
 const maishaPayPublicApiKey = process.env.MAISHA_PAY_PUBLIC_API_KEY;
 const maishaPaySecretApiKey = process.env.MAISHA_PAY_SECRET_API_KEY;
 const maishaPayCurrency = process.env.MAISHA_PAY_CURRENCY || 'CDF';
+const TWILIO_PENDING_CODE = '__twilio_pending__';
+const TWILIO_VERIFIED_PREFIX = '__twilio_verified__:';
 
 const pool = databaseUrl
   ? new pg.Pool({
@@ -38,6 +43,88 @@ function normalizeContact(value = '') {
 
 function generateCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
+}
+
+function hashOtpCode(code) {
+  return crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+}
+
+function isPhoneContact(contact) {
+  return Boolean(contact) && !String(contact).includes('@');
+}
+
+function isTwilioVerifyEnabled() {
+  return Boolean(twilioAccountSid && twilioAuthToken && twilioVerifyServiceSid);
+}
+
+function formatSmsPhone(contact) {
+  const value = String(contact || '').trim().replace(/[\s()-]/g, '');
+
+  if (value.startsWith('+')) {
+    return value;
+  }
+
+  if (value.startsWith('00')) {
+    return `+${value.slice(2)}`;
+  }
+
+  if (value.startsWith('243')) {
+    return `+${value}`;
+  }
+
+  if (value.startsWith('0')) {
+    return `+243${value.slice(1)}`;
+  }
+
+  return `+${value}`;
+}
+
+async function callTwilioVerify(action, params) {
+  const serviceSid = encodeURIComponent(twilioVerifyServiceSid);
+  const response = await fetch(`https://verify.twilio.com/v2/Services/${serviceSid}/${action}`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams(params).toString(),
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error('Twilio Verify failed:', response.status, result);
+    const error = new Error(
+      action === 'Verifications'
+        ? 'Impossible d’envoyer le code SMS. Vérifiez le numéro puis réessayez.'
+        : 'Code incorrect ou expiré',
+    );
+    error.statusCode = action === 'Verifications' ? 502 : 400;
+    throw error;
+  }
+
+  return result;
+}
+
+async function sendVerificationSms(contact) {
+  const result = await callTwilioVerify('Verifications', {
+    To: formatSmsPhone(contact),
+    Channel: 'sms',
+  });
+
+  return result.status === 'pending';
+}
+
+async function checkVerificationSms(contact, code) {
+  const result = await callTwilioVerify('VerificationCheck', {
+    To: formatSmsPhone(contact),
+    Code: String(code).trim(),
+  });
+
+  if (result.status !== 'approved') {
+    const error = new Error('Code incorrect ou expiré');
+    error.statusCode = 400;
+    throw error;
+  }
 }
 
 function generateClientId() {
@@ -459,6 +546,57 @@ async function verifyStoredCode(contact, code, purpose, consume = true) {
   }
 }
 
+async function verifyCode(contact, code, purpose, consume = true) {
+  const cleanContact = normalizeContact(contact);
+
+  if (!isPhoneContact(cleanContact) || !isTwilioVerifyEnabled()) {
+    await verifyStoredCode(cleanContact, code, purpose, consume);
+    return;
+  }
+
+  const result = await query(
+    `
+      SELECT *
+      FROM verification_codes
+      WHERE contact = $1 AND purpose = $2 AND expires_at > NOW()
+      LIMIT 1;
+    `,
+    [cleanContact, purpose],
+  );
+  const storedCode = result.rows[0];
+
+  const verifiedCode = `${TWILIO_VERIFIED_PREFIX}${hashOtpCode(code)}`;
+  const hasVerifiedCode = storedCode?.code?.startsWith(TWILIO_VERIFIED_PREFIX);
+
+  if (!storedCode || (storedCode.code !== TWILIO_PENDING_CODE && !hasVerifiedCode)) {
+    const error = new Error('Code incorrect ou expiré');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (storedCode.code === TWILIO_PENDING_CODE) {
+    await checkVerificationSms(cleanContact, code);
+  } else if (storedCode.code !== verifiedCode) {
+    const error = new Error('Code incorrect ou expiré');
+    error.statusCode = 400;
+    throw error;
+  }
+
+  if (consume) {
+    await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [cleanContact, purpose]);
+    return;
+  }
+
+  await query(
+    `
+      UPDATE verification_codes
+      SET code = $3, expires_at = NOW() + INTERVAL '10 minutes'
+      WHERE contact = $1 AND purpose = $2;
+    `,
+    [cleanContact, purpose, verifiedCode],
+  );
+}
+
 async function handleRequest(request, response) {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
@@ -513,7 +651,8 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const code = generateCode();
+    const useSms = isPhoneContact(contact) && isTwilioVerifyEnabled();
+    const code = useSms ? TWILIO_PENDING_CODE : generateCode();
     await query(
       `
         INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at)
@@ -523,6 +662,22 @@ async function handleRequest(request, response) {
       `,
       [contact, code, purpose],
     );
+
+    if (useSms) {
+      try {
+        await sendVerificationSms(contact);
+      } catch (error) {
+        await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, purpose]);
+        throw error;
+      }
+
+      sendJson(response, 200, {
+        ok: true,
+        message: 'Code envoyé par SMS',
+        delivery: 'sms',
+      });
+      return;
+    }
 
     const emailSent = await sendVerificationEmail(contact, code, purpose);
 
@@ -545,7 +700,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    await verifyStoredCode(contact, body.code, purpose, false);
+    await verifyCode(contact, body.code, purpose, false);
     sendJson(response, 200, {
       ok: true,
       verified: true,
@@ -562,7 +717,8 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const code = generateCode();
+    const useSms = isTwilioVerifyEnabled();
+    const code = useSms ? TWILIO_PENDING_CODE : generateCode();
     await query(
       `
         INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at)
@@ -573,10 +729,26 @@ async function handleRequest(request, response) {
       [phone, code],
     );
 
+    if (useSms) {
+      try {
+        await sendVerificationSms(phone);
+      } catch (error) {
+        await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [phone, 'prepaid-card']);
+        throw error;
+      }
+
+      sendJson(response, 200, {
+        ok: true,
+        message: 'Code envoyé par SMS au client',
+        delivery: 'sms',
+      });
+      return;
+    }
+
     sendJson(response, 200, {
       ok: true,
-      message: 'Code envoyé au numéro du client',
-      delivery: 'sms-pending',
+      message: 'Code généré en mode démo',
+      delivery: 'demo',
       code,
     });
     return;
@@ -593,7 +765,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    await verifyStoredCode(phone, code, 'prepaid-card');
+    await verifyCode(phone, code, 'prepaid-card');
 
     const cardOwner = await query('SELECT client_id FROM nfc_cards WHERE card_id = $1 LIMIT 1;', [cardId]);
     if (cardOwner.rowCount) {
@@ -660,7 +832,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    await verifyStoredCode(contact, body.code, 'register');
+    await verifyCode(contact, body.code, 'register');
 
     const id = await generateUniqueClientId();
     const email = contact.includes('@') ? contact : null;
@@ -747,7 +919,7 @@ async function handleRequest(request, response) {
       return;
     }
 
-    await verifyStoredCode(contact, body.code, 'reset');
+    await verifyCode(contact, body.code, 'reset');
     const result = await query(
       `
         UPDATE users

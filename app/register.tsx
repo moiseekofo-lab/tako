@@ -123,7 +123,9 @@ export default function Register() {
         'Code envoyé',
         nextCode
           ? `Votre code de confirmation est ${nextCode}`
-          : 'Votre code de confirmation a été envoyé par email.'
+          : cleanContact.includes('@')
+            ? 'Votre code de confirmation a été envoyé par email.'
+            : 'Votre code de confirmation a été envoyé par SMS.'
       );
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');

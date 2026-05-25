@@ -18,7 +18,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { loginAccount, loginAdmin, requestVerificationCode, resetPassword } from '../services/api';
+import { loginAccount, loginAdmin, requestVerificationCode, resetPassword, verifyVerificationCode } from '../services/api';
 import { languageOptions, translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -193,14 +193,16 @@ export default function Login() {
         'Code envoyé',
         nextCode
           ? `Votre code de récupération est ${nextCode}`
-          : 'Votre code de récupération a été envoyé par email.'
+          : cleanContact.includes('@')
+            ? 'Votre code de récupération a été envoyé par email.'
+            : 'Votre code de récupération a été envoyé par SMS.'
       );
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
     }
   };
 
-  const confirmResetCode = () => {
+  const confirmResetCode = async () => {
     if (!resetCode.trim()) {
       Alert.alert('Code manquant', 'Entrez le code reçu puis réessayez.');
       return;
@@ -211,7 +213,12 @@ export default function Login() {
       return;
     }
 
-    setAuthMode('newPassword');
+    try {
+      await verifyVerificationCode(resetContact.trim(), resetCode.trim(), 'reset');
+      setAuthMode('newPassword');
+    } catch (error: any) {
+      Alert.alert('Code incorrect', error?.message || 'Vérifiez le code reçu puis réessayez.');
+    }
   };
 
   const saveNewPassword = async () => {
