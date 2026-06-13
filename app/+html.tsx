@@ -67,34 +67,6 @@ const globalStyles = `
   * {
     box-sizing: border-box;
     -webkit-tap-highlight-color: transparent;
-    scrollbar-width: thin !important;
-    scrollbar-color: rgba(120, 130, 150, 0.34) transparent !important;
-  }
-
-  *::-webkit-scrollbar {
-    width: 5px !important;
-    height: 5px !important;
-    display: block !important;
-  }
-
-  *::-webkit-scrollbar-track {
-    background: transparent !important;
-  }
-
-  *::-webkit-scrollbar-thumb {
-    background: rgba(120, 130, 150, 0.34) !important;
-    border: 0;
-    border-radius: 999px;
-  }
-
-  *::-webkit-scrollbar-thumb:hover {
-    background: rgba(120, 130, 150, 0.52) !important;
-  }
-
-  *::-webkit-scrollbar-button {
-    width: 0 !important;
-    height: 0 !important;
-    display: none !important;
   }
 
   input,

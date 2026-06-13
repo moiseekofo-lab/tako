@@ -23,8 +23,6 @@ const PAGE_BG = '#F5F8FF';
 const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
       overflowY: 'scroll',
-      scrollbarWidth: 'thin',
-      scrollbarColor: `rgba(120, 130, 150, 0.34) transparent`,
     } as any)
   : null;
 type NfcTag = { id?: string; type?: string } | null;
