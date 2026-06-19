@@ -18,6 +18,7 @@ const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 const takoPetitTransportNews = require('../assets/images/news-tako-petit-transport.jpeg');
 const takoPublicTransportNews = require('../assets/images/news-tako-public-transport.jpeg');
 const takoEgliseNews = require('../assets/images/news-tako-eglise.jpeg');
+const clientPhysicalCardImage = require('../assets/images/client-physical-card.png');
 
 export default function Home() {
   const router = useRouter();
@@ -552,9 +553,7 @@ export default function Home() {
                 disabled={!!nfcCardId}
                 accessibilityLabel={nfcCardId ? text.active : text.activateCard}
                 onPress={() => router.push('/client-nfc' as any)}>
-                <Text style={styles.miniCardLogo}>TaKo</Text>
-                <MaterialCommunityIcons name="contactless-payment" size={35} color="#F2B624" />
-                <Text style={styles.miniCardVisa}>VISA</Text>
+                <Image source={clientPhysicalCardImage} style={styles.miniCardImage} resizeMode="cover" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -964,19 +963,11 @@ const styles = StyleSheet.create({
     height: 124,
     borderRadius: 9,
     backgroundColor: '#061F68',
-    padding: 10,
-    justifyContent: 'space-between',
+    overflow: 'hidden',
   },
-  miniCardLogo: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  miniCardVisa: {
-    color: 'white',
-    alignSelf: 'flex-end',
-    fontSize: 17,
-    fontWeight: '900',
+  miniCardImage: {
+    width: '100%',
+    height: '100%',
   },
   miniCardDisabled: {
     opacity: 0.72,
