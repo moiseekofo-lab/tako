@@ -143,6 +143,16 @@ async function generateUniqueClientId() {
   return String(crypto.randomInt(1000000000, 9999999999));
 }
 
+async function isEmailAlreadyUsed(contact) {
+  const email = normalizeContact(contact);
+  if (!email || !email.includes('@')) {
+    return false;
+  }
+
+  const existing = await query('SELECT id FROM users WHERE LOWER(email) = LOWER($1) LIMIT 1;', [email]);
+  return existing.rowCount > 0;
+}
+
 async function sendVerificationEmail(contact, code, purpose) {
   if (!sendGridApiKey || !sendGridFromEmail || !contact.includes('@')) {
     return false;
@@ -631,6 +641,14 @@ async function handleRequest(request, response) {
       return;
     }
 
+    if (purpose === 'register' && await isEmailAlreadyUsed(contact)) {
+      sendJson(response, 409, {
+        ok: false,
+        error: 'Cet email est déjà utilisé. Connectez-vous avec ce compte ou utilisez un autre email.',
+      });
+      return;
+    }
+
     const recentCode = await query(
       `
         SELECT created_at
@@ -838,6 +856,14 @@ async function handleRequest(request, response) {
     const email = contact.includes('@') ? contact : null;
     const phone = contact.includes('@') ? null : contact;
     const status = role === 'chauffeur' || role === 'agent' ? 'pending' : 'active';
+
+    if (email && await isEmailAlreadyUsed(email)) {
+      sendJson(response, 409, {
+        ok: false,
+        error: 'Cet email est déjà utilisé. Connectez-vous avec ce compte ou utilisez un autre email.',
+      });
+      return;
+    }
 
     const result = await query(
       `

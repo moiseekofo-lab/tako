@@ -86,6 +86,7 @@ export default function Register() {
     const cleanValue = value.trim();
     return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
   };
+  const isEmailAlreadyUsedError = (error: any) => String(error?.message || '').toLowerCase().includes('email est déjà utilisé');
 
   useEffect(() => {
     if (resendCooldown <= 0) {
@@ -128,7 +129,10 @@ export default function Register() {
             : 'Votre code de confirmation a été envoyé par SMS.'
       );
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code.');
+      Alert.alert(
+        isEmailAlreadyUsedError(error) ? 'Email déjà utilisé' : 'Erreur',
+        error?.message || 'Impossible d’envoyer le code.'
+      );
     } finally {
       setIsSendingCode(false);
     }
@@ -213,7 +217,10 @@ export default function Register() {
       );
       router.replace('/login' as any);
     } catch (error: any) {
-      Alert.alert('Erreur', error?.message || 'Impossible de créer le compte.');
+      Alert.alert(
+        isEmailAlreadyUsedError(error) ? 'Email déjà utilisé' : 'Erreur',
+        error?.message || 'Impossible de créer le compte.'
+      );
     }
   };
 
