@@ -26,10 +26,7 @@ export default function Register() {
   const [sentCode, setSentCode] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [birthDate, setBirthDate] = useState('');
-  const [showBirthSelector, setShowBirthSelector] = useState(false);
-  const [birthDay, setBirthDay] = useState(1);
-  const [birthMonth, setBirthMonth] = useState(1);
-  const [birthYear, setBirthYear] = useState(new Date().getFullYear() - 18);
+  const [birthDateTouched, setBirthDateTouched] = useState(false);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -42,51 +39,36 @@ export default function Register() {
 
   const generateClientId = () => `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
   const isEmail = (value: string) => value.includes('@');
-  const minBirthYear = new Date().getFullYear() - 100;
-  const maxBirthYear = new Date().getFullYear() - 12;
-  const monthLabels = ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Août', 'Sep', 'Oct', 'Nov', 'Déc'];
-  const padDate = (value: number) => String(value).padStart(2, '0');
-  const getDaysInMonth = (month: number, year: number) => new Date(year, month, 0).getDate();
-  const formatBirthDate = (day: number, month: number, year: number) => `${padDate(day)}/${padDate(month)}/${year}`;
-  const applyBirthDate = (day: number, month: number, year: number) => {
-    setBirthDay(day);
-    setBirthMonth(month);
-    setBirthYear(year);
-    setBirthDate(formatBirthDate(day, month, year));
+  const formatBirthDateInput = (value: string) => {
+    const digits = value.replace(/\D/g, '').slice(0, 8);
+    if (digits.length <= 2) return digits;
+    if (digits.length <= 4) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   };
-  const updateBirthDate = (part: 'day' | 'month' | 'year', direction: 1 | -1) => {
-    let nextDay = birthDay;
-    let nextMonth = birthMonth;
-    let nextYear = birthYear;
+  const isValidBirthDate = (value: string) => {
+    const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(value.trim());
+    if (!match) return false;
 
-    if (part === 'day') {
-      const maxDay = getDaysInMonth(birthMonth, birthYear);
-      nextDay = birthDay + direction;
-      if (nextDay > maxDay) nextDay = 1;
-      if (nextDay < 1) nextDay = maxDay;
-    }
+    const day = Number(match[1]);
+    const month = Number(match[2]);
+    const year = Number(match[3]);
+    const date = new Date(year, month - 1, day);
+    const currentYear = new Date().getFullYear();
 
-    if (part === 'month') {
-      nextMonth = birthMonth + direction;
-      if (nextMonth > 12) nextMonth = 1;
-      if (nextMonth < 1) nextMonth = 12;
-      nextDay = Math.min(nextDay, getDaysInMonth(nextMonth, birthYear));
-    }
-
-    if (part === 'year') {
-      nextYear = birthYear + direction;
-      if (nextYear > maxBirthYear) nextYear = minBirthYear;
-      if (nextYear < minBirthYear) nextYear = maxBirthYear;
-      nextDay = Math.min(nextDay, getDaysInMonth(birthMonth, nextYear));
-    }
-
-    applyBirthDate(nextDay, nextMonth, nextYear);
+    return (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day &&
+      year >= currentYear - 100 &&
+      year <= currentYear - 12
+    );
   };
   const isValidContact = (value: string) => {
     const cleanValue = value.trim();
     return /\S+@\S+\.\S+/.test(cleanValue);
   };
   const isEmailAlreadyUsedError = (error: any) => String(error?.message || '').toLowerCase().includes('email est déjà utilisé');
+  const showBirthDateError = birthDateTouched && birthDate.length > 0 && !isValidBirthDate(birthDate);
 
   useEffect(() => {
     if (resendCooldown <= 0) {
@@ -166,6 +148,12 @@ export default function Register() {
   const handleRegister = async () => {
     if (!fullName.trim() || !birthDate.trim() || !password.trim()) {
       Alert.alert('Informations manquantes', 'Ajoutez le nom complet, la date de naissance et le mot de passe.');
+      return;
+    }
+
+    if (!isValidBirthDate(birthDate)) {
+      setBirthDateTouched(true);
+      Alert.alert('Date invalide', 'Entrez la date de naissance au format JJ/MM/AAAA.');
       return;
     }
 
@@ -341,41 +329,20 @@ export default function Register() {
             />
           </View>
 
-          <Pressable
-            style={styles.profileField}
-            onPress={() => {
-              if (!birthDate) {
-                applyBirthDate(birthDay, birthMonth, birthYear);
-              }
-              setShowBirthSelector((value) => !value);
-            }}>
-            <Text style={[styles.profileDateText, !birthDate && styles.profilePlaceholder]}>
-              {birthDate || 'Date de naissance'}
-            </Text>
-            <Ionicons name={showBirthSelector ? 'chevron-up' : 'chevron-down'} size={23} color="#111827" />
-          </Pressable>
-
-          {showBirthSelector ? (
-            <View style={styles.dateSelector}>
-              <DateColumn
-                label="Jour"
-                value={padDate(birthDay)}
-                increase={() => updateBirthDate('day', 1)}
-                decrease={() => updateBirthDate('day', -1)}
-              />
-              <DateColumn
-                label="Mois"
-                value={monthLabels[birthMonth - 1]}
-                increase={() => updateBirthDate('month', 1)}
-                decrease={() => updateBirthDate('month', -1)}
-              />
-              <DateColumn
-                label="Année"
-                value={String(birthYear)}
-                increase={() => updateBirthDate('year', 1)}
-                decrease={() => updateBirthDate('year', -1)}
-              />
-            </View>
+          <View style={[styles.profileField, showBirthDateError && styles.profileFieldError]}>
+            <TextInput
+              placeholder="JJ/MM/AAAA"
+              placeholderTextColor="#A7ABB3"
+              value={birthDate}
+              onChangeText={(value) => setBirthDate(formatBirthDateInput(value))}
+              onBlur={() => setBirthDateTouched(true)}
+              keyboardType="number-pad"
+              maxLength={10}
+              style={styles.profileInput}
+            />
+          </View>
+          {showBirthDateError ? (
+            <Text style={styles.fieldErrorText}>Format invalide. Utilisez JJ/MM/AAAA.</Text>
           ) : null}
 
           <View style={styles.profileField}>
@@ -452,31 +419,6 @@ export default function Register() {
         </ScrollView>
       ) : null}
     </KeyboardAvoidingView>
-  );
-}
-
-function DateColumn({
-  label,
-  value,
-  increase,
-  decrease,
-}: {
-  label: string;
-  value: string;
-  increase: () => void;
-  decrease: () => void;
-}) {
-  return (
-    <View style={styles.dateColumn}>
-      <Text style={styles.dateLabel}>{label}</Text>
-      <TouchableOpacity style={styles.dateArrow} activeOpacity={0.75} onPress={increase}>
-        <Ionicons name="chevron-up" size={18} color="#061F68" />
-      </TouchableOpacity>
-      <Text style={styles.dateValue}>{value}</Text>
-      <TouchableOpacity style={styles.dateArrow} activeOpacity={0.75} onPress={decrease}>
-        <Ionicons name="chevron-down" size={18} color="#061F68" />
-      </TouchableOpacity>
-    </View>
   );
 }
 
@@ -654,6 +596,18 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: 'white',
     paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  profileFieldError: {
+    borderColor: '#D21F2B',
+    borderWidth: 2,
+    marginBottom: 6,
+  },
+  fieldErrorText: {
+    color: '#D21F2B',
+    fontSize: 13,
+    fontWeight: '800',
+    marginTop: -2,
     marginBottom: 14,
   },
   profileInput: {
