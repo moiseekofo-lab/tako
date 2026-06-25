@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -38,6 +38,7 @@ export default function Register() {
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(0);
   const [isVerifyingCode, setIsVerifyingCode] = useState(false);
+  const codeInputRef = useRef<TextInput>(null);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
 
   const generateClientId = () => `${Date.now().toString().slice(-8)}${Math.floor(Math.random() * 90 + 10)}`;
@@ -84,7 +85,7 @@ export default function Register() {
   };
   const isValidContact = (value: string) => {
     const cleanValue = value.trim();
-    return /\S+@\S+\.\S+/.test(cleanValue) || cleanValue.replace(/\D/g, '').length >= 8;
+    return /\S+@\S+\.\S+/.test(cleanValue);
   };
   const isEmailAlreadyUsedError = (error: any) => String(error?.message || '').toLowerCase().includes('email est déjà utilisé');
 
@@ -107,7 +108,7 @@ export default function Register() {
 
     const cleanContact = (step === 'code' ? verifiedContact : contact).trim();
     if (!isValidContact(cleanContact)) {
-      Alert.alert('Information manquante', 'Entrez un email ou un numéro valide pour recevoir le code.');
+      Alert.alert('Email manquant', 'Entrez un email valide pour recevoir le code.');
       return;
     }
 
@@ -124,9 +125,7 @@ export default function Register() {
         'Code envoyé',
         nextCode
           ? `Votre code de confirmation est ${nextCode}`
-          : cleanContact.includes('@')
-            ? 'Votre code de confirmation a été envoyé par email.'
-            : 'Votre code de confirmation a été envoyé par SMS.'
+            : 'Votre code de confirmation a été envoyé par email.'
       );
     } catch (error: any) {
       Alert.alert(
@@ -226,93 +225,120 @@ export default function Register() {
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, step !== 'profile' && styles.simpleScreen]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
-        <View style={styles.logoWrap}>
-          <TakoLogo size="login" />
-        </View>
+      {step === 'contact' ? (
+        <View style={styles.simpleContent}>
+          <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => router.back()}>
+            <Ionicons name="chevron-back" size={26} color="#111827" />
+          </TouchableOpacity>
 
-        <Text style={styles.title}>Créer un compte</Text>
-        <View style={styles.formPanel}>
-          <View style={styles.stepRow}>
-            <View style={[styles.stepDot, styles.stepActive]} />
-            <View style={[styles.stepLine, step !== 'contact' && styles.stepActive]} />
-            <View style={[styles.stepDot, step !== 'contact' && styles.stepActive]} />
-            <View style={[styles.stepLine, step === 'profile' && styles.stepActive]} />
-            <View style={[styles.stepDot, step === 'profile' && styles.stepActive]} />
+          <Text style={styles.simpleTitle}>Entrez votre email</Text>
+
+          <View style={styles.emailRow}>
+            <View style={styles.mailBadge}>
+              <Ionicons name="mail" size={24} color="#061F68" />
+            </View>
+            <TextInput
+              placeholder="Email"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              value={contact}
+              onChangeText={setContact}
+              style={styles.emailInput}
+            />
           </View>
 
-          {step === 'contact' ? (
-            <>
-              <Text style={styles.stepTitle}>Vérification du compte</Text>
-              <Text style={styles.helperText}>
-                Ajoutez d’abord votre email ou votre numéro. Il servira à récupérer votre compte plus facilement.
-              </Text>
+          <Text style={styles.simpleText}>
+            Nous enverrons un code de confirmation à cet email pour créer votre compte.
+          </Text>
 
-              <View style={styles.inputBox}>
-                <Ionicons name="mail" size={26} color="#87909F" style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Email ou numéro"
-                  placeholderTextColor="#87909F"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  value={contact}
-                  onChangeText={setContact}
-                  style={styles.input}
-                />
+          <TouchableOpacity
+            style={[styles.bottomButton, isSendingCode && styles.disabledBtn]}
+            activeOpacity={0.9}
+            disabled={isSendingCode}
+            onPress={handleSendCode}>
+            <Text style={styles.bottomButtonText}>{isSendingCode ? 'ENVOI...' : 'SUIVANT'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      {step === 'code' ? (
+        <View style={styles.simpleContent}>
+          <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => setStep('contact')}>
+            <Ionicons name="chevron-back" size={26} color="#111827" />
+          </TouchableOpacity>
+
+          <Text style={styles.simpleTitle}>Confirmez votre email</Text>
+          <Text style={styles.simpleText}>
+            Nous avons envoyé un code à {verifiedContact}. Entrez-le ci-dessous pour continuer.
+          </Text>
+
+          <Pressable style={styles.codeWrap} onPress={() => codeInputRef.current?.focus()}>
+            <TextInput
+              ref={codeInputRef}
+              value={verificationCode}
+              onChangeText={(value) => setVerificationCode(value.replace(/\D/g, '').slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+              style={styles.codeInputHidden}
+            />
+            {[0, 1, 2, 3, 4, 5].map((index) => (
+              <View key={index} style={styles.codeBoxGroup}>
+                <View style={[styles.codeBox, verificationCode.length === index && styles.codeBoxActive]}>
+                  <Text style={styles.codeDigit}>{verificationCode[index] || ''}</Text>
+                </View>
+                {index === 2 ? <Text style={styles.codeSeparator}>-</Text> : null}
               </View>
+            ))}
+          </Pressable>
 
-              <TouchableOpacity
-                style={[styles.btn, isSendingCode && styles.disabledBtn]}
-                activeOpacity={0.9}
-                disabled={isSendingCode}
-                onPress={handleSendCode}>
-                <Text style={styles.btnText}>{isSendingCode ? 'Envoi...' : 'Recevoir le code'}</Text>
-              </TouchableOpacity>
-            </>
-          ) : null}
+          <TouchableOpacity
+            style={styles.resendButton}
+            activeOpacity={0.85}
+            disabled={isSendingCode || resendCooldown > 0}
+            onPress={handleSendCode}>
+            <Text style={[styles.resendText, (isSendingCode || resendCooldown > 0) && styles.disabledResendText]}>
+              {isSendingCode ? 'Envoi...' : resendCooldown > 0 ? `Vous n’avez pas reçu le code ? 00:${String(resendCooldown).padStart(2, '0')}` : 'Renvoyer le code'}
+            </Text>
+          </TouchableOpacity>
 
-          {step === 'code' ? (
-            <>
-              <Text style={styles.stepTitle}>Confirmer le code</Text>
-              <Text style={styles.helperText}>
-                Entrez le code reçu sur {verifiedContact}. Après confirmation, vous pourrez compléter le compte.
-              </Text>
+          <TouchableOpacity
+            style={[styles.bottomButton, (verificationCode.length < 6 || isVerifyingCode) && styles.bottomButtonDisabled]}
+            activeOpacity={0.9}
+            disabled={verificationCode.length < 6 || isVerifyingCode}
+            onPress={handleConfirmCode}>
+            <Text style={styles.bottomButtonText}>{isVerifyingCode ? 'VÉRIFICATION...' : 'CONFIRMER'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
 
-              <View style={styles.inputBox}>
-                <Ionicons name="keypad" size={26} color="#87909F" style={styles.inputIcon} />
-                <TextInput
-                  placeholder="Code de confirmation"
-                  placeholderTextColor="#87909F"
-                  keyboardType="number-pad"
-                  value={verificationCode}
-                  onChangeText={setVerificationCode}
-                  maxLength={6}
-                  style={styles.input}
-                />
-              </View>
+      {step === 'profile' ? (
+        <ScrollView
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => setStep('code')}>
+            <Ionicons name="chevron-back" size={26} color="#111827" />
+          </TouchableOpacity>
 
-              <TouchableOpacity style={styles.btn} activeOpacity={0.9} disabled={isVerifyingCode} onPress={handleConfirmCode}>
-                <Text style={styles.btnText}>{isVerifyingCode ? 'Vérification...' : 'Confirmer'}</Text>
-              </TouchableOpacity>
+          <View style={styles.logoWrap}>
+            <TakoLogo size="login" />
+          </View>
 
-              <TouchableOpacity
-                style={styles.textButton}
-                activeOpacity={0.85}
-                disabled={isSendingCode || resendCooldown > 0}
-                onPress={handleSendCode}>
-                <Text style={[styles.textButtonLabel, (isSendingCode || resendCooldown > 0) && styles.disabledTextButtonLabel]}>
-                  {isSendingCode ? 'Envoi...' : resendCooldown > 0 ? ('Renvoyer dans ' + resendCooldown + 's') : 'Renvoyer le code'}
-                </Text>
-              </TouchableOpacity>
-            </>
-          ) : null}
+          <Text style={styles.title}>Créer un compte</Text>
+          <View style={styles.formPanel}>
+            <View style={styles.stepRow}>
+              <View style={[styles.stepDot, styles.stepActive]} />
+              <View style={[styles.stepLine, styles.stepActive]} />
+              <View style={[styles.stepDot, styles.stepActive]} />
+              <View style={[styles.stepLine, styles.stepActive]} />
+              <View style={[styles.stepDot, styles.stepActive]} />
+            </View>
 
-          {step === 'profile' ? (
             <>
               <Text style={styles.stepTitle}>Compléter le profil</Text>
               <Text style={styles.verifiedText}>
@@ -438,9 +464,9 @@ export default function Register() {
                 <Text style={styles.btnText}>Créer</Text>
               </TouchableOpacity>
             </>
-          ) : null}
-        </View>
-      </ScrollView>
+          </View>
+        </ScrollView>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -474,6 +500,141 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F5F8FF',
+  },
+  simpleScreen: {
+    backgroundColor: 'white',
+  },
+  simpleContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 70,
+    paddingBottom: 34,
+    backgroundColor: 'white',
+  },
+  backButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F1F2F4',
+    marginBottom: 40,
+  },
+  simpleTitle: {
+    color: '#064636',
+    fontSize: 32,
+    lineHeight: 41,
+    fontWeight: '900',
+    marginBottom: 22,
+  },
+  simpleText: {
+    color: '#2B2F36',
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '500',
+    marginBottom: 22,
+  },
+  emailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 16,
+  },
+  mailBadge: {
+    width: 104,
+    height: 60,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+  },
+  emailInput: {
+    flex: 1,
+    height: 60,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    paddingHorizontal: 18,
+    color: '#202836',
+    fontSize: 18,
+    fontWeight: '500',
+  },
+  bottomButton: {
+    position: 'absolute',
+    left: 24,
+    right: 24,
+    bottom: 34,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#9DDFB7',
+  },
+  bottomButtonDisabled: {
+    opacity: 0.75,
+  },
+  bottomButtonText: {
+    color: '#12352F',
+    fontSize: 16,
+    fontWeight: '900',
+    letterSpacing: 0.4,
+  },
+  codeWrap: {
+    position: 'relative',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 4,
+    marginBottom: 10,
+  },
+  codeInputHidden: {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    opacity: 0,
+  },
+  codeBoxGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  codeBox: {
+    width: 42,
+    height: 64,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    marginRight: 10,
+  },
+  codeBoxActive: {
+    borderWidth: 2,
+    borderColor: '#111827',
+  },
+  codeDigit: {
+    color: '#061F68',
+    fontSize: 28,
+    fontWeight: '800',
+  },
+  codeSeparator: {
+    color: '#D8D8D8',
+    fontSize: 24,
+    fontWeight: '700',
+    marginRight: 10,
+  },
+  resendButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 10,
+  },
+  resendText: {
+    color: '#8B8F98',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  disabledResendText: {
+    color: '#A7ABB3',
   },
   container: {
     flexGrow: 1,
