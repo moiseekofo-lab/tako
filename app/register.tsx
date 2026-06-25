@@ -13,7 +13,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { TakoLogo } from '../components/tako-logo';
 import { registerAccount, requestVerificationCode, verifyVerificationCode } from '../services/api';
 import { useStore } from './store';
 
@@ -318,153 +317,138 @@ export default function Register() {
 
       {step === 'profile' ? (
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={styles.profileContainer}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
           <TouchableOpacity style={styles.backButton} activeOpacity={0.8} onPress={() => setStep('code')}>
             <Ionicons name="chevron-back" size={26} color="#111827" />
           </TouchableOpacity>
 
-          <View style={styles.logoWrap}>
-            <TakoLogo size="login" />
+          <Text style={styles.simpleTitle}>Créez votre compte</Text>
+
+          <View style={styles.verifiedBox}>
+            <Ionicons name="checkmark-circle" size={20} color="#0CBF63" />
+            <Text style={styles.verifiedSimpleText}>{verifiedContact} vérifié</Text>
           </View>
 
-          <Text style={styles.title}>Créer un compte</Text>
-          <View style={styles.formPanel}>
-            <View style={styles.stepRow}>
-              <View style={[styles.stepDot, styles.stepActive]} />
-              <View style={[styles.stepLine, styles.stepActive]} />
-              <View style={[styles.stepDot, styles.stepActive]} />
-              <View style={[styles.stepLine, styles.stepActive]} />
-              <View style={[styles.stepDot, styles.stepActive]} />
-            </View>
+          <View style={styles.profileField}>
+            <TextInput
+              placeholder="Nom complet"
+              placeholderTextColor="#A7ABB3"
+              value={fullName}
+              onChangeText={setFullName}
+              style={styles.profileInput}
+            />
+          </View>
 
-            <>
-              <Text style={styles.stepTitle}>Compléter le profil</Text>
-              <Text style={styles.verifiedText}>
-                {verifiedContact} vérifié
-              </Text>
+          <Pressable
+            style={styles.profileField}
+            onPress={() => {
+              if (!birthDate) {
+                applyBirthDate(birthDay, birthMonth, birthYear);
+              }
+              setShowBirthSelector((value) => !value);
+            }}>
+            <Text style={[styles.profileDateText, !birthDate && styles.profilePlaceholder]}>
+              {birthDate || 'Date de naissance'}
+            </Text>
+            <Ionicons name={showBirthSelector ? 'chevron-up' : 'chevron-down'} size={23} color="#111827" />
+          </Pressable>
 
-            <View style={styles.inputBox}>
-              <Ionicons name="person" size={26} color="#87909F" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Nom complet"
-                placeholderTextColor="#87909F"
-                value={fullName}
-                onChangeText={setFullName}
-                style={styles.input}
+          {showBirthSelector ? (
+            <View style={styles.dateSelector}>
+              <DateColumn
+                label="Jour"
+                value={padDate(birthDay)}
+                increase={() => updateBirthDate('day', 1)}
+                decrease={() => updateBirthDate('day', -1)}
+              />
+              <DateColumn
+                label="Mois"
+                value={monthLabels[birthMonth - 1]}
+                increase={() => updateBirthDate('month', 1)}
+                decrease={() => updateBirthDate('month', -1)}
+              />
+              <DateColumn
+                label="Année"
+                value={String(birthYear)}
+                increase={() => updateBirthDate('year', 1)}
+                decrease={() => updateBirthDate('year', -1)}
               />
             </View>
+          ) : null}
 
-            <Pressable
-              style={styles.inputBox}
-              onPress={() => {
-                if (!birthDate) {
-                  applyBirthDate(birthDay, birthMonth, birthYear);
-                }
-                setShowBirthSelector((value) => !value);
-              }}>
-              <Ionicons name="calendar" size={26} color="#87909F" style={styles.inputIcon} />
-              <Text style={[styles.dateValueText, !birthDate && styles.datePlaceholder]}>
-                {birthDate || 'Date de naissance'}
-              </Text>
-              <Ionicons name={showBirthSelector ? 'chevron-up' : 'chevron-down'} size={22} color="#87909F" />
+          <View style={styles.profileField}>
+            <TextInput
+              placeholder="Mot de passe"
+              placeholderTextColor="#A7ABB3"
+              secureTextEntry={!showPassword}
+              value={password}
+              onChangeText={setPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              textContentType="none"
+              style={styles.profileInput}
+            />
+            <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
+              <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={27} color="#111827" />
             </Pressable>
+          </View>
 
-            {showBirthSelector ? (
-              <View style={styles.dateSelector}>
-                <DateColumn
-                  label="Jour"
-                  value={padDate(birthDay)}
-                  increase={() => updateBirthDate('day', 1)}
-                  decrease={() => updateBirthDate('day', -1)}
-                />
-                <DateColumn
-                  label="Mois"
-                  value={monthLabels[birthMonth - 1]}
-                  increase={() => updateBirthDate('month', 1)}
-                  decrease={() => updateBirthDate('month', -1)}
-                />
-                <DateColumn
-                  label="Année"
-                  value={String(birthYear)}
-                  increase={() => updateBirthDate('year', 1)}
-                  decrease={() => updateBirthDate('year', -1)}
-                />
-              </View>
-            ) : null}
+          <Text style={styles.passwordHint}>
+            Utilisez un mot de passe personnel avec des lettres et des chiffres.
+          </Text>
 
-            <View style={styles.inputBox}>
-              <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Mot de passe"
-                placeholderTextColor="#87909F"
-                secureTextEntry={!showPassword}
-                value={password}
-                onChangeText={setPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="off"
-                textContentType="none"
-                style={styles.input}
-              />
-              <Pressable onPress={() => setShowPassword((value) => !value)} hitSlop={10}>
-                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
-              </Pressable>
-            </View>
+          <View style={styles.profileField}>
+            <TextInput
+              placeholder="Confirmer mot de passe"
+              placeholderTextColor="#A7ABB3"
+              secureTextEntry={!showConfirmPassword}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+              autoComplete="off"
+              textContentType="none"
+              style={styles.profileInput}
+            />
+            <Pressable onPress={() => setShowConfirmPassword((value) => !value)} hitSlop={10}>
+              <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={27} color="#111827" />
+            </Pressable>
+          </View>
 
-            <View style={styles.inputBox}>
-              <Ionicons name="lock-closed" size={26} color="#87909F" style={styles.inputIcon} />
-              <TextInput
-                placeholder="Confirmer mot de passe"
-                placeholderTextColor="#87909F"
-                secureTextEntry={!showConfirmPassword}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                autoComplete="off"
-                textContentType="none"
-                style={styles.input}
-              />
-              <Pressable onPress={() => setShowConfirmPassword((value) => !value)} hitSlop={10}>
-                <Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={26} color="#87909F" />
-              </Pressable>
-            </View>
+          <Text style={styles.simpleLabel}>Choisir votre rôle</Text>
 
-            <Text style={styles.label}>Choisir votre rôle :</Text>
-
-            <View style={styles.row}>
-              <TouchableOpacity
-                style={[styles.roleBtn, role === 'passager' && styles.active]}
-                activeOpacity={0.85}
-                onPress={() => setRole('passager')}>
-                <Ionicons name="people" size={31} color={role === 'passager' ? 'white' : '#061F68'} />
-                <Text style={[styles.roleText, role === 'passager' && styles.activeRoleText]}>Passager</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.roleBtn, role === 'chauffeur' && styles.active]}
-                activeOpacity={0.85}
-                onPress={() => setRole('chauffeur')}>
-                <MaterialCommunityIcons name="steering" size={33} color={role === 'chauffeur' ? 'white' : '#061F68'} />
-                <Text style={[styles.roleText, role === 'chauffeur' && styles.activeRoleText]}>Chauffeur</Text>
-              </TouchableOpacity>
-            </View>
-
+          <View style={styles.row}>
             <TouchableOpacity
-              style={[styles.roleBtn, styles.agentRoleBtn, role === 'agent' && styles.active]}
+              style={[styles.simpleRoleBtn, role === 'passager' && styles.simpleRoleActive]}
               activeOpacity={0.85}
-              onPress={() => setRole('agent')}>
-              <MaterialCommunityIcons name="account-tie" size={31} color={role === 'agent' ? 'white' : '#061F68'} />
-              <Text style={[styles.roleText, role === 'agent' && styles.activeRoleText]}>Agent</Text>
+              onPress={() => setRole('passager')}>
+              <Ionicons name="people" size={24} color={role === 'passager' ? 'white' : '#061F68'} />
+              <Text style={[styles.simpleRoleText, role === 'passager' && styles.activeRoleText]}>Passager</Text>
             </TouchableOpacity>
 
-              <TouchableOpacity style={styles.btn} activeOpacity={0.9} onPress={handleRegister}>
-                <Text style={styles.btnText}>Créer</Text>
-              </TouchableOpacity>
-            </>
+            <TouchableOpacity
+              style={[styles.simpleRoleBtn, role === 'chauffeur' && styles.simpleRoleActive]}
+              activeOpacity={0.85}
+              onPress={() => setRole('chauffeur')}>
+              <MaterialCommunityIcons name="steering" size={26} color={role === 'chauffeur' ? 'white' : '#061F68'} />
+              <Text style={[styles.simpleRoleText, role === 'chauffeur' && styles.activeRoleText]}>Chauffeur</Text>
+            </TouchableOpacity>
           </View>
+
+          <TouchableOpacity
+            style={[styles.simpleRoleBtn, styles.agentRoleBtn, role === 'agent' && styles.simpleRoleActive]}
+            activeOpacity={0.85}
+            onPress={() => setRole('agent')}>
+            <MaterialCommunityIcons name="account-tie" size={25} color={role === 'agent' ? 'white' : '#061F68'} />
+            <Text style={[styles.simpleRoleText, role === 'agent' && styles.activeRoleText]}>Agent</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.profileCreateButton} activeOpacity={0.9} onPress={handleRegister}>
+            <Text style={styles.bottomButtonText}>CRÉER</Text>
+          </TouchableOpacity>
         </ScrollView>
       ) : null}
     </KeyboardAvoidingView>
@@ -635,6 +619,103 @@ const styles = StyleSheet.create({
   },
   disabledResendText: {
     color: '#A7ABB3',
+  },
+  profileContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 70,
+    paddingBottom: 42,
+    backgroundColor: 'white',
+  },
+  verifiedBox: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#09D457',
+    backgroundColor: '#F0FFF6',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    marginBottom: 24,
+  },
+  verifiedSimpleText: {
+    color: '#061F68',
+    fontSize: 14,
+    fontWeight: '800',
+  },
+  profileField: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    borderRadius: 9,
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  profileInput: {
+    flex: 1,
+    color: '#202836',
+    fontSize: 17,
+    fontWeight: '500',
+    paddingVertical: 0,
+  },
+  profileDateText: {
+    flex: 1,
+    color: '#202836',
+    fontSize: 17,
+    fontWeight: '600',
+  },
+  profilePlaceholder: {
+    color: '#A7ABB3',
+    fontWeight: '500',
+  },
+  passwordHint: {
+    color: '#111827',
+    fontSize: 15,
+    lineHeight: 22,
+    fontWeight: '500',
+    marginTop: -4,
+    marginBottom: 20,
+  },
+  simpleLabel: {
+    color: '#111827',
+    fontSize: 17,
+    fontWeight: '800',
+    marginTop: 10,
+    marginBottom: 12,
+  },
+  simpleRoleBtn: {
+    flex: 1,
+    minHeight: 56,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 9,
+    borderWidth: 1,
+    borderColor: '#D8D8D8',
+    backgroundColor: 'white',
+  },
+  simpleRoleActive: {
+    borderColor: '#139DFF',
+    backgroundColor: '#139DFF',
+  },
+  simpleRoleText: {
+    color: '#061F68',
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  profileCreateButton: {
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#9DDFB7',
+    marginTop: 34,
   },
   container: {
     flexGrow: 1,

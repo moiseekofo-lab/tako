@@ -194,6 +194,19 @@ async function sendVerificationEmail(contact, code, purpose) {
         email: sendGridFromEmail,
         name: sendGridFromName,
       },
+      reply_to: {
+        email: sendGridFromEmail,
+        name: sendGridFromName,
+      },
+      tracking_settings: {
+        click_tracking: {
+          enable: false,
+          enable_text: false,
+        },
+        open_tracking: {
+          enable: false,
+        },
+      },
       content: [
         { type: 'text/plain', value: text },
         { type: 'text/html', value: html },
@@ -254,6 +267,19 @@ async function sendAccountCreatedEmail(user) {
       from: {
         email: sendGridFromEmail,
         name: sendGridFromName,
+      },
+      reply_to: {
+        email: sendGridFromEmail,
+        name: sendGridFromName,
+      },
+      tracking_settings: {
+        click_tracking: {
+          enable: false,
+          enable_text: false,
+        },
+        open_tracking: {
+          enable: false,
+        },
       },
       content: [
         { type: 'text/plain', value: text },
