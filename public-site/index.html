@@ -4,273 +4,575 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="theme-color" content="#061F68" />
-    <title>TaKo - Liens officiels</title>
+    <title>TaKo - Transport et paiement a Kinshasa</title>
     <meta
       name="description"
-      content="TaKo, transport et paiement en RDC. Retrouvez le site officiel, le support, l'application et les canaux d'information."
+      content="TaKo simplifie le paiement du transport a Kinshasa avec QR Code, NFC, recharge et suivi en temps reel."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Alkatra:wght@500;600;700&family=Inter:wght@500;700;800&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Alkatra:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
       :root {
-        --tako-blue: #061f68;
-        --tako-gold: #ffc35c;
-        --ink: #0b1220;
-        --white: #ffffff;
-        --soft: rgba(255, 255, 255, 0.16);
+        --blue: #061f68;
+        --blue-2: #0b45aa;
+        --sky: #139dff;
+        --gold: #ffc35c;
+        --green: #11d45a;
+        --ink: #111827;
+        --muted: #5f6b7a;
+        --line: #dbe5f3;
+        --paper: #ffffff;
+        --soft: #f4f8ff;
+        --shadow: 0 18px 45px rgba(6, 31, 104, 0.15);
       }
 
-      * {
-        box-sizing: border-box;
-      }
+      * { box-sizing: border-box; }
+
+      html { scroll-behavior: smooth; }
 
       body {
         margin: 0;
-        min-height: 100vh;
         font-family: Inter, Arial, sans-serif;
-        color: var(--white);
-        background:
-          radial-gradient(circle at 16% 10%, rgba(255, 195, 92, 0.34), transparent 24%),
-          radial-gradient(circle at 92% 18%, rgba(255, 255, 255, 0.18), transparent 26%),
-          linear-gradient(160deg, #061f68 0%, #0a2a82 52%, #061f68 100%);
+        color: var(--ink);
+        background: #fff;
       }
 
-      main {
-        width: min(100%, 760px);
+      a { color: inherit; }
+
+      .page {
         min-height: 100vh;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 86% 10%, rgba(19, 157, 255, 0.16), transparent 24rem),
+          linear-gradient(180deg, #ffffff 0%, #f8fbff 56%, #ffffff 100%);
+      }
+
+      .shell {
+        width: min(1180px, calc(100% - 38px));
         margin: 0 auto;
-        padding: 34px 22px 30px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
       }
 
-      .logo {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 14px;
-        margin-top: 14px;
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 30;
+        background: rgba(255, 255, 255, 0.92);
+        backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(6, 31, 104, 0.08);
       }
 
-      .mark {
-        position: relative;
-        width: 78px;
-        height: 68px;
+      .nav {
+        height: 74px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        text-decoration: none;
+        color: var(--blue);
         flex: 0 0 auto;
       }
 
-      .dot {
+      .brand-mark {
+        position: relative;
+        width: 52px;
+        height: 42px;
+      }
+
+      .brand-mark::before {
+        content: "";
         position: absolute;
         left: 0;
-        top: 13px;
-        width: 25px;
-        height: 25px;
-        border-radius: 999px;
-        background: var(--white);
+        top: 12px;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--blue);
       }
 
-      .slash {
+      .brand-mark::after {
+        content: "";
         position: absolute;
-        left: 40px;
-        top: 3px;
-        width: 28px;
-        height: 61px;
+        left: 27px;
+        top: 4px;
+        width: 20px;
+        height: 36px;
         border-radius: 999px;
-        background: var(--tako-gold);
-        transform: rotate(29deg);
+        background: var(--gold);
+        transform: rotate(30deg);
       }
 
-      .word {
+      .brand-word {
         font-family: Alkatra, cursive;
-        font-size: clamp(52px, 11vw, 82px);
-        line-height: 0.92;
+        font-size: 38px;
+        line-height: 1;
+        font-weight: 700;
         letter-spacing: 0;
-        color: var(--white);
       }
 
-      .tagline {
-        max-width: 560px;
-        margin: 22px auto 28px;
-        font-size: clamp(19px, 4.5vw, 28px);
-        line-height: 1.12;
-        text-align: center;
-        font-weight: 500;
-      }
-
-      .links {
-        width: 100%;
-        display: grid;
-        gap: 14px;
-      }
-
-      .link {
-        min-height: 64px;
-        padding: 0 24px;
-        border-radius: 999px;
-        background: var(--white);
-        color: var(--ink);
-        text-decoration: none;
+      .menu {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 12px;
-        font-size: clamp(16px, 3.8vw, 21px);
-        font-weight: 800;
-        box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
-        transition: transform 180ms ease, box-shadow 180ms ease;
-      }
-
-      .link:active,
-      .link:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.24);
-      }
-
-      .link svg {
-        width: 23px;
-        height: 23px;
-        flex: 0 0 auto;
-      }
-
-      .socials {
-        margin-top: 28px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: clamp(18px, 6vw, 44px);
-        flex-wrap: wrap;
-      }
-
-      .social {
-        width: 56px;
-        height: 56px;
-        border-radius: 999px;
-        display: grid;
-        place-items: center;
-        color: var(--tako-gold);
-        background: #020711;
-        text-decoration: none;
-        font-size: 25px;
-        font-weight: 900;
-        box-shadow: 0 14px 30px rgba(0, 0, 0, 0.22);
-      }
-
-      .footer {
-        margin-top: auto;
-        padding-top: 34px;
-        text-align: center;
-        color: rgba(255, 255, 255, 0.76);
-        font-size: 12px;
+        gap: clamp(14px, 2vw, 30px);
+        font-size: 14px;
         font-weight: 700;
       }
 
-      @media (max-width: 520px) {
-        main {
-          padding: 28px 18px 24px;
-        }
+      .menu a {
+        text-decoration: none;
+        color: #101827;
+        padding: 27px 0 23px;
+        border-bottom: 3px solid transparent;
+      }
 
-        .logo {
-          gap: 12px;
-        }
+      .menu a:hover,
+      .menu a.active {
+        color: var(--blue);
+        border-color: var(--blue);
+      }
 
-        .mark {
-          width: 62px;
-          height: 55px;
-        }
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 0 0 auto;
+      }
 
-        .dot {
-          width: 20px;
-          height: 20px;
-          top: 10px;
-        }
+      .btn {
+        min-height: 42px;
+        padding: 0 22px;
+        border-radius: 10px;
+        border: 1px solid var(--blue);
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 9px;
+        text-decoration: none;
+        font-size: 14px;
+        font-weight: 800;
+        transition: transform 160ms ease, box-shadow 160ms ease, background 160ms ease;
+      }
 
-        .slash {
-          left: 32px;
-          width: 23px;
-          height: 49px;
-        }
+      .btn:hover { transform: translateY(-1px); }
+      .btn.primary { color: #fff; background: var(--blue); box-shadow: 0 16px 32px rgba(6, 31, 104, 0.22); }
+      .btn.ghost { color: var(--blue); background: #fff; }
 
-        .link {
-          min-height: 60px;
-          padding: 0 18px;
-        }
+      .hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(390px, 0.92fr);
+        align-items: center;
+        gap: 42px;
+        min-height: 420px;
+        padding: 48px 0 34px;
+      }
 
-        .social {
-          width: 52px;
-          height: 52px;
-          font-size: 23px;
-        }
+      .hero::after {
+        content: "";
+        position: absolute;
+        right: -10vw;
+        bottom: 32px;
+        width: 60vw;
+        height: 145px;
+        background: linear-gradient(110deg, transparent, rgba(19, 157, 255, 0.14), rgba(6, 31, 104, 0.18), transparent);
+        filter: blur(2px);
+        transform: rotate(-12deg);
+        pointer-events: none;
+      }
+
+      .eyebrow {
+        width: fit-content;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 11px 16px;
+        border-radius: 999px;
+        background: #eef5ff;
+        color: var(--blue);
+        font-weight: 700;
+        font-size: 14px;
+        margin-bottom: 18px;
+      }
+
+      .signal {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+        background: #fff;
+        color: var(--blue);
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(40px, 5vw, 66px);
+        line-height: 0.97;
+        letter-spacing: 0;
+        color: #08122e;
+      }
+
+      h1 span { color: var(--blue); }
+
+      .lead {
+        max-width: 530px;
+        margin: 18px 0 26px;
+        color: #344054;
+        font-size: 18px;
+        line-height: 1.6;
+        font-weight: 500;
+      }
+
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      .visual {
+        position: relative;
+        min-height: 320px;
+        z-index: 1;
+      }
+
+      .phone {
+        position: absolute;
+        left: 14%;
+        top: 0;
+        width: 190px;
+        height: 360px;
+        border: 9px solid #101827;
+        border-radius: 38px;
+        background: #fff;
+        box-shadow: 0 28px 60px rgba(8, 18, 46, 0.22);
+        padding: 18px 14px;
+      }
+
+      .phone::before {
+        content: "";
+        position: absolute;
+        top: 8px;
+        left: 50%;
+        width: 70px;
+        height: 17px;
+        border-radius: 0 0 16px 16px;
+        background: #101827;
+        transform: translateX(-50%);
+      }
+
+      .phone-logo {
+        margin-top: 12px;
+        color: var(--blue);
+        font-family: Alkatra, cursive;
+        font-weight: 700;
+        font-size: 22px;
+      }
+
+      .balance {
+        margin-top: 10px;
+        padding: 14px;
+        border-radius: 14px;
+        color: #fff;
+        background: linear-gradient(135deg, var(--blue), var(--blue-2));
+      }
+
+      .balance small { display: block; opacity: 0.8; font-weight: 700; }
+      .balance strong { display: block; margin-top: 7px; font-size: 22px; }
+
+      .mini-list { margin-top: 12px; display: grid; gap: 9px; }
+      .mini-row { height: 38px; border-radius: 12px; background: #f1f6ff; display: flex; align-items: center; gap: 9px; padding: 0 10px; font-size: 11px; font-weight: 800; color: var(--blue); }
+      .mini-icon { width: 20px; height: 20px; border-radius: 7px; background: #e1edff; }
+
+      .card-tilt {
+        position: absolute;
+        right: 4%;
+        top: 55px;
+        width: 255px;
+        height: 150px;
+        border-radius: 20px;
+        padding: 22px;
+        color: #fff;
+        background:
+          radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.22), transparent 34%),
+          linear-gradient(135deg, var(--blue), #0a4bc0);
+        box-shadow: 0 28px 55px rgba(6, 31, 104, 0.28);
+        transform: rotate(-5deg);
+      }
+
+      .card-tilt .brand-word { font-size: 34px; color: #fff; }
+      .card-tilt p { margin: 26px 0 0; max-width: 150px; font-size: 12px; line-height: 1.35; opacity: 0.9; }
+
+      .terminal {
+        position: absolute;
+        right: 0;
+        bottom: 12px;
+        width: 220px;
+        height: 110px;
+        border-radius: 28px;
+        background: linear-gradient(145deg, #111827, #0b1630);
+        box-shadow: 0 28px 60px rgba(8, 18, 46, 0.28);
+        transform: rotate(8deg);
+      }
+
+      .terminal::before {
+        content: "";
+        position: absolute;
+        inset: 22px 44px;
+        border-radius: 16px;
+        background: #f8fbff;
+        box-shadow: inset 0 0 0 8px #101827;
+      }
+
+      .wave {
+        position: absolute;
+        right: 24px;
+        top: 24px;
+        width: 42px;
+        height: 42px;
+        border: 4px solid var(--sky);
+        border-left-color: transparent;
+        border-bottom-color: transparent;
+        border-radius: 50%;
+        transform: rotate(45deg);
+      }
+
+      section.block { padding: 20px 0 16px; }
+      .section-title { margin: 0 0 18px; color: #111827; font-size: 27px; line-height: 1.2; }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        gap: 18px;
+      }
+
+      .feature-card,
+      .solution-card,
+      .testimonial {
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        background: rgba(255,255,255,0.92);
+        box-shadow: var(--shadow);
+      }
+
+      .feature-card { min-height: 155px; padding: 20px; }
+      .iconbox { width: 44px; height: 44px; border-radius: 14px; display: grid; place-items: center; color: var(--blue); background: #edf5ff; margin-bottom: 20px; }
+      .feature-card h3, .solution-card h3 { margin: 0 0 8px; font-size: 16px; color: #101827; }
+      .feature-card p, .solution-card p, .testimonial p { margin: 0; color: #344054; font-size: 13px; line-height: 1.45; }
+      .more { display: inline-flex; margin-top: 12px; color: var(--blue); text-decoration: none; font-size: 13px; font-weight: 800; }
+
+      .solutions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+      }
+
+      .solution-card {
+        min-height: 120px;
+        padding: 22px;
+        display: grid;
+        grid-template-columns: 58px 1fr 104px;
+        align-items: center;
+        gap: 18px;
+        overflow: hidden;
+      }
+
+      .person-blob {
+        width: 96px;
+        height: 96px;
+        border-radius: 50% 50% 44% 56%;
+        background: linear-gradient(160deg, #dcecff, #ffffff);
+        position: relative;
+      }
+
+      .person-blob::before { content: ""; position: absolute; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); left: 31px; top: 18px; }
+      .person-blob::after { content: ""; position: absolute; width: 62px; height: 35px; border-radius: 50% 50% 0 0; background: #edf5ff; left: 17px; bottom: 16px; border: 2px solid var(--blue); }
+
+      .testimonials {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+      }
+
+      .testimonial { padding: 17px; display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: start; }
+      .avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, var(--blue), var(--sky)); }
+      .testimonial strong { display: block; margin-bottom: 5px; font-size: 13px; color: #101827; }
+
+      .contact-panel {
+        margin-top: 8px;
+        padding: 28px;
+        border-radius: 24px;
+        background: linear-gradient(135deg, var(--blue), #0b43a8);
+        color: #fff;
+        display: grid;
+        grid-template-columns: 1fr 1.2fr;
+        gap: 22px;
+        align-items: center;
+        box-shadow: 0 22px 60px rgba(6, 31, 104, 0.24);
+      }
+
+      .contact-panel h2 { margin: 0 0 8px; font-size: 28px; }
+      .contact-panel p { margin: 0; color: rgba(255,255,255,0.78); line-height: 1.5; }
+      .contact-links { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .contact-link { min-height: 48px; border-radius: 14px; display: flex; align-items: center; justify-content: center; gap: 9px; text-decoration: none; color: var(--blue); background: #fff; font-size: 13px; font-weight: 900; }
+
+      .footer {
+        margin-top: 34px;
+        padding: 28px 0;
+        color: #fff;
+        background: var(--blue);
+      }
+
+      .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 28px; }
+      .footer h3 { margin: 0 0 12px; font-size: 15px; }
+      .footer a, .footer p { display: block; margin: 0 0 8px; color: rgba(255,255,255,0.74); text-decoration: none; font-size: 13px; }
+      .footer .brand-word { color: #fff; }
+      .socials { display: flex; gap: 10px; margin-top: 14px; }
+      .social { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.12); display: grid; place-items: center; color: #fff; text-decoration: none; font-weight: 900; }
+
+      @media (max-width: 980px) {
+        .nav { height: auto; padding: 16px 0; flex-wrap: wrap; }
+        .menu { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 2px; }
+        .menu a { padding: 9px 0; white-space: nowrap; }
+        .hero { grid-template-columns: 1fr; padding-top: 34px; }
+        .visual { min-height: 330px; }
+        .feature-grid { grid-template-columns: repeat(2, 1fr); }
+        .solutions, .contact-panel, .footer-grid { grid-template-columns: 1fr; }
+      }
+
+      @media (max-width: 620px) {
+        .shell { width: min(100% - 28px, 1180px); }
+        .actions { width: 100%; }
+        .actions .btn { flex: 1; padding-inline: 12px; }
+        h1 { font-size: 38px; }
+        .lead { font-size: 15px; }
+        .feature-grid, .testimonials, .contact-links { grid-template-columns: 1fr; }
+        .solution-card { grid-template-columns: 48px 1fr; }
+        .solution-card .person-blob { display: none; }
+        .phone { left: 0; width: 170px; height: 326px; }
+        .card-tilt { right: 0; width: 218px; height: 132px; }
+        .terminal { width: 190px; }
       }
     </style>
   </head>
   <body>
-    <main>
-      <section class="hero" aria-label="TaKo">
-        <div class="logo" aria-label="TaKo">
-          <div class="mark" aria-hidden="true">
-            <span class="dot"></span>
-            <span class="slash"></span>
+    <div class="page">
+      <header class="topbar">
+        <div class="shell nav">
+          <a class="brand" href="#accueil" aria-label="TaKo accueil">
+            <span class="brand-mark" aria-hidden="true"></span>
+            <span class="brand-word">TaKo</span>
+          </a>
+          <nav class="menu" aria-label="Navigation principale">
+            <a class="active" href="#accueil">Accueil</a>
+            <a href="#apropos">A propos</a>
+            <a href="#fonctionnalites">Fonctionnalites</a>
+            <a href="#solutions">Solutions</a>
+            <a href="#tarifs">Tarifs</a>
+            <a href="#actualites">Actualites</a>
+          </nav>
+          <div class="actions">
+            <a class="btn ghost" href="https://takotransport.online/app">Se connecter</a>
+            <a class="btn primary" href="#contact">Contact us</a>
           </div>
-          <div class="word">TaKo</div>
         </div>
+      </header>
 
-        <p class="tagline">Transport, paiement et recharge simple en République Démocratique du Congo</p>
-      </section>
+      <main id="accueil" class="shell">
+        <section class="hero">
+          <div>
+            <div class="eyebrow"><span class="signal">⌁</span> Solution de paiement du transport a Kinshasa</div>
+            <h1>La route de demain,<br /><span>commence aujourd'hui</span></h1>
+            <p class="lead">TaKo simplifie le paiement du transport pour tous, avec ou sans smartphone. Payez par QR Code, carte NFC ou recharge interne, en toute securite.</p>
+            <div class="hero-actions">
+              <a class="btn primary" href="#fonctionnalites">Decouvrir TaKo →</a>
+              <a class="btn ghost" href="#actualites">Voir les actualites</a>
+            </div>
+          </div>
 
-      <nav class="links" aria-label="Liens officiels TaKo">
-        <a class="link" href="https://takotransport.online">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"></circle><path d="M2 12h20"></path><path d="M12 2a15.3 15.3 0 0 1 0 20"></path><path d="M12 2a15.3 15.3 0 0 0 0 20"></path>
-          </svg>
-          Site officiel
-        </a>
+          <div class="visual" aria-label="Apercu TaKo">
+            <div class="phone">
+              <div class="phone-logo">TaKo</div>
+              <div class="balance"><small>Solde actuel</small><strong>125.000 FC</strong></div>
+              <div class="mini-list">
+                <div class="mini-row"><span class="mini-icon"></span> QR Code</div>
+                <div class="mini-row"><span class="mini-icon"></span> Carte NFC</div>
+                <div class="mini-row"><span class="mini-icon"></span> Historique</div>
+              </div>
+            </div>
+            <div class="card-tilt">
+              <div class="brand-word">TaKo</div>
+              <p>Le transport de demain commence aujourd'hui.</p>
+            </div>
+            <div class="terminal"><span class="wave"></span></div>
+          </div>
+        </section>
 
-        <a class="link" href="https://wa.me/243898341454">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.4l1.6-5.4A8.5 8.5 0 1 1 21 11.5Z"></path><path d="M9.5 8.8c.2-.4.4-.4.7-.4h.5c.2 0 .4.1.5.4l.7 1.6c.1.3.1.5-.1.7l-.4.5c.7 1.2 1.7 2.1 2.9 2.7l.5-.6c.2-.2.4-.3.7-.2l1.6.7c.3.1.4.3.4.6v.5c0 .4-.2.6-.5.8-.5.3-1 .4-1.6.3-3.5-.5-6.2-3.1-6.8-6.6 0-.6.1-1.1.4-1.6Z"></path>
-          </svg>
-          Écrire à TaKo
-        </a>
+        <section id="fonctionnalites" class="block">
+          <h2 class="section-title">Pourquoi choisir TaKo ?</h2>
+          <div class="feature-grid">
+            <article class="feature-card"><div class="iconbox">▯</div><h3>Facile a utiliser</h3><p>Une interface simple pour les passagers, agents et chauffeurs.</p><a class="more" href="#contact">En savoir plus →</a></article>
+            <article class="feature-card"><div class="iconbox">▦</div><h3>Paiement par QR Code</h3><p>Scannez, payez et validez le trajet en quelques secondes.</p><a class="more" href="#contact">En savoir plus →</a></article>
+            <article class="feature-card"><div class="iconbox">)))</div><h3>Carte NFC</h3><p>Sans smartphone ? Utilisez une carte TaKo NFC rechargeable.</p><a class="more" href="#contact">En savoir plus →</a></article>
+            <article class="feature-card"><div class="iconbox">◇</div><h3>Securite maximale</h3><p>Transactions protegees et suivi fiable des paiements.</p><a class="more" href="#contact">En savoir plus →</a></article>
+            <article class="feature-card"><div class="iconbox">▥</div><h3>Suivi en temps reel</h3><p>Consultez le solde, l'historique et les recharges.</p><a class="more" href="#contact">En savoir plus →</a></article>
+          </div>
+        </section>
 
-        <a class="link" href="https://takotransport.online/app">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path>
-          </svg>
-          Télécharger l’application
-        </a>
+        <section id="solutions" class="block">
+          <h2 class="section-title">Des solutions pour tous</h2>
+          <div class="solutions">
+            <article class="solution-card"><div class="iconbox">♙</div><div><h3>Pour les passagers</h3><p>Payez avec smartphone ou carte NFC, et gardez votre historique.</p><a class="more" href="#contact">En savoir plus →</a></div><div class="person-blob"></div></article>
+            <article class="solution-card"><div class="iconbox">◉</div><div><h3>Pour les chauffeurs</h3><p>Recevez les paiements, renseignez trajet et plaque, puis validez rapidement.</p><a class="more" href="#contact">En savoir plus →</a></div><div class="person-blob"></div></article>
+          </div>
+        </section>
 
-        <a class="link" href="https://takotransport.online/points">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle>
-          </svg>
-          Points de service
-        </a>
+        <section id="actualites" class="block">
+          <h2 class="section-title">Temoignages</h2>
+          <div class="testimonials">
+            <article class="testimonial"><div class="avatar"></div><div><strong>Passager a Kinshasa</strong><p>TaKo rend le paiement plus rapide et evite les problemes de monnaie.</p><a class="more" href="#contact">En savoir plus →</a></div></article>
+            <article class="testimonial"><div class="avatar"></div><div><strong>Chauffeur partenaire</strong><p>Le suivi des transactions me permet de mieux gerer mes recettes.</p><a class="more" href="#contact">En savoir plus →</a></div></article>
+            <article class="testimonial"><div class="avatar"></div><div><strong>Agent TaKo</strong><p>La recharge interne aide les clients qui n'ont pas encore l'application.</p><a class="more" href="#contact">En savoir plus →</a></div></article>
+          </div>
+        </section>
 
-        <a class="link" href="mailto:support@takotransport.online">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10"></circle><path d="M9.1 9a3 3 0 1 1 5.8 1c-.5 1.4-2.3 1.7-2.7 3"></path><path d="M12 17h.01"></path>
-          </svg>
-          Centre d’aide
-        </a>
+        <section id="apropos" class="block">
+          <div class="contact-panel" id="contact">
+            <div>
+              <h2>Contact us</h2>
+              <p>Toutes les fonctionnalites de contact et les liens officiels sont regroupes ici.</p>
+            </div>
+            <div class="contact-links">
+              <a class="contact-link" href="https://takotransport.online">Site officiel</a>
+              <a class="contact-link" href="https://wa.me/243898341454">WhatsApp TaKo</a>
+              <a class="contact-link" href="https://takotransport.online/app">Telecharger l'application</a>
+              <a class="contact-link" href="https://takotransport.online/points">Points de service</a>
+              <a class="contact-link" href="mailto:support@takotransport.online">Centre d'aide</a>
+              <a class="contact-link" href="https://www.facebook.com/share/18iU4wsczv/?mibextid=wwXIfr">Facebook</a>
+            </div>
+          </div>
+        </section>
+      </main>
 
-        <a class="link" href="https://wa.me/243898341454">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 20.4l1.6-5.4A8.5 8.5 0 1 1 21 11.5Z"></path><path d="M8.5 12h7"></path><path d="M8.5 15h4"></path><path d="M8.5 9h7"></path>
-          </svg>
-          Canal d’actualités WhatsApp
-        </a>
-      </nav>
-
-      <section class="socials" aria-label="Réseaux sociaux">
-        <a class="social" href="https://www.facebook.com/share/18iU4wsczv/?mibextid=wwXIfr" aria-label="Facebook">f</a>
-        <a class="social" href="#" aria-label="X">𝕏</a>
-        <a class="social" href="#" aria-label="TikTok">♪</a>
-        <a class="social" href="#" aria-label="LinkedIn">in</a>
-      </section>
-
-      <footer class="footer">© 2026 TaKo. Accessible, sécurisé et rapide.</footer>
-    </main>
+      <footer class="footer" id="tarifs">
+        <div class="shell footer-grid">
+          <div>
+            <a class="brand" href="#accueil"><span class="brand-mark" aria-hidden="true"></span><span class="brand-word">TaKo</span></a>
+            <p>Transport. Paiement. Simplicite.</p>
+            <div class="socials"><a class="social" href="https://www.facebook.com/share/18iU4wsczv/?mibextid=wwXIfr">f</a><a class="social" href="#">in</a><a class="social" href="#">x</a><a class="social" href="https://wa.me/243898341454">w</a></div>
+          </div>
+          <div><h3>Quick Links</h3><a href="#accueil">Accueil</a><a href="#solutions">Solutions</a><a href="#fonctionnalites">Fonctionnalites</a></div>
+          <div><h3>Resources</h3><a href="https://takotransport.online/app">Application</a><a href="mailto:support@takotransport.online">Support</a><a href="#contact">Contact us</a></div>
+          <div><h3>Company</h3><a href="#apropos">A propos</a><a href="#actualites">Actualites</a><a href="#tarifs">Tarifs</a></div>
+        </div>
+      </footer>
+    </div>
   </body>
 </html>
