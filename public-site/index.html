@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Alkatra:wght@500;600;700&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
     <style>
       :root {
         --blue: #061f68;
@@ -430,12 +431,13 @@
         background: var(--blue);
       }
 
-      .footer-grid { display: grid; grid-template-columns: 1.4fr repeat(3, 1fr); gap: 28px; }
+      .footer-grid { display: grid; grid-template-columns: minmax(190px, 1.4fr) repeat(3, minmax(105px, 1fr)); gap: 24px; }
       .footer h3 { margin: 0 0 12px; font-size: 15px; }
       .footer a, .footer p { display: block; margin: 0 0 8px; color: rgba(255,255,255,0.74); text-decoration: none; font-size: 13px; }
       .footer .brand-word { color: #fff; }
       .socials { display: flex; gap: 10px; margin-top: 14px; }
-      .social { width: 34px; height: 34px; border-radius: 50%; background: rgba(255,255,255,0.12); display: grid; place-items: center; color: #fff; text-decoration: none; font-weight: 900; }
+      .social { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.12); display: grid !important; place-items: center; color: #fff !important; text-decoration: none; font-size: 17px !important; transition: transform 160ms ease, background 160ms ease; }
+      .social:hover { transform: translateY(-2px); background: var(--sky); }
 
       @media (max-width: 980px) {
         .nav { height: auto; padding: 16px 0; flex-wrap: wrap; }
@@ -444,7 +446,8 @@
         .hero { grid-template-columns: 1fr; padding-top: 34px; }
         .visual { min-height: 330px; }
         .feature-grid { grid-template-columns: repeat(2, 1fr); }
-        .solutions, .contact-panel, .footer-grid { grid-template-columns: 1fr; }
+        .solutions, .contact-panel { grid-template-columns: 1fr; }
+        .footer-grid { grid-template-columns: minmax(180px, 1.35fr) repeat(3, minmax(100px, 1fr)); gap: 18px; }
       }
 
       @media (max-width: 620px) {
@@ -459,6 +462,8 @@
         .phone { left: 0; width: 170px; height: 326px; }
         .card-tilt { right: 0; width: 218px; height: 132px; }
         .terminal { width: 190px; }
+        .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .footer-brand { grid-column: 1 / -1; }
       }
     </style>
   </head>
@@ -553,10 +558,15 @@
 
       <footer class="footer" id="tarifs">
         <div class="shell footer-grid">
-          <div>
+          <div class="footer-brand">
             <a class="brand" href="#accueil"><span class="brand-mark" aria-hidden="true"></span><span class="brand-word">TaKo</span></a>
-            <p>Transport. Paiement. Simplicite.</p>
-            <div class="socials"><a class="social" href="https://www.facebook.com/share/18iU4wsczv/?mibextid=wwXIfr">f</a><a class="social" href="#">in</a><a class="social" href="#">x</a><a class="social" href="https://wa.me/243898341454">w</a></div>
+            <p>Le futur commence aujourd’hui.</p>
+            <div class="socials">
+              <a class="social" href="https://www.facebook.com/share/18iU4wsczv/?mibextid=wwXIfr" target="_blank" rel="noopener noreferrer" aria-label="Facebook"><i class="fa-brands fa-facebook-f" aria-hidden="true"></i></a>
+              <a class="social" href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in" aria-hidden="true"></i></a>
+              <a class="social" href="#" aria-label="X"><i class="fa-brands fa-x-twitter" aria-hidden="true"></i></a>
+              <a class="social" href="https://wa.me/243898341454" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp" aria-hidden="true"></i></a>
+            </div>
           </div>
           <div><h3>Quick Links</h3><a href="#accueil">Accueil</a><a href="#solutions">Solutions</a><a href="#fonctionnalites">Fonctionnalites</a></div>
           <div><h3>Resources</h3><a href="https://takotransport.online/app">Application</a><a href="mailto:support@takotransport.online">Support</a><a href="/contact/">Contact us</a></div>
