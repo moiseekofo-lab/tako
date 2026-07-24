@@ -37,7 +37,7 @@ export default function Login() {
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [rememberAccess, setRememberAccess] = useState(true);
+  const [rememberAccess, setRememberAccess] = useState(!isWeb);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetContact, setResetContact] = useState('');
@@ -55,17 +55,19 @@ export default function Login() {
   const roadPulse = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    AsyncStorage.getItem(CLIENT_NAME_KEY).then((storedName) => {
-      if (storedName) {
-        setClientName(storedName);
-      }
-    });
+    if (!isWeb) {
+      AsyncStorage.getItem(CLIENT_NAME_KEY).then((storedName) => {
+        if (storedName) {
+          setClientName(storedName);
+        }
+      });
+    }
     AsyncStorage.getItem(LANGUAGE_KEY).then((storedLanguage) => {
       if (storedLanguage === 'fr' || storedLanguage === 'en' || storedLanguage === 'es') {
         setGlobalLanguage(storedLanguage);
       }
     });
-  }, [setGlobalLanguage]);
+  }, [isWeb, setGlobalLanguage]);
 
   useEffect(() => {
     if (!showLoginForm) {
@@ -412,7 +414,7 @@ export default function Login() {
             {authMode === 'login' ? (
               <>
                 <Text style={[styles.greeting, isWeb && styles.webGreeting]}>
-                  {greeting}, {displayName}
+                  {isWeb ? 'Bonjour, cher administrateur' : `${greeting}, ${displayName}`}
                 </Text>
                 <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{text.loginTitle}</Text>
 
@@ -444,21 +446,23 @@ export default function Login() {
                   </View>
                 </View>
 
-                <View style={styles.optionsRow}>
-                  <TouchableOpacity activeOpacity={0.8} style={styles.forgotButton} onPress={startPasswordRecovery}>
-                    <Text style={styles.forgotText}>{text.forgotPassword}</Text>
-                    <Ionicons name="chevron-forward" size={22} color="#9B9B9B" />
-                  </TouchableOpacity>
+                {!isWeb ? (
+                  <View style={styles.optionsRow}>
+                    <TouchableOpacity activeOpacity={0.8} style={styles.forgotButton} onPress={startPasswordRecovery}>
+                      <Text style={styles.forgotText}>{text.forgotPassword}</Text>
+                      <Ionicons name="chevron-forward" size={22} color="#9B9B9B" />
+                    </TouchableOpacity>
 
-                  <Pressable
-                    style={styles.rememberWrap}
-                    onPress={() => setRememberAccess((value) => !value)}>
-                    <Text style={styles.rememberText}>{text.rememberAccess}</Text>
-                    <View style={[styles.checkBox, rememberAccess && styles.checkBoxActive]}>
-                      {rememberAccess ? <Ionicons name="checkmark" size={22} color="white" /> : null}
-                    </View>
-                  </Pressable>
-                </View>
+                    <Pressable
+                      style={styles.rememberWrap}
+                      onPress={() => setRememberAccess((value) => !value)}>
+                      <Text style={styles.rememberText}>{text.rememberAccess}</Text>
+                      <View style={[styles.checkBox, rememberAccess && styles.checkBoxActive]}>
+                        {rememberAccess ? <Ionicons name="checkmark" size={22} color="white" /> : null}
+                      </View>
+                    </Pressable>
+                  </View>
+                ) : null}
 
                 <TouchableOpacity
                   style={[styles.enterButton, isWeb && styles.webEnterButton, isLoggingIn && styles.enterButtonDisabled]}
@@ -469,9 +473,11 @@ export default function Login() {
                   <Text style={styles.enterText}>{text.enter}</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/register' as any)}>
-                  <Text style={styles.registerHint}>{text.registerHint}</Text>
-                </TouchableOpacity>
+                {!isWeb ? (
+                  <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/register' as any)}>
+                    <Text style={styles.registerHint}>{text.registerHint}</Text>
+                  </TouchableOpacity>
+                ) : null}
               </>
             ) : null}
 
