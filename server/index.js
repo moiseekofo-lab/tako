@@ -970,7 +970,7 @@ async function handleRequest(request, response) {
 
     const period = ['day', 'week', 'month'].includes(body.period) ? body.period : 'day';
     const interval = period === 'month' ? '30 days' : period === 'week' ? '7 days' : '1 day';
-    const [usersResult, paymentsResult, previousPaymentsResult, rechargeResult, previousRechargeResult] = await Promise.all([
+    const [usersResult, paymentsResult, previousPaymentsResult, rechargeResult, previousRechargeResult, totalCollectedResult] = await Promise.all([
       query(`
         SELECT
           COUNT(*) FILTER (WHERE role = 'passager')::int AS clients,
@@ -1043,6 +1043,13 @@ async function handleRequest(request, response) {
         `,
         [interval],
       ),
+      query(`
+        SELECT COALESCE(SUM(amount) FILTER (
+          WHERE status IN ('accepted', 'successful', 'success')
+            AND method <> 'internal_recharge'
+        ), 0)::numeric AS collected
+        FROM payments;
+      `),
     ]);
 
     const users = usersResult.rows[0] || {};
@@ -1050,10 +1057,9 @@ async function handleRequest(request, response) {
     const previousPayments = previousPaymentsResult.rows[0] || {};
     const recharges = rechargeResult.rows[0] || {};
     const previousRecharges = previousRechargeResult.rows[0] || {};
-    const collected = Number(payments.collected || 0);
+    const collected = Number(totalCollectedResult.rows[0]?.collected || 0);
     const transportCollected = Number(payments.transport_collected || 0);
     const commission = Math.round(transportCollected * 0.04);
-    const previousCollected = Number(previousPayments.collected || 0);
     const previousTransportCollected = Number(previousPayments.transport_collected || 0);
     const percentChange = (current, previous) => {
       const currentValue = Number(current || 0);
@@ -1090,7 +1096,7 @@ async function handleRequest(request, response) {
           drivers: percentChange(users.drivers, users.previous_drivers),
           agents: percentChange(users.agents, users.previous_agents),
           transactions: percentChange(payments.transactions, previousPayments.transactions),
-          collected: percentChange(collected, previousCollected),
+          collected: null,
           driverAmount: percentChange(transportCollected, previousTransportCollected),
           commission: percentChange(transportCollected, previousTransportCollected),
           recharges: percentChange(recharges.successful, previousRecharges.successful),
