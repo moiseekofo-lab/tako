@@ -988,7 +988,14 @@ async function handleRequest(request, response) {
         `
           SELECT
             COUNT(*)::int AS transactions,
-            COALESCE(SUM(amount) FILTER (WHERE status IN ('accepted', 'successful', 'success')), 0)::numeric AS collected,
+            COALESCE(SUM(amount) FILTER (
+              WHERE status IN ('accepted', 'successful', 'success')
+                AND method <> 'internal_recharge'
+            ), 0)::numeric AS collected,
+            COALESCE(SUM(amount) FILTER (
+              WHERE status IN ('accepted', 'successful', 'success')
+                AND method IN ('qr', 'nfc')
+            ), 0)::numeric AS transport_collected,
             COUNT(*) FILTER (WHERE status IN ('failed', 'refused'))::int AS failed
           FROM payments
           WHERE created_at >= NOW() - $1::interval;
@@ -999,7 +1006,14 @@ async function handleRequest(request, response) {
         `
           SELECT
             COUNT(*)::int AS transactions,
-            COALESCE(SUM(amount) FILTER (WHERE status IN ('accepted', 'successful', 'success')), 0)::numeric AS collected
+            COALESCE(SUM(amount) FILTER (
+              WHERE status IN ('accepted', 'successful', 'success')
+                AND method <> 'internal_recharge'
+            ), 0)::numeric AS collected,
+            COALESCE(SUM(amount) FILTER (
+              WHERE status IN ('accepted', 'successful', 'success')
+                AND method IN ('qr', 'nfc')
+            ), 0)::numeric AS transport_collected
           FROM payments
           WHERE created_at >= NOW() - ($1::interval * 2)
             AND created_at < NOW() - $1::interval;
@@ -1037,8 +1051,10 @@ async function handleRequest(request, response) {
     const recharges = rechargeResult.rows[0] || {};
     const previousRecharges = previousRechargeResult.rows[0] || {};
     const collected = Number(payments.collected || 0);
-    const commission = Math.round(collected * 0.04);
+    const transportCollected = Number(payments.transport_collected || 0);
+    const commission = Math.round(transportCollected * 0.04);
     const previousCollected = Number(previousPayments.collected || 0);
+    const previousTransportCollected = Number(previousPayments.transport_collected || 0);
     const percentChange = (current, previous) => {
       const currentValue = Number(current || 0);
       const previousValue = Number(previous || 0);
@@ -1060,7 +1076,7 @@ async function handleRequest(request, response) {
         agents: Number(users.agents || 0),
         transactions: Number(payments.transactions || 0),
         collected,
-        driverAmount: collected - commission,
+        driverAmount: transportCollected - commission,
         commission,
         recharges: {
           successful: Number(recharges.successful || 0),
@@ -1075,8 +1091,8 @@ async function handleRequest(request, response) {
           agents: percentChange(users.agents, users.previous_agents),
           transactions: percentChange(payments.transactions, previousPayments.transactions),
           collected: percentChange(collected, previousCollected),
-          driverAmount: percentChange(collected, previousCollected),
-          commission: percentChange(collected, previousCollected),
+          driverAmount: percentChange(transportCollected, previousTransportCollected),
+          commission: percentChange(transportCollected, previousTransportCollected),
           recharges: percentChange(recharges.successful, previousRecharges.successful),
           payouts: null,
           balance: null,
