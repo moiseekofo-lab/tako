@@ -901,6 +901,11 @@ async function handleRequest(request, response) {
       return;
     }
 
+    if (['blocked', 'closed', 'suspended'].includes(user.status)) {
+      sendJson(response, 403, { ok: false, error: 'Ce compte est bloqué ou fermé' });
+      return;
+    }
+
     sendJson(response, 200, {
       ok: true,
       user: publicUser(user),
@@ -1171,6 +1176,38 @@ async function handleRequest(request, response) {
           : null,
       })),
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/clients/') && url.pathname.endsWith('/status')) {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    const clientId = decodeURIComponent(url.pathname.replace('/admin/clients/', '').replace('/status', '')).trim();
+    const status = String(body.status || '').trim();
+    if (!['active', 'blocked', 'closed'].includes(status)) {
+      sendJson(response, 400, { ok: false, error: 'Statut client invalide' });
+      return;
+    }
+
+    const result = await query(
+      `
+        UPDATE users
+        SET status = $1, updated_at = NOW()
+        WHERE id = $2 AND role = 'passager'
+        RETURNING id, full_name, email, phone, birth_date, balance, role, status, created_at, updated_at;
+      `,
+      [status, clientId],
+    );
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+
+    sendJson(response, 200, { ok: true, client: publicUser(result.rows[0]) });
     return;
   }
 

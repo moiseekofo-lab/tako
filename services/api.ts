@@ -110,6 +110,13 @@ export function getAdminClients(params: {
   return postJson('/admin/clients/list', params);
 }
 
+export function updateClientStatus(clientId: string, sessionToken: string, status: 'active' | 'blocked' | 'closed') {
+  return postJson(`/admin/clients/${encodeURIComponent(clientId)}/status`, {
+    sessionToken,
+    status,
+  });
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,

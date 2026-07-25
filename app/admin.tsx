@@ -15,7 +15,10 @@ import {
   getPendingUsers,
   rechargeAgent,
   requestPrepaidCardCode,
+  saveNfcCard,
+  setNfcCardBlocked,
   updateClientByAdmin,
+  updateClientStatus,
   validateAdminSession,
 } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -210,6 +213,10 @@ export default function Admin() {
   const [clientPage, setClientPage] = useState(1);
   const [clientDirectory, setClientDirectory] = useState<any>({ clients: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
   const [clientDirectoryLoading, setClientDirectoryLoading] = useState(false);
+  const [clientDirectoryVersion, setClientDirectoryVersion] = useState(0);
+  const [cardManagerClient, setCardManagerClient] = useState<any>(null);
+  const [managedCardId, setManagedCardId] = useState('');
+  const [clientActionLoading, setClientActionLoading] = useState(false);
 
   useEffect(() => {
     if (params.clientId) {
@@ -389,7 +396,7 @@ export default function Admin() {
       active = false;
       clearTimeout(timer);
     };
-  }, [activeSection, clientCardFilter, clientPage, clientSearch, clientStatusFilter, isAuthenticated]);
+  }, [activeSection, clientCardFilter, clientDirectoryVersion, clientPage, clientSearch, clientStatusFilter, isAuthenticated]);
 
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
@@ -407,6 +414,77 @@ export default function Admin() {
     await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
     clearSession();
     router.replace('/login' as any);
+  };
+
+  const openClientProfile = async (clientIdToOpen: string) => {
+    try {
+      setClientActionLoading(true);
+      const result = await findClientById(clientIdToOpen);
+      if (!result?.client) {
+        throw new Error('Client introuvable');
+      }
+      setSelectedClient(result.client);
+      setClientId(clientIdToOpen);
+    } catch (error) {
+      Alert.alert('Profil indisponible', error instanceof Error ? error.message : 'Impossible de charger ce client.');
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const changeClientStatus = async (client: any, status: 'active' | 'blocked' | 'closed') => {
+    try {
+      setClientActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) {
+        throw new Error('Session administrateur expirée');
+      }
+      await updateClientStatus(client.id, sessionToken, status);
+      setClientDirectoryVersion((value) => value + 1);
+      if (selectedClient?.id === client.id) {
+        setSelectedClient((current: any) => current ? { ...current, status } : current);
+      }
+      Alert.alert('Compte mis à jour', status === 'closed' ? 'Le compte est fermé et son historique est conservé.' : status === 'blocked' ? 'Le compte est bloqué.' : 'Le compte est réactivé.');
+    } catch (error) {
+      Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const saveManagedCard = async () => {
+    if (!cardManagerClient || !managedCardId.trim()) {
+      Alert.alert('Carte obligatoire', 'Entrez ou scannez l’identifiant de la carte NFC.');
+      return;
+    }
+    try {
+      setClientActionLoading(true);
+      await saveNfcCard(cardManagerClient.id, managedCardId.trim());
+      setCardManagerClient((client: any) => ({ ...client, nfcCard: { cardId: managedCardId.trim(), blocked: false } }));
+      setClientDirectoryVersion((value) => value + 1);
+      Alert.alert('Carte associée', 'La carte NFC est maintenant associée à ce client.');
+    } catch (error) {
+      Alert.alert('Association impossible', error instanceof Error ? error.message : 'Cette carte est peut-être déjà utilisée.');
+    } finally {
+      setClientActionLoading(false);
+    }
+  };
+
+  const toggleManagedCard = async () => {
+    if (!cardManagerClient?.nfcCard) {
+      return;
+    }
+    try {
+      setClientActionLoading(true);
+      const blocked = !cardManagerClient.nfcCard.blocked;
+      await setNfcCardBlocked(cardManagerClient.id, blocked);
+      setCardManagerClient((client: any) => ({ ...client, nfcCard: { ...client.nfcCard, blocked } }));
+      setClientDirectoryVersion((value) => value + 1);
+    } catch (error) {
+      Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setClientActionLoading(false);
+    }
   };
 
   const findClient = async () => {
@@ -919,11 +997,50 @@ export default function Admin() {
                 page={clientPage}
                 setPage={setClientPage}
                 addClient={() => router.push('/register' as any)}
-                viewClient={(client) => {
-                  setSelectedClient(client);
-                  setClientId(client.id);
+                viewClient={(client) => openClientProfile(client.id)}
+                editClient={(client) => openClientProfile(client.id)}
+                manageCard={(client) => {
+                  setCardManagerClient(client);
+                  setManagedCardId(client.nfcCard?.cardId || '');
                 }}
+                closeClient={(client) => Alert.alert(
+                  'Fermer le compte',
+                  `Fermer le compte de ${client.fullName} ? Son historique financier sera conservé.`,
+                  [
+                    { text: 'Annuler', style: 'cancel' },
+                    { text: 'Fermer', style: 'destructive', onPress: () => changeClientStatus(client, 'closed') },
+                  ],
+                )}
+                actionLoading={clientActionLoading}
               />
+              {cardManagerClient ? (
+                <View style={[styles.card, styles.cardManager]}>
+                  <View style={styles.referenceHeader}>
+                    <View>
+                      <Text style={styles.cardTitle}>Carte NFC — {cardManagerClient.fullName}</Text>
+                      <Text style={styles.cardText}>Une carte ne peut être associée qu’à un seul client.</Text>
+                    </View>
+                    <TouchableOpacity onPress={() => setCardManagerClient(null)}><Ionicons name="close" size={24} color={TAKO_BLUE} /></TouchableOpacity>
+                  </View>
+                  <View style={styles.cardManagerRow}>
+                    <TextInput
+                      value={managedCardId}
+                      onChangeText={setManagedCardId}
+                      placeholder="UID ou numéro de série NFC"
+                      placeholderTextColor="#94A3B8"
+                      style={styles.cardManagerInput}
+                    />
+                    <TouchableOpacity style={styles.referencePrimary} disabled={clientActionLoading} onPress={saveManagedCard}>
+                      <Text style={styles.referencePrimaryText}>Associer la carte</Text>
+                    </TouchableOpacity>
+                    {cardManagerClient.nfcCard ? (
+                      <TouchableOpacity style={styles.secondaryAction} disabled={clientActionLoading} onPress={toggleManagedCard}>
+                        <Text style={styles.secondaryActionText}>{cardManagerClient.nfcCard.blocked ? 'Réactiver la carte' : 'Suspendre la carte'}</Text>
+                      </TouchableOpacity>
+                    ) : null}
+                  </View>
+                </View>
+              ) : null}
               {activeClient ? (
                 <View style={[styles.grid, styles.clientProfilePanel, isNarrow && styles.mobileGrid]}>
                   <ClientDetails
@@ -1085,6 +1202,10 @@ function ClientDirectoryScreen({
   setPage,
   addClient,
   viewClient,
+  editClient,
+  manageCard,
+  closeClient,
+  actionLoading,
 }: {
   directory: any;
   loading: boolean;
@@ -1098,6 +1219,10 @@ function ClientDirectoryScreen({
   setPage: (value: number) => void;
   addClient: () => void;
   viewClient: (client: any) => void;
+  editClient: (client: any) => void;
+  manageCard: (client: any) => void;
+  closeClient: (client: any) => void;
+  actionLoading: boolean;
 }) {
   const stats = directory?.stats || {};
   const clients = directory?.clients || [];
@@ -1186,7 +1311,10 @@ function ClientDirectoryScreen({
               <Text style={styles.clientTableCellText}>{formatDate(client.createdAt)}</Text>
               <Text style={styles.clientTableCellText}>{client.lastLoginAt ? formatDate(client.lastLoginAt) : 'Non disponible'}</Text>
               <View style={[styles.clientTableCell, styles.clientActions]}>
-                <TouchableOpacity onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={20} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity disabled={actionLoading} onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity disabled={actionLoading} onPress={() => editClient(client)} accessibilityLabel={`Modifier ${client.fullName}`}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity disabled={actionLoading} onPress={() => manageCard(client)} accessibilityLabel={`Gérer la carte de ${client.fullName}`}><Ionicons name="card-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity disabled={actionLoading || client.status === 'closed'} onPress={() => closeClient(client)} accessibilityLabel={`Fermer le compte de ${client.fullName}`}><Ionicons name="trash-outline" size={19} color={client.status === 'closed' ? '#CBD5E1' : '#DC2626'} /></TouchableOpacity>
               </View>
             </View>
           )) : (
@@ -2769,6 +2897,40 @@ const styles = StyleSheet.create({
   },
   clientProfilePanel: {
     marginTop: 20,
+  },
+  cardManager: {
+    marginTop: 20,
+  },
+  cardManagerRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 12,
+    marginTop: 18,
+  },
+  cardManagerInput: {
+    minWidth: 280,
+    minHeight: 42,
+    flexGrow: 1,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    color: '#111827',
+    paddingHorizontal: 13,
+  },
+  secondaryAction: {
+    minHeight: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: TAKO_BLUE,
+    paddingHorizontal: 15,
+  },
+  secondaryActionText: {
+    color: TAKO_BLUE,
+    fontSize: 12,
+    fontWeight: '900',
   },
   referenceHeader: {
     flexDirection: 'row',
