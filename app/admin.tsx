@@ -1105,7 +1105,7 @@ export default function Admin() {
                   <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" change={dashboardData?.changes?.commission} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="checkmark-circle-outline" label="Recharges réussies" value={`${dashboardData?.recharges?.successful ?? 0}`} tone="green" change={dashboardData?.changes?.recharges} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="checkmark-done-outline" label="Versements réussis" value={`${dashboardData?.payouts?.successful ?? 0}`} tone="blue" change={dashboardData?.changes?.payouts} comparison={dashboardData?.comparisonLabel} />
-                  <StatCard icon="wallet-outline" label="Solde disponible total" value={`${balance} FC`} tone="green" change={dashboardData?.changes?.balance} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="wallet-outline" label="Solde disponible total" value={`${dashboardData?.availableBalance ?? 0} FC`} tone="green" change={dashboardData?.changes?.balance} comparison={dashboardData?.comparisonLabel} />
                 </View>
               )}
 

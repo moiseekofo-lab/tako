@@ -981,7 +981,11 @@ async function handleRequest(request, response) {
           COUNT(*) FILTER (WHERE role = 'chauffeur' AND status = 'pending')::int AS pending_drivers,
           COUNT(*) FILTER (WHERE role = 'chauffeur' AND status IN ('suspended', 'blocked'))::int AS suspended_drivers,
           COUNT(*) FILTER (WHERE role = 'agent')::int AS agents,
-          COUNT(*) FILTER (WHERE role = 'agent' AND created_at < NOW() - $1::interval)::int AS previous_agents
+          COUNT(*) FILTER (WHERE role = 'agent' AND created_at < NOW() - $1::interval)::int AS previous_agents,
+          COALESCE(SUM(balance) FILTER (
+            WHERE role IN ('passager', 'chauffeur', 'agent')
+              AND status <> 'closed'
+          ), 0)::numeric AS available_balance
         FROM users;
       `, [interval]),
       query(
@@ -1082,6 +1086,7 @@ async function handleRequest(request, response) {
         agents: Number(users.agents || 0),
         transactions: Number(payments.transactions || 0),
         collected,
+        availableBalance: Number(users.available_balance || 0),
         driverAmount: transportCollected - commission,
         commission,
         recharges: {
