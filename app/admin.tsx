@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import {
@@ -9,6 +9,7 @@ import {
   approveUser,
   createInternalRecharge,
   findClientById,
+  getAdminDashboard,
   getAgentAccount,
   getPendingUsers,
   rechargeAgent,
@@ -30,16 +31,105 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   : null;
 type NfcTag = { id?: string; type?: string } | null;
 
-type AdminSection = 'dashboard' | 'clients' | 'drivers' | 'agents' | 'transactions' | 'settings';
+type AdminSection =
+  | 'dashboard'
+  | 'clients'
+  | 'drivers'
+  | 'agents'
+  | 'nfcCards'
+  | 'transactions'
+  | 'recharges'
+  | 'payouts'
+  | 'treasury'
+  | 'reconciliation'
+  | 'claims'
+  | 'notifications'
+  | 'reports'
+  | 'roles'
+  | 'audit'
+  | 'settings';
 
 const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
   { key: 'dashboard', label: 'Tableau de bord', icon: 'grid-outline' },
   { key: 'clients', label: 'Clients', icon: 'people-outline' },
   { key: 'drivers', label: 'Chauffeurs', icon: 'bus-outline' },
   { key: 'agents', label: 'Agents', icon: 'person-add-outline' },
+  { key: 'nfcCards', label: 'Cartes NFC', icon: 'card-outline' },
   { key: 'transactions', label: 'Transactions', icon: 'receipt-outline' },
+  { key: 'recharges', label: 'Recharges', icon: 'add-circle-outline' },
+  { key: 'payouts', label: 'Versements', icon: 'cash-outline' },
+  { key: 'treasury', label: 'Trésorerie', icon: 'wallet-outline' },
+  { key: 'reconciliation', label: 'Rapprochement', icon: 'git-compare-outline' },
+  { key: 'claims', label: 'Réclamations', icon: 'chatbox-ellipses-outline' },
+  { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
+  { key: 'reports', label: 'Rapports', icon: 'bar-chart-outline' },
+  { key: 'roles', label: 'Administrateurs et rôles', icon: 'shield-checkmark-outline' },
+  { key: 'audit', label: 'Journal d’activité', icon: 'list-outline' },
   { key: 'settings', label: 'Paramètres', icon: 'settings-outline' },
 ];
+
+const moduleContent: Partial<Record<AdminSection, { title: string; description: string; information: string[]; actions: string[] }>> = {
+  nfcCards: {
+    title: 'Cartes NFC',
+    description: 'Cycle de vie complet des cartes TaKo et association unique avec les clients.',
+    information: ['Numéro de série et UID', 'Client associé', 'Statut et date d’activation', 'Dernière utilisation'],
+    actions: ['Importer un lot', 'Scanner et associer', 'Suspendre ou remplacer', 'Consulter l’historique'],
+  },
+  recharges: {
+    title: 'Recharges clients',
+    description: 'Suivi des demandes de recharge et confirmations des opérateurs.',
+    information: ['Client et montant', 'Opérateur et référence', 'Frais éventuels', 'Statut de confirmation'],
+    actions: ['Rechercher une recharge', 'Contrôler les doublons', 'Voir le callback', 'Exporter la liste'],
+  },
+  payouts: {
+    title: 'Versements chauffeurs',
+    description: 'Validation et suivi des retraits demandés par les chauffeurs.',
+    information: ['Solde disponible et réservé', 'Montant et frais', 'Opérateur et référence', 'Administrateur initiateur'],
+    actions: ['Vérifier la demande', 'Approuver à deux niveaux', 'Lancer le versement', 'Générer le reçu'],
+  },
+  treasury: {
+    title: 'Trésorerie Mobile Money',
+    description: 'Fonds disponibles, réservés et réellement utilisables par opérateur.',
+    information: ['M-Pesa', 'Orange Money', 'Airtel Money', 'Afrimoney et banque'],
+    actions: ['Définir les seuils', 'Enregistrer un réapprovisionnement', 'Voir les mouvements', 'Bloquer les versements'],
+  },
+  reconciliation: {
+    title: 'Rapprochement financier',
+    description: 'Comparaison entre les opérations TaKo et les relevés des opérateurs.',
+    information: ['Correspondances', 'Montants différents', 'Transactions absentes', 'Doublons'],
+    actions: ['Importer un relevé', 'Lancer le rapprochement', 'Résoudre une différence', 'Exporter le résultat'],
+  },
+  claims: {
+    title: 'Réclamations et litiges',
+    description: 'Traitement des problèmes signalés par les clients et chauffeurs.',
+    information: ['Numéro de dossier', 'Utilisateur et transaction', 'Preuves jointes', 'Responsable et statut'],
+    actions: ['Créer un dossier', 'Assigner un agent', 'Ouvrir un litige', 'Clôturer le dossier'],
+  },
+  notifications: {
+    title: 'Notifications',
+    description: 'Messages individuels ou groupés dans l’application, par SMS et par e-mail.',
+    information: ['Destinataires', 'Canal', 'Programmation', 'Statut de livraison'],
+    actions: ['Créer un message', 'Choisir les destinataires', 'Programmer l’envoi', 'Suivre la livraison'],
+  },
+  reports: {
+    title: 'Rapports',
+    description: 'Analyse financière et opérationnelle de l’activité TaKo.',
+    information: ['Chiffre d’affaires', 'Commissions', 'Utilisateurs actifs', 'Paiements par zone'],
+    actions: ['Filtrer la période', 'Comparer les résultats', 'Exporter en Excel ou CSV', 'Générer un PDF'],
+  },
+  roles: {
+    title: 'Administrateurs et rôles',
+    description: 'Contrôle des droits selon le principe du moindre privilège.',
+    information: ['Super administrateur', 'Responsable financier', 'Support client', 'Agent terrain et auditeur'],
+    actions: ['Créer un rôle', 'Attribuer les permissions', 'Désactiver un accès', 'Réinitialiser une session'],
+  },
+  audit: {
+    title: 'Journal d’activité',
+    description: 'Historique inaltérable des actions sensibles des administrateurs et agents.',
+    information: ['Utilisateur et action', 'Date, IP et appareil', 'Ancienne valeur', 'Nouvelle valeur'],
+    actions: ['Rechercher une action', 'Filtrer par utilisateur', 'Voir les détails', 'Exporter le journal'],
+  },
+};
 
 const formatDate = (date?: string) => {
   if (!date) {
@@ -99,6 +189,9 @@ export default function Admin() {
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingAdminSession, setCheckingAdminSession] = useState(Platform.OS === 'web');
+  const [dashboardPeriod, setDashboardPeriod] = useState<'day' | 'week' | 'month'>('day');
+  const [dashboardData, setDashboardData] = useState<any>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
   useEffect(() => {
     if (params.clientId) {
@@ -195,7 +288,41 @@ export default function Admin() {
     };
   }, [isAuthenticated, router, setCurrentUser]);
 
-  const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'dashboard') {
+      return;
+    }
+
+    let active = true;
+    setDashboardLoading(true);
+    AsyncStorage.getItem(ADMIN_SESSION_KEY)
+      .then((sessionToken) => {
+        if (!sessionToken) {
+          throw new Error('Session absente');
+        }
+        return getAdminDashboard(sessionToken, dashboardPeriod);
+      })
+      .then((result) => {
+        if (active) {
+          setDashboardData(result?.dashboard || null);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setDashboardData(null);
+        }
+      })
+      .finally(() => {
+        if (active) {
+          setDashboardLoading(false);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [activeSection, dashboardPeriod, isAuthenticated]);
+
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
   const rechargeTransactions = notifications.filter((item) => item.type === 'recharge').length;
@@ -568,7 +695,10 @@ export default function Admin() {
             <Text style={styles.brandSubtitle}>Administration</Text>
           </View>
 
-          <View style={[styles.navList, isNarrow && styles.mobileNavList]}>
+          <ScrollView
+            style={!isNarrow ? styles.navScroller : undefined}
+            contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}
+            showsVerticalScrollIndicator={false}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -579,7 +709,7 @@ export default function Admin() {
                 <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+          </ScrollView>
 
           <View style={[styles.privateBox, isNarrow && styles.mobileHidden]}>
             <Ionicons name="shield-checkmark" size={22} color={TAKO_GREEN} />
@@ -625,12 +755,61 @@ export default function Admin() {
           </View>
 
           {activeSection === 'dashboard' ? (
-            <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
-              <StatCard icon="wallet-outline" label="Solde suivi" value={`${balance} FC`} tone="blue" />
-              <StatCard icon="bus-outline" label="Trajets" value={`${trips.length}`} tone="green" />
-              <StatCard icon="receipt-outline" label="Transactions" value={`${notifications.length}`} tone="blue" />
-              <StatCard icon="cash-outline" label="Volume transport" value={`${totalTripAmount} FC`} tone="green" />
-            </View>
+            <>
+              <View style={styles.dashboardToolbar}>
+                <View>
+                  <Text style={styles.cardTitle}>Vue générale</Text>
+                  <Text style={styles.cardText}>Données actualisées depuis le serveur TaKo.</Text>
+                </View>
+                <View style={styles.periodFilters}>
+                  {([
+                    ['day', 'Jour'],
+                    ['week', 'Semaine'],
+                    ['month', 'Mois'],
+                  ] as const).map(([period, label]) => (
+                    <TouchableOpacity
+                      key={period}
+                      style={[styles.periodButton, dashboardPeriod === period && styles.periodButtonActive]}
+                      onPress={() => setDashboardPeriod(period)}>
+                      <Text style={[styles.periodButtonText, dashboardPeriod === period && styles.periodButtonTextActive]}>{label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {dashboardLoading ? (
+                <ActivityIndicator size="large" color={TAKO_BLUE} style={styles.dashboardLoader} />
+              ) : (
+                <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
+                  <StatCard icon="people-outline" label="Clients" value={`${dashboardData?.clients ?? 0}`} tone="blue" onPress={() => setActiveSection('clients')} />
+                  <StatCard icon="bus-outline" label="Chauffeurs" value={`${dashboardData?.drivers ?? 0}`} tone="green" onPress={() => setActiveSection('drivers')} />
+                  <StatCard icon="checkmark-circle-outline" label="Chauffeurs actifs" value={`${dashboardData?.activeDrivers ?? 0}`} tone="green" onPress={() => setActiveSection('drivers')} />
+                  <StatCard icon="person-add-outline" label="Agents" value={`${dashboardData?.agents ?? 0}`} tone="blue" onPress={() => setActiveSection('agents')} />
+                  <StatCard icon="receipt-outline" label="Transactions" value={`${dashboardData?.transactions ?? 0}`} tone="blue" onPress={() => setActiveSection('transactions')} />
+                  <StatCard icon="cash-outline" label="Montant collecté" value={`${dashboardData?.collected ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
+                  <StatCard icon="car-outline" label="À verser aux chauffeurs" value={`${dashboardData?.driverAmount ?? 0} FC`} tone="blue" onPress={() => setActiveSection('payouts')} />
+                  <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
+                </View>
+              )}
+
+              <View style={styles.statusPanels}>
+                <StatusPanel title="Recharges" values={dashboardData?.recharges} />
+                <StatusPanel title="Versements" values={dashboardData?.payouts} />
+                <View style={[styles.card, styles.alertPanel]}>
+                  <Text style={styles.cardTitle}>Alertes importantes</Text>
+                  {dashboardData?.alerts?.length ? (
+                    dashboardData.alerts.map((alert: any, index: number) => (
+                      <View key={`${alert.message}-${index}`} style={styles.alertRow}>
+                        <Ionicons name="warning-outline" size={20} color="#B45309" />
+                        <Text style={styles.alertText}>{alert.message}</Text>
+                      </View>
+                    ))
+                  ) : (
+                    <Text style={styles.cardText}>Aucune alerte importante.</Text>
+                  )}
+                </View>
+              </View>
+            </>
           ) : null}
 
           {activeSection === 'dashboard' ? (
@@ -869,21 +1048,72 @@ export default function Admin() {
               </View>
             </View>
           ) : null}
+
+          {moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} /> : null}
         </ScrollView>
       </View>
     </View>
   );
 }
 
-function StatCard({ icon, label, value, tone }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; tone: 'blue' | 'green' }) {
+function StatusPanel({ title, values }: { title: string; values?: { successful?: number; failed?: number; pending?: number } }) {
   return (
-    <View style={styles.statCard}>
+    <View style={[styles.card, styles.statusPanel]}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      <View style={styles.statusLine}><Text style={styles.statusLabel}>Réussies</Text><Text style={styles.statusSuccess}>{values?.successful ?? 0}</Text></View>
+      <View style={styles.statusLine}><Text style={styles.statusLabel}>En attente</Text><Text style={styles.statusPending}>{values?.pending ?? 0}</Text></View>
+      <View style={styles.statusLine}><Text style={styles.statusLabel}>Échouées</Text><Text style={styles.statusFailed}>{values?.failed ?? 0}</Text></View>
+    </View>
+  );
+}
+
+function AdminModuleSection({ module }: { module: { title: string; description: string; information: string[]; actions: string[] } }) {
+  return (
+    <View style={[styles.grid, styles.moduleGrid]}>
+      <View style={[styles.card, styles.moduleIntro]}>
+        <Text style={styles.kicker}>Module d’administration</Text>
+        <Text style={styles.moduleTitle}>{module.title}</Text>
+        <Text style={styles.cardText}>{module.description}</Text>
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Informations suivies</Text>
+        {module.information.map((item) => <ChecklistItem key={item} label={item} done />)}
+      </View>
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Actions disponibles</Text>
+        {module.actions.map((item) => (
+          <TouchableOpacity key={item} style={styles.moduleAction} activeOpacity={0.8}>
+            <Text style={styles.moduleActionText}>{item}</Text>
+            <Ionicons name="chevron-forward" size={18} color={TAKO_ACTION} />
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function StatCard({
+  icon,
+  label,
+  value,
+  tone,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  value: string;
+  tone: 'blue' | 'green';
+  onPress?: () => void;
+}) {
+  return (
+    <TouchableOpacity style={styles.statCard} activeOpacity={0.82} onPress={onPress}>
       <View style={[styles.statIcon, tone === 'green' && styles.statIconGreen]}>
         <Ionicons name={icon} size={22} color={tone === 'green' ? '#087B35' : TAKO_BLUE} />
       </View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
-    </View>
+      <Text style={styles.statHint}>Ouvrir les détails →</Text>
+    </TouchableOpacity>
   );
 }
 
@@ -1577,6 +1807,9 @@ const styles = StyleSheet.create({
   navList: {
     gap: 10,
   },
+  navScroller: {
+    flex: 1,
+  },
   mobileNavList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -1741,6 +1974,93 @@ const styles = StyleSheet.create({
     gap: 16,
     marginBottom: 18,
   },
+  dashboardToolbar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 18,
+    marginBottom: 18,
+  },
+  periodFilters: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  periodButton: {
+    minHeight: 38,
+    justifyContent: 'center',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D7E0EF',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 14,
+  },
+  periodButtonActive: {
+    borderColor: TAKO_BLUE,
+    backgroundColor: TAKO_BLUE,
+  },
+  periodButtonText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  periodButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  dashboardLoader: {
+    marginVertical: 36,
+  },
+  statusPanels: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 18,
+    marginBottom: 20,
+  },
+  statusPanel: {
+    flexBasis: 220,
+  },
+  statusLine: {
+    minHeight: 38,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+  },
+  statusLabel: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  statusSuccess: {
+    color: '#087B35',
+    fontWeight: '900',
+  },
+  statusPending: {
+    color: '#B45309',
+    fontWeight: '900',
+  },
+  statusFailed: {
+    color: '#B91C1C',
+    fontWeight: '900',
+  },
+  alertPanel: {
+    flexBasis: 300,
+  },
+  alertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderRadius: 8,
+    backgroundColor: '#FFF7ED',
+    padding: 12,
+    marginTop: 10,
+  },
+  alertText: {
+    flex: 1,
+    color: '#92400E',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   mobileStatsGrid: {
     flexDirection: 'column',
   },
@@ -1776,6 +2096,40 @@ const styles = StyleSheet.create({
     color: TAKO_BLUE,
     fontSize: 24,
     fontWeight: '900',
+  },
+  statHint: {
+    color: TAKO_ACTION,
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 8,
+  },
+  moduleGrid: {
+    marginTop: 4,
+  },
+  moduleIntro: {
+    flexBasis: '100%',
+    borderTopWidth: 4,
+    borderTopColor: TAKO_ACTION,
+  },
+  moduleTitle: {
+    color: TAKO_BLUE,
+    fontSize: 28,
+    fontWeight: '900',
+    marginBottom: 8,
+  },
+  moduleAction: {
+    minHeight: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+  },
+  moduleActionText: {
+    color: TAKO_BLUE,
+    fontSize: 14,
+    fontWeight: '800',
   },
   grid: {
     flexDirection: 'row',

@@ -945,6 +945,90 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/dashboard') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    const period = ['day', 'week', 'month'].includes(body.period) ? body.period : 'day';
+    const interval = period === 'month' ? '30 days' : period === 'week' ? '7 days' : '1 day';
+    const [usersResult, paymentsResult, rechargeResult] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*) FILTER (WHERE role = 'passager')::int AS clients,
+          COUNT(*) FILTER (WHERE role = 'chauffeur')::int AS drivers,
+          COUNT(*) FILTER (WHERE role = 'chauffeur' AND status = 'active')::int AS active_drivers,
+          COUNT(*) FILTER (WHERE role = 'chauffeur' AND status = 'pending')::int AS pending_drivers,
+          COUNT(*) FILTER (WHERE role = 'chauffeur' AND status IN ('suspended', 'blocked'))::int AS suspended_drivers,
+          COUNT(*) FILTER (WHERE role = 'agent')::int AS agents
+        FROM users;
+      `),
+      query(
+        `
+          SELECT
+            COUNT(*)::int AS transactions,
+            COALESCE(SUM(amount) FILTER (WHERE status IN ('accepted', 'successful', 'success')), 0)::numeric AS collected,
+            COUNT(*) FILTER (WHERE status IN ('failed', 'refused'))::int AS failed
+          FROM payments
+          WHERE created_at >= NOW() - $1::interval;
+        `,
+        [interval],
+      ),
+      query(
+        `
+          SELECT
+            COUNT(*) FILTER (WHERE status IN ('accepted', 'successful', 'success'))::int AS successful,
+            COUNT(*) FILTER (WHERE status IN ('failed', 'refused'))::int AS failed,
+            COUNT(*) FILTER (WHERE status = 'pending')::int AS pending
+          FROM payments
+          WHERE method IN ('mobile_money', 'internal_recharge', 'agent_recharge')
+            AND created_at >= NOW() - $1::interval;
+        `,
+        [interval],
+      ),
+    ]);
+
+    const users = usersResult.rows[0] || {};
+    const payments = paymentsResult.rows[0] || {};
+    const recharges = rechargeResult.rows[0] || {};
+    const collected = Number(payments.collected || 0);
+    const commission = Math.round(collected * 0.04);
+
+    sendJson(response, 200, {
+      ok: true,
+      dashboard: {
+        period,
+        clients: Number(users.clients || 0),
+        drivers: Number(users.drivers || 0),
+        activeDrivers: Number(users.active_drivers || 0),
+        pendingDrivers: Number(users.pending_drivers || 0),
+        suspendedDrivers: Number(users.suspended_drivers || 0),
+        agents: Number(users.agents || 0),
+        transactions: Number(payments.transactions || 0),
+        collected,
+        driverAmount: collected - commission,
+        commission,
+        recharges: {
+          successful: Number(recharges.successful || 0),
+          failed: Number(recharges.failed || 0),
+          pending: Number(recharges.pending || 0),
+        },
+        payouts: { successful: 0, failed: 0, pending: 0 },
+        alerts: [
+          ...(Number(users.pending_drivers || 0) > 0
+            ? [{ level: 'warning', message: `${users.pending_drivers} chauffeur(s) en attente de validation` }]
+            : []),
+          ...(Number(payments.failed || 0) > 5
+            ? [{ level: 'danger', message: 'Trop de paiements échoués sur la période' }]
+            : []),
+        ],
+      },
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/auth/reset-password') {
     const body = await readJson(request);
     const contact = normalizeContact(body.contact);

@@ -93,6 +93,13 @@ export function validateAdminSession(sessionToken: string) {
   });
 }
 
+export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' | 'month') {
+  return postJson('/admin/dashboard', {
+    sessionToken,
+    period,
+  });
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,
