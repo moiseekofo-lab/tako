@@ -14,6 +14,7 @@ const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
 const TWILIO_PENDING_CODE = '__twilio_pending__';
 const TWILIO_VERIFIED_PREFIX = '__twilio_verified__:';
+const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
 const pool = databaseUrl
   ? new pg.Pool({
@@ -24,6 +25,56 @@ const pool = databaseUrl
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function adminPublicUser() {
+  return {
+    id: 'ADMIN',
+    fullName: 'Administrateur TaKo',
+    email: adminEmail,
+    phone: '',
+    birthDate: '',
+    role: 'admin',
+    status: 'active',
+    balance: 0,
+  };
+}
+
+function createAdminSessionToken() {
+  const payload = Buffer.from(
+    JSON.stringify({ role: 'admin', expiresAt: Date.now() + ADMIN_SESSION_DURATION_MS }),
+  ).toString('base64url');
+  const signature = crypto.createHmac('sha256', adminPassword).update(payload).digest('base64url');
+  return `${payload}.${signature}`;
+}
+
+function verifyAdminSessionToken(token = '') {
+  const [payload, signature] = String(token).split('.');
+  if (!payload || !signature) {
+    return false;
+  }
+
+  const expectedSignature = crypto.createHmac('sha256', adminPassword).update(payload).digest();
+  let receivedSignature;
+  try {
+    receivedSignature = Buffer.from(signature, 'base64url');
+  } catch {
+    return false;
+  }
+
+  if (
+    receivedSignature.length !== expectedSignature.length ||
+    !crypto.timingSafeEqual(receivedSignature, expectedSignature)
+  ) {
+    return false;
+  }
+
+  try {
+    const session = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'));
+    return session.role === 'admin' && Number(session.expiresAt) > Date.now();
+  } catch {
+    return false;
+  }
 }
 
 function normalizeContact(value = '') {
@@ -874,16 +925,22 @@ async function handleRequest(request, response) {
 
     sendJson(response, 200, {
       ok: true,
-      user: {
-        id: 'ADMIN',
-        fullName: 'Administrateur TaKo',
-        email: adminEmail,
-        phone: '',
-        birthDate: '',
-        role: 'admin',
-        status: 'active',
-        balance: 0,
-      },
+      user: adminPublicUser(),
+      sessionToken: createAdminSessionToken(),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/auth/admin-session') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    sendJson(response, 200, {
+      ok: true,
+      user: adminPublicUser(),
     });
     return;
   }

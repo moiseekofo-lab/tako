@@ -23,6 +23,7 @@ import { languageOptions, translations, type Language } from './i18n';
 import { useStore } from './store';
 
 const CLIENT_NAME_KEY = 'tako:lastClientName';
+const ADMIN_SESSION_KEY = 'tako:adminSession';
 const LANGUAGE_KEY = 'tako:language';
 const SHEET_DISMISS_Y = 560;
 const SHEET_DISMISS_THRESHOLD = 120;
@@ -319,6 +320,9 @@ export default function Login() {
         try {
           const adminResult = await loginAdmin(cleanLogin, password);
           if (adminResult?.user) {
+            if (adminResult.sessionToken) {
+              await AsyncStorage.setItem(ADMIN_SESSION_KEY, adminResult.sessionToken);
+            }
             setCurrentUser({
               id: adminResult.user.id,
               fullName: adminResult.user.fullName,

@@ -87,6 +87,12 @@ export function loginAdmin(login: string, password: string) {
   });
 }
 
+export function validateAdminSession(sessionToken: string) {
+  return postJson('/auth/admin-session', {
+    sessionToken,
+  });
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,

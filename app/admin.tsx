@@ -1,3 +1,4 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
@@ -13,6 +14,7 @@ import {
   rechargeAgent,
   requestPrepaidCardCode,
   updateClientByAdmin,
+  validateAdminSession,
 } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
 
@@ -20,6 +22,7 @@ const TAKO_BLUE = '#061F68';
 const TAKO_ACTION = '#139DFF';
 const TAKO_GREEN = '#09D457';
 const PAGE_BG = '#F5F8FF';
+const ADMIN_SESSION_KEY = 'tako:adminSession';
 const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
       overflowY: 'auto',
@@ -60,6 +63,7 @@ export default function Admin() {
   const currentUser = useStore((state: any) => state.currentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const clearSession = useStore((state: any) => state.clearSession);
+  const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const notifications = useStore((state: any) => state.notifications) as TransactionNotification[];
   const balance = useStore((state: any) => state.balance);
@@ -94,6 +98,7 @@ export default function Admin() {
   const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [checkingAdminSession, setCheckingAdminSession] = useState(Platform.OS === 'web');
 
   useEffect(() => {
     if (params.clientId) {
@@ -148,13 +153,47 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    if (Platform.OS === 'web' && !isAuthenticated) {
-      router.replace('/login' as any);
-      return;
-    }
+    let active = true;
 
-    loadPendingUsers();
-  }, [isAuthenticated, router]);
+    const restoreAdminSession = async () => {
+      if (Platform.OS !== 'web' || isAuthenticated) {
+        if (active) {
+          setCheckingAdminSession(false);
+          loadPendingUsers();
+        }
+        return;
+      }
+
+      try {
+        const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+        if (!sessionToken) {
+          throw new Error('Session absente');
+        }
+
+        const result = await validateAdminSession(sessionToken);
+        if (!result?.user) {
+          throw new Error('Session invalide');
+        }
+
+        if (active) {
+          setCurrentUser(result.user);
+          setCheckingAdminSession(false);
+          loadPendingUsers();
+        }
+      } catch {
+        await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
+        if (active) {
+          setCheckingAdminSession(false);
+          router.replace('/login' as any);
+        }
+      }
+    };
+
+    restoreAdminSession();
+    return () => {
+      active = false;
+    };
+  }, [isAuthenticated, router, setCurrentUser]);
 
   const totalTripAmount = useMemo(() => trips.reduce((sum, trip) => sum + Number(trip.amount || 0), 0), [trips]);
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
@@ -167,9 +206,10 @@ export default function Admin() {
     Alert.alert('Chauffeur validé', 'Le chauffeur peut maintenant utiliser son compte.');
   };
 
-  const logout = () => {
+  const logout = async () => {
     setSelectedClient(null);
     setClientId('');
+    await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
     clearSession();
     router.replace('/login' as any);
   };
@@ -510,6 +550,14 @@ export default function Admin() {
       setApprovingUserId(null);
     }
   };
+
+  if (checkingAdminSession) {
+    return (
+      <View style={[styles.page, { alignItems: 'center', justifyContent: 'center' }]}>
+        <ActivityIndicator size="large" color={TAKO_BLUE} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.page}>
