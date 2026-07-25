@@ -954,17 +954,20 @@ async function handleRequest(request, response) {
 
     const period = ['day', 'week', 'month'].includes(body.period) ? body.period : 'day';
     const interval = period === 'month' ? '30 days' : period === 'week' ? '7 days' : '1 day';
-    const [usersResult, paymentsResult, rechargeResult] = await Promise.all([
+    const [usersResult, paymentsResult, previousPaymentsResult, rechargeResult, previousRechargeResult] = await Promise.all([
       query(`
         SELECT
           COUNT(*) FILTER (WHERE role = 'passager')::int AS clients,
+          COUNT(*) FILTER (WHERE role = 'passager' AND created_at < NOW() - $1::interval)::int AS previous_clients,
           COUNT(*) FILTER (WHERE role = 'chauffeur')::int AS drivers,
+          COUNT(*) FILTER (WHERE role = 'chauffeur' AND created_at < NOW() - $1::interval)::int AS previous_drivers,
           COUNT(*) FILTER (WHERE role = 'chauffeur' AND status = 'active')::int AS active_drivers,
           COUNT(*) FILTER (WHERE role = 'chauffeur' AND status = 'pending')::int AS pending_drivers,
           COUNT(*) FILTER (WHERE role = 'chauffeur' AND status IN ('suspended', 'blocked'))::int AS suspended_drivers,
-          COUNT(*) FILTER (WHERE role = 'agent')::int AS agents
+          COUNT(*) FILTER (WHERE role = 'agent')::int AS agents,
+          COUNT(*) FILTER (WHERE role = 'agent' AND created_at < NOW() - $1::interval)::int AS previous_agents
         FROM users;
-      `),
+      `, [interval]),
       query(
         `
           SELECT
@@ -973,6 +976,17 @@ async function handleRequest(request, response) {
             COUNT(*) FILTER (WHERE status IN ('failed', 'refused'))::int AS failed
           FROM payments
           WHERE created_at >= NOW() - $1::interval;
+        `,
+        [interval],
+      ),
+      query(
+        `
+          SELECT
+            COUNT(*)::int AS transactions,
+            COALESCE(SUM(amount) FILTER (WHERE status IN ('accepted', 'successful', 'success')), 0)::numeric AS collected
+          FROM payments
+          WHERE created_at >= NOW() - ($1::interval * 2)
+            AND created_at < NOW() - $1::interval;
         `,
         [interval],
       ),
@@ -988,13 +1002,35 @@ async function handleRequest(request, response) {
         `,
         [interval],
       ),
+      query(
+        `
+          SELECT
+            COUNT(*) FILTER (WHERE status IN ('accepted', 'successful', 'success'))::int AS successful
+          FROM payments
+          WHERE method IN ('mobile_money', 'internal_recharge', 'agent_recharge')
+            AND created_at >= NOW() - ($1::interval * 2)
+            AND created_at < NOW() - $1::interval;
+        `,
+        [interval],
+      ),
     ]);
 
     const users = usersResult.rows[0] || {};
     const payments = paymentsResult.rows[0] || {};
+    const previousPayments = previousPaymentsResult.rows[0] || {};
     const recharges = rechargeResult.rows[0] || {};
+    const previousRecharges = previousRechargeResult.rows[0] || {};
     const collected = Number(payments.collected || 0);
     const commission = Math.round(collected * 0.04);
+    const previousCollected = Number(previousPayments.collected || 0);
+    const percentChange = (current, previous) => {
+      const currentValue = Number(current || 0);
+      const previousValue = Number(previous || 0);
+      if (previousValue <= 0) {
+        return null;
+      }
+      return Math.round(((currentValue - previousValue) / previousValue) * 1000) / 10;
+    };
 
     sendJson(response, 200, {
       ok: true,
@@ -1016,6 +1052,19 @@ async function handleRequest(request, response) {
           pending: Number(recharges.pending || 0),
         },
         payouts: { successful: 0, failed: 0, pending: 0 },
+        comparisonLabel: period === 'day' ? 'vs hier' : period === 'week' ? 'vs semaine précédente' : 'vs mois précédent',
+        changes: {
+          clients: percentChange(users.clients, users.previous_clients),
+          drivers: percentChange(users.drivers, users.previous_drivers),
+          agents: percentChange(users.agents, users.previous_agents),
+          transactions: percentChange(payments.transactions, previousPayments.transactions),
+          collected: percentChange(collected, previousCollected),
+          driverAmount: percentChange(collected, previousCollected),
+          commission: percentChange(collected, previousCollected),
+          recharges: percentChange(recharges.successful, previousRecharges.successful),
+          payouts: null,
+          balance: null,
+        },
         alerts: [
           ...(Number(users.pending_drivers || 0) > 0
             ? [{ level: 'warning', message: `${users.pending_drivers} chauffeur(s) en attente de validation` }]

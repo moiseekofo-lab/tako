@@ -305,32 +305,38 @@ export default function Admin() {
     }
 
     let active = true;
+    const loadDashboard = () => {
+      AsyncStorage.getItem(ADMIN_SESSION_KEY)
+        .then((sessionToken) => {
+          if (!sessionToken) {
+            throw new Error('Session absente');
+          }
+          return getAdminDashboard(sessionToken, dashboardPeriod);
+        })
+        .then((result) => {
+          if (active) {
+            setDashboardData(result?.dashboard || null);
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setDashboardData(null);
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setDashboardLoading(false);
+          }
+        });
+    };
+
     setDashboardLoading(true);
-    AsyncStorage.getItem(ADMIN_SESSION_KEY)
-      .then((sessionToken) => {
-        if (!sessionToken) {
-          throw new Error('Session absente');
-        }
-        return getAdminDashboard(sessionToken, dashboardPeriod);
-      })
-      .then((result) => {
-        if (active) {
-          setDashboardData(result?.dashboard || null);
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setDashboardData(null);
-        }
-      })
-      .finally(() => {
-        if (active) {
-          setDashboardLoading(false);
-        }
-      });
+    loadDashboard();
+    const refreshTimer = setInterval(loadDashboard, 30000);
 
     return () => {
       active = false;
+      clearInterval(refreshTimer);
     };
   }, [activeSection, dashboardPeriod, isAuthenticated]);
 
@@ -786,16 +792,16 @@ export default function Admin() {
                 <ActivityIndicator size="large" color={TAKO_BLUE} style={styles.dashboardLoader} />
               ) : (
                 <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
-                  <StatCard icon="people-outline" label="Clients" value={`${dashboardData?.clients ?? 0}`} tone="blue" onPress={() => setActiveSection('clients')} />
-                  <StatCard icon="bus-outline" label="Chauffeurs" value={`${dashboardData?.drivers ?? 0}`} tone="green" onPress={() => setActiveSection('drivers')} />
-                  <StatCard icon="person-add-outline" label="Agents" value={`${dashboardData?.agents ?? 0}`} tone="blue" onPress={() => setActiveSection('agents')} />
-                  <StatCard icon="swap-horizontal-outline" label="Transactions (période)" value={`${dashboardData?.transactions ?? 0}`} tone="blue" onPress={() => setActiveSection('transactions')} />
-                  <StatCard icon="cash-outline" label="Montant collecté" value={`${dashboardData?.collected ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
-                  <StatCard icon="car-outline" label="À verser aux chauffeurs" value={`${dashboardData?.driverAmount ?? 0} FC`} tone="blue" onPress={() => setActiveSection('payouts')} />
-                  <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
-                  <StatCard icon="checkmark-circle-outline" label="Recharges réussies" value={`${dashboardData?.recharges?.successful ?? 0}`} tone="green" onPress={() => setActiveSection('recharges')} />
-                  <StatCard icon="checkmark-done-outline" label="Versements réussis" value={`${dashboardData?.payouts?.successful ?? 0}`} tone="blue" onPress={() => setActiveSection('payouts')} />
-                  <StatCard icon="wallet-outline" label="Solde disponible total" value={`${balance} FC`} tone="green" onPress={() => setActiveSection('treasury')} />
+                  <StatCard icon="people-outline" label="Clients" value={`${dashboardData?.clients ?? 0}`} tone="blue" change={dashboardData?.changes?.clients} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="bus-outline" label="Chauffeurs" value={`${dashboardData?.drivers ?? 0}`} tone="green" change={dashboardData?.changes?.drivers} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="person-add-outline" label="Agents" value={`${dashboardData?.agents ?? 0}`} tone="blue" change={dashboardData?.changes?.agents} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="swap-horizontal-outline" label="Transactions (période)" value={`${dashboardData?.transactions ?? 0}`} tone="blue" change={dashboardData?.changes?.transactions} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="cash-outline" label="Montant collecté" value={`${dashboardData?.collected ?? 0} FC`} tone="green" change={dashboardData?.changes?.collected} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="car-outline" label="À verser aux chauffeurs" value={`${dashboardData?.driverAmount ?? 0} FC`} tone="blue" change={dashboardData?.changes?.driverAmount} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" change={dashboardData?.changes?.commission} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="checkmark-circle-outline" label="Recharges réussies" value={`${dashboardData?.recharges?.successful ?? 0}`} tone="green" change={dashboardData?.changes?.recharges} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="checkmark-done-outline" label="Versements réussis" value={`${dashboardData?.payouts?.successful ?? 0}`} tone="blue" change={dashboardData?.changes?.payouts} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="wallet-outline" label="Solde disponible total" value={`${balance} FC`} tone="green" change={dashboardData?.changes?.balance} comparison={dashboardData?.comparisonLabel} />
                 </View>
               )}
 
@@ -1166,23 +1172,30 @@ function StatCard({
   label,
   value,
   tone,
-  onPress,
+  change,
+  comparison,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value: string;
   tone: 'blue' | 'green';
-  onPress?: () => void;
+  change?: number | null;
+  comparison?: string;
 }) {
+  const hasComparison = typeof change === 'number';
+  const changeText = hasComparison ? `${change >= 0 ? '+' : ''}${change}%` : '—';
   return (
-    <TouchableOpacity style={styles.statCard} activeOpacity={0.82} onPress={onPress}>
+    <View style={styles.statCard}>
       <View style={[styles.statIcon, tone === 'green' && styles.statIconGreen]}>
         <Ionicons name={icon} size={22} color={tone === 'green' ? '#087B35' : TAKO_BLUE} />
       </View>
       <Text style={styles.statLabel}>{label}</Text>
       <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statHint}>Ouvrir les détails →</Text>
-    </TouchableOpacity>
+      <View style={styles.statComparison}>
+        <Text style={[styles.statChange, hasComparison && change < 0 && styles.statChangeNegative]}>{changeText}</Text>
+        <Text style={styles.statComparisonLabel}>{hasComparison ? comparison : 'Donnée indisponible'}</Text>
+      </View>
+    </View>
   );
 }
 
@@ -2334,11 +2347,24 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '900',
   },
-  statHint: {
-    color: TAKO_ACTION,
+  statComparison: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    marginTop: 9,
+  },
+  statChange: {
+    color: '#087B35',
     fontSize: 11,
-    fontWeight: '800',
-    marginTop: 8,
+    fontWeight: '900',
+  },
+  statChangeNegative: {
+    color: '#B91C1C',
+  },
+  statComparisonLabel: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
   },
   referencePage: {
     gap: 18,
