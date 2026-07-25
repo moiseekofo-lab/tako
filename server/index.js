@@ -416,6 +416,7 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE driver_trip_settings ADD COLUMN IF NOT EXISTS vehicle TEXT;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payments (
@@ -1208,6 +1209,166 @@ async function handleRequest(request, response) {
     }
 
     sendJson(response, 200, { ok: true, client: publicUser(result.rows[0]) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/drivers/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    const search = String(body.search || '').trim();
+    const status = ['active', 'pending', 'suspended', 'blocked', 'refused'].includes(body.status) ? body.status : '';
+    const zone = String(body.zone || '').trim();
+    const page = Math.max(1, Number.parseInt(body.page, 10) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    const conditions = [`u.role = 'chauffeur'`, `u.status <> 'closed'`];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(u.full_name ILIKE $${params.length} OR u.phone ILIKE $${params.length} OR u.email ILIKE $${params.length} OR u.id ILIKE $${params.length} OR d.bus_plate ILIKE $${params.length})`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`u.status = $${params.length}`);
+    }
+    if (zone) {
+      params.push(`%${zone}%`);
+      conditions.push(`d.route ILIKE $${params.length}`);
+    }
+
+    const where = conditions.join(' AND ');
+    const [statsResult, countResult, driversResult] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status <> 'closed')::int AS total,
+          COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+          COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+          COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended,
+          COUNT(*) FILTER (WHERE status = 'blocked')::int AS blocked
+        FROM users
+        WHERE role = 'chauffeur';
+      `),
+      query(
+        `SELECT COUNT(*)::int AS total FROM users u LEFT JOIN driver_trip_settings d ON d.driver_id = u.id WHERE ${where};`,
+        params,
+      ),
+      query(
+        `
+          SELECT
+            u.id, u.full_name, u.phone, u.email, u.birth_date, u.balance, u.status, u.created_at,
+            d.vehicle, d.bus_plate, d.route,
+            COALESCE(p.total_earned, 0)::numeric AS total_earned,
+            COALESCE(p.payment_count, 0)::int AS payment_count
+          FROM users u
+          LEFT JOIN driver_trip_settings d ON d.driver_id = u.id
+          LEFT JOIN LATERAL (
+            SELECT COALESCE(SUM(amount), 0) AS total_earned, COUNT(*) AS payment_count
+            FROM payments
+            WHERE driver_id = u.id AND status IN ('accepted', 'successful', 'success')
+          ) p ON TRUE
+          WHERE ${where}
+          ORDER BY u.created_at DESC
+          LIMIT $${params.length + 1}
+          OFFSET $${params.length + 2};
+        `,
+        [...params, limit, offset],
+      ),
+    ]);
+
+    sendJson(response, 200, {
+      ok: true,
+      stats: statsResult.rows[0],
+      pagination: { page, limit, total: Number(countResult.rows[0]?.total || 0) },
+      drivers: driversResult.rows.map((driver) => ({
+        id: driver.id,
+        fullName: driver.full_name,
+        phone: driver.phone || '',
+        email: driver.email || '',
+        birthDate: driver.birth_date || '',
+        balance: Number(driver.balance || 0),
+        status: driver.status,
+        createdAt: driver.created_at,
+        vehicle: driver.vehicle || null,
+        busPlate: driver.bus_plate || null,
+        route: driver.route || null,
+        withdrawalOperator: null,
+        totalEarned: Number(driver.total_earned || 0),
+        paymentCount: Number(driver.payment_count || 0),
+      })),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/drivers/') && url.pathname.endsWith('/status')) {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const driverId = decodeURIComponent(url.pathname.replace('/admin/drivers/', '').replace('/status', '')).trim();
+    const status = String(body.status || '').trim();
+    if (!['active', 'pending', 'suspended', 'blocked', 'refused', 'closed'].includes(status)) {
+      sendJson(response, 400, { ok: false, error: 'Statut chauffeur invalide' });
+      return;
+    }
+    const result = await query(
+      `UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2 AND role = 'chauffeur' RETURNING *;`,
+      [status, driverId],
+    );
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Chauffeur introuvable' });
+      return;
+    }
+    sendJson(response, 200, { ok: true, driver: publicUser(result.rows[0]) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/drivers/') && url.pathname.endsWith('/update')) {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const driverId = decodeURIComponent(url.pathname.replace('/admin/drivers/', '').replace('/update', '')).trim();
+    const fullName = String(body.fullName || '').trim();
+    const email = normalizeEmail(body.email);
+    const phone = normalizePhone(body.phone);
+    const vehicle = String(body.vehicle || '').trim();
+    const busPlate = String(body.busPlate || '').trim();
+    const route = String(body.route || '').trim();
+    if (!fullName || !phone) {
+      sendJson(response, 400, { ok: false, error: 'Nom et téléphone obligatoires' });
+      return;
+    }
+
+    const driverResult = await query(
+      `
+        UPDATE users
+        SET full_name = $1, email = NULLIF($2, ''), phone = $3, updated_at = NOW()
+        WHERE id = $4 AND role = 'chauffeur'
+        RETURNING *;
+      `,
+      [fullName, email, phone, driverId],
+    );
+    if (!driverResult.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Chauffeur introuvable' });
+      return;
+    }
+    await query(
+      `
+        INSERT INTO driver_trip_settings (driver_id, vehicle, bus_plate, route, amount, updated_at)
+        VALUES ($1, $2, $3, $4, 0, NOW())
+        ON CONFLICT (driver_id)
+        DO UPDATE SET vehicle = EXCLUDED.vehicle, bus_plate = EXCLUDED.bus_plate, route = EXCLUDED.route, updated_at = NOW();
+      `,
+      [driverId, vehicle, busPlate, route],
+    );
+    sendJson(response, 200, { ok: true, driver: publicUser(driverResult.rows[0]) });
     return;
   }
 

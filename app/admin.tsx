@@ -11,6 +11,7 @@ import {
   findClientById,
   getAdminClients,
   getAdminDashboard,
+  getAdminDrivers,
   getAgentAccount,
   getPendingUsers,
   rechargeAgent,
@@ -19,6 +20,8 @@ import {
   setNfcCardBlocked,
   updateClientByAdmin,
   updateClientStatus,
+  updateDriverByAdmin,
+  updateDriverStatus,
   validateAdminSession,
 } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -198,7 +201,17 @@ export default function Admin() {
   const [selectedClient, setSelectedClient] = useState<any>(null);
   const [trackedAgent, setTrackedAgent] = useState<any>(null);
   const [trackedAgentStats, setTrackedAgentStats] = useState<any>(null);
-  const [driverStatus, setDriverStatus] = useState<'En attente' | 'Actif'>('En attente');
+  const [driverSearch, setDriverSearch] = useState('');
+  const [driverStatusFilter, setDriverStatusFilter] = useState('');
+  const [driverZoneFilter, setDriverZoneFilter] = useState('');
+  const [driverPage, setDriverPage] = useState(1);
+  const [driverDirectory, setDriverDirectory] = useState<any>({ drivers: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+  const [driverDirectoryLoading, setDriverDirectoryLoading] = useState(false);
+  const [driverDirectoryVersion, setDriverDirectoryVersion] = useState(0);
+  const [selectedDriver, setSelectedDriver] = useState<any>(null);
+  const [driverPanelMode, setDriverPanelMode] = useState<'view' | 'edit' | null>(null);
+  const [driverDeleteCandidate, setDriverDeleteCandidate] = useState<any>(null);
+  const [driverActionLoading, setDriverActionLoading] = useState(false);
   const [pendingAgents, setPendingAgents] = useState<any[]>([]);
   const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
@@ -400,14 +413,81 @@ export default function Admin() {
     };
   }, [activeSection, clientCardFilter, clientDirectoryVersion, clientPage, clientSearch, clientStatusFilter, isAuthenticated]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'drivers') return;
+    let active = true;
+    const timer = setTimeout(() => {
+      setDriverDirectoryLoading(true);
+      AsyncStorage.getItem(ADMIN_SESSION_KEY)
+        .then((sessionToken) => {
+          if (!sessionToken) throw new Error('Session absente');
+          return getAdminDrivers({
+            sessionToken,
+            search: driverSearch,
+            status: driverStatusFilter,
+            zone: driverZoneFilter,
+            page: driverPage,
+          });
+        })
+        .then((result) => {
+          if (active) setDriverDirectory(result || { drivers: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+        })
+        .catch(() => {
+          if (active) setDriverDirectory({ drivers: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+        })
+        .finally(() => {
+          if (active) setDriverDirectoryLoading(false);
+        });
+    }, 250);
+    return () => { active = false; clearTimeout(timer); };
+  }, [activeSection, driverDirectoryVersion, driverPage, driverSearch, driverStatusFilter, driverZoneFilter, isAuthenticated]);
+
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
   const rechargeTransactions = notifications.filter((item) => item.type === 'recharge').length;
   const activeClient = selectedClient;
 
-  const approve = () => {
-    setDriverStatus('Actif');
-    Alert.alert('Chauffeur validé', 'Le chauffeur peut maintenant utiliser son compte.');
+  const changeDriverStatus = async (driver: any, status: 'active' | 'pending' | 'suspended' | 'blocked' | 'refused' | 'closed') => {
+    try {
+      setDriverActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      await updateDriverStatus(driver.id, sessionToken, status);
+      setDriverDirectoryVersion((value) => value + 1);
+      setSelectedDriver((current: any) => current?.id === driver.id ? { ...current, status } : current);
+      Alert.alert('Chauffeur mis à jour', status === 'closed' ? 'Le chauffeur est retiré de la liste. Son historique est conservé.' : 'Le nouveau statut a été enregistré.');
+      return true;
+    } catch (error) {
+      Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+      return false;
+    } finally {
+      setDriverActionLoading(false);
+    }
+  };
+
+  const saveDriver = async (driver: any) => {
+    try {
+      setDriverActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      const result = await updateDriverByAdmin(driver.id, {
+        sessionToken,
+        fullName: driver.fullName || '',
+        email: driver.email || '',
+        phone: driver.phone || '',
+        vehicle: driver.vehicle || '',
+        busPlate: driver.busPlate || '',
+        route: driver.route || '',
+      });
+      setSelectedDriver({ ...driver, ...(result?.driver || {}) });
+      setDriverDirectoryVersion((value) => value + 1);
+      setDriverPanelMode('view');
+      Alert.alert('Modifications enregistrées', 'Le profil du chauffeur a été mis à jour.');
+    } catch (error) {
+      Alert.alert('Modification impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setDriverActionLoading(false);
+    }
   };
 
   const logout = async () => {
@@ -1094,27 +1174,63 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'drivers' ? (
-            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <PendingApprovalsCard
-                title="Chauffeurs en attente"
-                users={pendingDrivers}
-                approvingUserId={approvingUserId}
-                approve={approvePendingUser}
+            <>
+              <DriverDirectoryScreen
+                directory={driverDirectory}
+                loading={driverDirectoryLoading}
+                search={driverSearch}
+                setSearch={(value) => { setDriverSearch(value); setDriverPage(1); }}
+                status={driverStatusFilter}
+                setStatus={(value) => { setDriverStatusFilter(value); setDriverPage(1); }}
+                zone={driverZoneFilter}
+                setZone={(value) => { setDriverZoneFilter(value); setDriverPage(1); }}
+                page={driverPage}
+                setPage={setDriverPage}
+                addDriver={() => router.push('/register' as any)}
+                viewDriver={(driver) => { setSelectedDriver(driver); setDriverPanelMode('view'); }}
+                editDriver={(driver) => { setSelectedDriver({ ...driver }); setDriverPanelMode('edit'); }}
+                closeDriver={setDriverDeleteCandidate}
+                actionLoading={driverActionLoading}
               />
-              <DriverCard driverStatus={driverStatus} approve={approve} />
-              <OperationsCard
-                route={driverTripInfo.route}
-                bus={driverTripInfo.bus}
-                amount={driverTripInfo.amount}
-              />
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Contrôles chauffeur</Text>
-                <ChecklistItem label="Plaque du bus enregistrée" done={!!driverTripInfo.bus} />
-                <ChecklistItem label="Trajet enregistré" done={!!driverTripInfo.route} />
-                <ChecklistItem label="Montant enregistré" done={!!driverTripInfo.amount} />
-                <ChecklistItem label="QR et NFC disponibles" done />
-              </View>
-            </View>
+              <Modal visible={!!driverDeleteCandidate} transparent animationType="fade" onRequestClose={() => setDriverDeleteCandidate(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.confirmModal}>
+                    <View style={styles.confirmIcon}><Ionicons name="trash-outline" size={30} color="#DC2626" /></View>
+                    <Text style={styles.confirmTitle}>Confirmer la suppression</Text>
+                    <Text style={styles.confirmText}>Voulez-vous supprimer le chauffeur {driverDeleteCandidate?.fullName} de la liste ? Son historique financier sera conservé.</Text>
+                    <View style={styles.confirmActions}>
+                      <TouchableOpacity style={styles.confirmNo} disabled={driverActionLoading} onPress={() => setDriverDeleteCandidate(null)}><Text style={styles.confirmNoText}>Non</Text></TouchableOpacity>
+                      <TouchableOpacity style={styles.confirmYes} disabled={driverActionLoading} onPress={async () => {
+                        const deleted = await changeDriverStatus(driverDeleteCandidate, 'closed');
+                        if (deleted) setDriverDeleteCandidate(null);
+                      }}>
+                        {driverActionLoading ? <ActivityIndicator color="white" /> : <Text style={styles.confirmYesText}>Oui, supprimer</Text>}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+              <Modal visible={!!selectedDriver && !!driverPanelMode} transparent animationType="fade" onRequestClose={() => setDriverPanelMode(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.profileModalCard}>
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.referenceTitle}>{driverPanelMode === 'edit' ? 'Modifier le chauffeur' : 'Profil chauffeur'}</Text>
+                      <TouchableOpacity onPress={() => setDriverPanelMode(null)}><Ionicons name="close" size={26} color={TAKO_BLUE} /></TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.profileModalScroll}>
+                      <DriverDetails
+                        driver={selectedDriver}
+                        editing={driverPanelMode === 'edit'}
+                        setDriver={setSelectedDriver}
+                        loading={driverActionLoading}
+                        save={() => saveDriver(selectedDriver)}
+                        changeStatus={(status) => changeDriverStatus(selectedDriver, status)}
+                      />
+                    </ScrollView>
+                  </View>
+                </View>
+              </Modal>
+            </>
           ) : null}
 
           {activeSection === 'agents' ? (
@@ -1382,6 +1498,138 @@ function ClientStat({ icon, label, value, tone, total }: { icon: keyof typeof Io
         <Text style={styles.clientStatLabel}>{label}</Text>
         <Text style={styles.clientStatValue}>{value.toLocaleString('fr-FR')}</Text>
         <Text style={styles.clientSubtext}>{total ? percentage : 'Tous les clients'}</Text>
+      </View>
+    </View>
+  );
+}
+
+function DriverDirectoryScreen({
+  directory, loading, search, setSearch, status, setStatus, zone, setZone, page, setPage,
+  addDriver, viewDriver, editDriver, closeDriver, actionLoading,
+}: {
+  directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
+  status: string; setStatus: (value: string) => void; zone: string; setZone: (value: string) => void;
+  page: number; setPage: (value: number) => void; addDriver: () => void;
+  viewDriver: (driver: any) => void; editDriver: (driver: any) => void;
+  closeDriver: (driver: any) => void; actionLoading: boolean;
+}) {
+  const stats = directory?.stats || {};
+  const drivers = directory?.drivers || [];
+  const pagination = directory?.pagination || { total: 0, limit: 20 };
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.limit || 20)));
+  const statusLabel = (value: string) => value === 'active' ? 'Actif' : value === 'pending' ? 'En attente' : value === 'suspended' ? 'Suspendu' : value === 'blocked' ? 'Bloqué' : value === 'refused' ? 'Refusé' : value || 'Non disponible';
+  const statusStyle = (value: string) => value === 'active' ? styles.statusActive : ['blocked', 'refused', 'suspended'].includes(value) ? styles.statusBlocked : styles.statusInactive;
+  const exportDrivers = () => {
+    if (Platform.OS !== 'web' || !drivers.length) {
+      Alert.alert('Export indisponible', 'Aucun chauffeur à exporter.');
+      return;
+    }
+    const rows = [
+      ['ID', 'Nom', 'Téléphone', 'E-mail', 'Véhicule', 'Plaque', 'Ligne / Zone', 'Solde CDF', 'Total gagné CDF', 'Statut'],
+      ...drivers.map((driver: any) => [driver.id, driver.fullName, driver.phone, driver.email, driver.vehicle, driver.busPlate, driver.route, driver.balance, driver.totalEarned, statusLabel(driver.status)]),
+    ];
+    const csv = rows.map((row) => row.map((value: any) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'chauffeurs-tako.csv';
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
+  return (
+    <View style={styles.clientDirectory}>
+      <View style={styles.referenceHeader}>
+        <View><Text style={styles.referenceTitle}>Gestion des chauffeurs</Text><Text style={styles.cardText}>Accueil / Chauffeurs</Text></View>
+        <View style={styles.driverDetailActions}>
+          <TouchableOpacity style={styles.secondaryAction} onPress={exportDrivers}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.referencePrimary} onPress={addDriver}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un chauffeur</Text></TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.clientStats}>
+        <ClientStat icon="people-outline" label="Total chauffeurs" value={Number(stats.total || 0)} tone="blue" />
+        <ClientStat icon="checkmark-circle-outline" label="Chauffeurs actifs" value={Number(stats.active || 0)} tone="green" total={Number(stats.total || 0)} />
+        <ClientStat icon="time-outline" label="En attente" value={Number(stats.pending || 0)} tone="orange" total={Number(stats.total || 0)} />
+        <ClientStat icon="pause-circle-outline" label="Suspendus" value={Number(stats.suspended || 0)} tone="red" total={Number(stats.total || 0)} />
+        <ClientStat icon="close-circle-outline" label="Bloqués" value={Number(stats.blocked || 0)} tone="red" total={Number(stats.total || 0)} />
+      </View>
+      <View style={styles.clientFilters}>
+        <View style={styles.clientSearchBox}><Ionicons name="search-outline" size={18} color="#64748B" /><TextInput value={search} onChangeText={setSearch} placeholder="Rechercher par nom, téléphone ou plaque…" placeholderTextColor="#94A3B8" style={styles.clientSearchInput} /></View>
+        <View style={styles.filterChoices}>
+          {[['', 'Tous'], ['active', 'Actifs'], ['pending', 'En attente'], ['suspended', 'Suspendus'], ['blocked', 'Bloqués']].map(([value, label]) => (
+            <TouchableOpacity key={label} style={[styles.filterChip, status === value && styles.filterChipActive]} onPress={() => setStatus(value)}><Text style={[styles.filterChipText, status === value && styles.filterChipTextActive]}>{label}</Text></TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.clientSearchBox}><Ionicons name="location-outline" size={18} color="#64748B" /><TextInput value={zone} onChangeText={setZone} placeholder="Filtrer par ligne ou zone…" placeholderTextColor="#94A3B8" style={styles.clientSearchInput} /></View>
+        <TouchableOpacity style={styles.filterChip} onPress={() => { setSearch(''); setStatus(''); setZone(''); }}><Text style={styles.filterChipText}>Réinitialiser</Text></TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View style={styles.driverTable}>
+          <View style={[styles.clientTableRow, styles.clientTableHeader]}>
+            {['Chauffeur', 'Téléphone', 'Véhicule', 'Plaque', 'Ligne / Zone', 'Solde disponible', 'Total gagné', 'Statut', 'Validation', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
+          </View>
+          {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : drivers.length ? drivers.map((driver: any) => (
+            <View key={driver.id} style={styles.clientTableRow}>
+              <View style={styles.driverTableCell}><Text style={styles.clientName}>{driver.fullName}</Text><Text style={styles.clientSubtext}>{driver.id}</Text></View>
+              <Text style={styles.driverTableCell}>{driver.phone || 'Non disponible'}</Text>
+              <Text style={styles.driverTableCell}>{driver.vehicle || 'Non disponible'}</Text>
+              <Text style={styles.driverTableCell}>{driver.busPlate || 'Non disponible'}</Text>
+              <Text style={styles.driverTableCell}>{driver.route || 'Non disponible'}</Text>
+              <Text style={[styles.driverTableCell, styles.clientBalance]}>{Number(driver.balance || 0).toLocaleString('fr-FR')} CDF</Text>
+              <Text style={styles.driverTableCell}>{Number(driver.totalEarned || 0).toLocaleString('fr-FR')} CDF</Text>
+              <View style={styles.driverTableCell}><Text style={statusStyle(driver.status)}>{statusLabel(driver.status)}</Text></View>
+              <View style={styles.driverTableCell}><Text style={driver.status === 'active' ? styles.statusActive : driver.status === 'refused' ? styles.statusBlocked : styles.statusInactive}>{driver.status === 'active' ? 'Validé' : driver.status === 'refused' ? 'Refusé' : 'En vérification'}</Text></View>
+              <View style={[styles.driverTableCell, styles.clientActions]}>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewDriver(driver)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editDriver(driver)}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewDriver(driver)}><Ionicons name="wallet-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeDriver(driver)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
+              </View>
+            </View>
+          )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun chauffeur trouvé.</Text></View>}
+        </View>
+      </ScrollView>
+      <View style={styles.clientPagination}><Text style={styles.cardText}>{pagination.total || 0} chauffeur(s)</Text><View style={styles.paginationButtons}>
+        <TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity>
+        <Text style={styles.pageCurrent}>{page} / {totalPages}</Text>
+        <TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity>
+      </View></View>
+    </View>
+  );
+}
+
+function DriverDetails({ driver, editing, setDriver, loading, save, changeStatus }: {
+  driver: any; editing: boolean; setDriver: (driver: any) => void; loading: boolean;
+  save: () => void; changeStatus: (status: 'active' | 'suspended' | 'blocked' | 'refused') => void;
+}) {
+  const fields = [
+    ['Nom complet', 'fullName'], ['Téléphone', 'phone'], ['E-mail', 'email'],
+    ['Véhicule', 'vehicle'], ['Plaque', 'busPlate'], ['Ligne / Zone', 'route'],
+  ];
+  return (
+    <View style={styles.driverDetails}>
+      <View style={styles.driverProfileTop}>
+        <View style={styles.driverAvatar}><Ionicons name="person-outline" size={34} color={TAKO_BLUE} /></View>
+        <View><Text style={styles.referenceTitle}>{driver.fullName}</Text><Text style={styles.cardText}>{driver.id}</Text></View>
+      </View>
+      <View style={styles.clientStats}>
+        <MiniMetric label="Solde disponible" value={`${Number(driver.balance || 0).toLocaleString('fr-FR')} CDF`} />
+        <MiniMetric label="Total gagné" value={`${Number(driver.totalEarned || 0).toLocaleString('fr-FR')} CDF`} />
+        <MiniMetric label="Paiements reçus" value={String(driver.paymentCount || 0)} />
+      </View>
+      <Text style={styles.cardTitle}>Informations du chauffeur</Text>
+      <View style={styles.driverFormGrid}>
+        {fields.map(([label, key]) => <View key={key} style={styles.driverFormField}><Text style={styles.formLabel}>{label}</Text>{editing ? (
+          <TextInput value={driver[key] || ''} onChangeText={(value) => setDriver({ ...driver, [key]: value })} style={styles.driverInput} placeholder="Non disponible" placeholderTextColor="#94A3B8" />
+        ) : <Text style={styles.clientTableCellText}>{driver[key] || 'Non disponible'}</Text>}</View>)}
+      </View>
+      <Text style={styles.cardText}>Opérateur de retrait : {driver.withdrawalOperator || 'Non disponible'}</Text>
+      <View style={styles.driverDetailActions}>
+        {editing ? <TouchableOpacity style={styles.referencePrimary} disabled={loading} onPress={save}>{loading ? <ActivityIndicator color="white" /> : <Text style={styles.referencePrimaryText}>Enregistrer</Text>}</TouchableOpacity> : null}
+        {driver.status !== 'active' ? <TouchableOpacity style={styles.referencePrimary} disabled={loading} onPress={() => changeStatus('active')}><Text style={styles.referencePrimaryText}>Valider</Text></TouchableOpacity> : null}
+        {driver.status === 'active' ? <TouchableOpacity style={styles.secondaryAction} disabled={loading} onPress={() => changeStatus('suspended')}><Text style={styles.secondaryActionText}>Suspendre</Text></TouchableOpacity> : null}
+        {driver.status !== 'blocked' ? <TouchableOpacity style={styles.confirmYes} disabled={loading} onPress={() => changeStatus('blocked')}><Text style={styles.confirmYesText}>Bloquer</Text></TouchableOpacity> : null}
+        {driver.status === 'pending' ? <TouchableOpacity style={styles.confirmNo} disabled={loading} onPress={() => changeStatus('refused')}><Text style={styles.confirmNoText}>Refuser</Text></TouchableOpacity> : null}
       </View>
     </View>
   );
@@ -2827,6 +3075,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
+  driverTable: {
+    minWidth: 1500,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  driverTableCell: {
+    width: 145,
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '700',
+    paddingRight: 10,
+  },
   clientTableRow: {
     minHeight: 68,
     flexDirection: 'row',
@@ -3037,6 +3300,49 @@ const styles = StyleSheet.create({
   },
   profileModalScroll: {
     flexGrow: 0,
+  },
+  driverDetails: {
+    gap: 18,
+    paddingBottom: 12,
+  },
+  driverProfileTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+  },
+  driverAvatar: {
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF3FF',
+  },
+  driverFormGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
+  driverFormField: {
+    minWidth: 260,
+    flexGrow: 1,
+    flexBasis: '45%',
+    gap: 7,
+  },
+  driverInput: {
+    minHeight: 44,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    color: '#111827',
+    paddingHorizontal: 12,
+  },
+  driverDetailActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 4,
   },
   cardManagerRow: {
     flexDirection: 'row',

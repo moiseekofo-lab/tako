@@ -117,6 +117,39 @@ export function updateClientStatus(clientId: string, sessionToken: string, statu
   });
 }
 
+export function getAdminDrivers(params: {
+  sessionToken: string;
+  search?: string;
+  status?: string;
+  zone?: string;
+  page?: number;
+}) {
+  return postJson('/admin/drivers/list', params);
+}
+
+export function updateDriverStatus(
+  driverId: string,
+  sessionToken: string,
+  status: 'active' | 'pending' | 'suspended' | 'blocked' | 'refused' | 'closed',
+) {
+  return postJson(`/admin/drivers/${encodeURIComponent(driverId)}/status`, { sessionToken, status });
+}
+
+export function updateDriverByAdmin(
+  driverId: string,
+  params: {
+    sessionToken: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    vehicle: string;
+    busPlate: string;
+    route: string;
+  },
+) {
+  return postJson(`/admin/drivers/${encodeURIComponent(driverId)}/update`, params);
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,
