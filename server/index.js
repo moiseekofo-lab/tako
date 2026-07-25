@@ -1098,7 +1098,7 @@ async function handleRequest(request, response) {
     const page = Math.max(1, Number.parseInt(body.page, 10) || 1);
     const limit = 20;
     const offset = (page - 1) * limit;
-    const conditions = [`u.role = 'passager'`];
+    const conditions = [`u.role = 'passager'`, `u.status <> 'closed'`];
     const params = [];
 
     if (search) {
@@ -1125,7 +1125,7 @@ async function handleRequest(request, response) {
           COUNT(*) FILTER (WHERE status IN ('inactive', 'suspended', 'pending'))::int AS inactive,
           COUNT(*) FILTER (WHERE status = 'blocked')::int AS blocked
         FROM users
-        WHERE role = 'passager';
+        WHERE role = 'passager' AND status <> 'closed';
       `),
       query(
         `SELECT COUNT(*)::int AS total FROM users u LEFT JOIN nfc_cards c ON c.client_id = u.id WHERE ${where};`,

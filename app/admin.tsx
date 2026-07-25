@@ -218,6 +218,7 @@ export default function Admin() {
   const [managedCardId, setManagedCardId] = useState('');
   const [clientActionLoading, setClientActionLoading] = useState(false);
   const [clientPanelMode, setClientPanelMode] = useState<'view' | 'edit' | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<any>(null);
 
   useEffect(() => {
     if (params.clientId) {
@@ -447,8 +448,10 @@ export default function Admin() {
         setSelectedClient((current: any) => current ? { ...current, status } : current);
       }
       Alert.alert('Compte mis à jour', status === 'closed' ? 'Le compte est fermé et son historique est conservé.' : status === 'blocked' ? 'Le compte est bloqué.' : 'Le compte est réactivé.');
+      return true;
     } catch (error) {
       Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+      return false;
     } finally {
       setClientActionLoading(false);
     }
@@ -1005,16 +1008,38 @@ export default function Admin() {
                   setCardManagerClient(client);
                   setManagedCardId(client.nfcCard?.cardId || '');
                 }}
-                closeClient={(client) => Alert.alert(
-                  'Fermer le compte',
-                  `Fermer le compte de ${client.fullName} ? Son historique financier sera conservé.`,
-                  [
-                    { text: 'Annuler', style: 'cancel' },
-                    { text: 'Fermer', style: 'destructive', onPress: () => changeClientStatus(client, 'closed') },
-                  ],
-                )}
+                closeClient={setDeleteCandidate}
                 actionLoading={clientActionLoading}
               />
+              <Modal visible={!!deleteCandidate} transparent animationType="fade" onRequestClose={() => setDeleteCandidate(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.confirmModal}>
+                    <View style={styles.confirmIcon}>
+                      <Ionicons name="trash-outline" size={30} color="#DC2626" />
+                    </View>
+                    <Text style={styles.confirmTitle}>Confirmer la suppression</Text>
+                    <Text style={styles.confirmText}>
+                      Voulez-vous supprimer le client {deleteCandidate?.fullName} de la liste ? Son historique financier sera conservé.
+                    </Text>
+                    <View style={styles.confirmActions}>
+                      <TouchableOpacity style={styles.confirmNo} disabled={clientActionLoading} onPress={() => setDeleteCandidate(null)}>
+                        <Text style={styles.confirmNoText}>Non</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={styles.confirmYes}
+                        disabled={clientActionLoading}
+                        onPress={async () => {
+                          const deleted = await changeClientStatus(deleteCandidate, 'closed');
+                          if (deleted) {
+                            setDeleteCandidate(null);
+                          }
+                        }}>
+                        {clientActionLoading ? <ActivityIndicator color="white" /> : <Text style={styles.confirmYesText}>Oui, supprimer</Text>}
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
               <Modal visible={!!cardManagerClient} transparent animationType="fade" onRequestClose={() => setCardManagerClient(null)}>
                 <View style={styles.modalBackdrop}>
                   <View style={[styles.card, styles.modalCard]}>
@@ -2931,6 +2956,70 @@ const styles = StyleSheet.create({
   modalCard: {
     width: '100%',
     maxWidth: 760,
+  },
+  confirmModal: {
+    width: '100%',
+    maxWidth: 440,
+    alignItems: 'center',
+    borderRadius: 10,
+    backgroundColor: '#FFFFFF',
+    padding: 28,
+  },
+  confirmIcon: {
+    width: 64,
+    height: 64,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 32,
+    backgroundColor: '#FEF2F2',
+    marginBottom: 16,
+  },
+  confirmTitle: {
+    color: '#111827',
+    fontSize: 21,
+    fontWeight: '900',
+    textAlign: 'center',
+  },
+  confirmText: {
+    color: '#64748B',
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 22,
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  confirmActions: {
+    width: '100%',
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  confirmNo: {
+    minHeight: 44,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+  },
+  confirmNoText: {
+    color: TAKO_BLUE,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  confirmYes: {
+    minHeight: 44,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: '#DC2626',
+  },
+  confirmYesText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '900',
   },
   profileModalCard: {
     width: '100%',
