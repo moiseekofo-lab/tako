@@ -624,12 +624,14 @@ export default function Admin() {
             </View>
           </View>
 
-          <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
-            <StatCard icon="wallet-outline" label="Solde suivi" value={`${balance} FC`} tone="blue" />
-            <StatCard icon="bus-outline" label="Trajets" value={`${trips.length}`} tone="green" />
-            <StatCard icon="receipt-outline" label="Transactions" value={`${notifications.length}`} tone="blue" />
-            <StatCard icon="cash-outline" label="Volume transport" value={`${totalTripAmount} FC`} tone="green" />
-          </View>
+          {activeSection === 'dashboard' ? (
+            <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
+              <StatCard icon="wallet-outline" label="Solde suivi" value={`${balance} FC`} tone="blue" />
+              <StatCard icon="bus-outline" label="Trajets" value={`${trips.length}`} tone="green" />
+              <StatCard icon="receipt-outline" label="Transactions" value={`${notifications.length}`} tone="blue" />
+              <StatCard icon="cash-outline" label="Volume transport" value={`${totalTripAmount} FC`} tone="green" />
+            </View>
+          ) : null}
 
           {activeSection === 'dashboard' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
