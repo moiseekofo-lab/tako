@@ -235,7 +235,6 @@ export default function Admin() {
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [checkingAdminSession, setCheckingAdminSession] = useState(Platform.OS === 'web');
-  const [dashboardPeriod, setDashboardPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
@@ -358,7 +357,7 @@ export default function Admin() {
           if (!sessionToken) {
             throw new Error('Session absente');
           }
-          return getAdminDashboard(sessionToken, dashboardPeriod);
+          return getAdminDashboard(sessionToken, 'day');
         })
         .then((result) => {
           if (active) {
@@ -379,13 +378,13 @@ export default function Admin() {
 
     setDashboardLoading(true);
     loadDashboard();
-    const refreshTimer = setInterval(loadDashboard, 30000);
+    const refreshTimer = setInterval(loadDashboard, 10000);
 
     return () => {
       active = false;
       clearInterval(refreshTimer);
     };
-  }, [activeSection, dashboardPeriod, isAuthenticated]);
+  }, [activeSection, isAuthenticated]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'clients') {
@@ -597,6 +596,7 @@ export default function Admin() {
       setDashboardData((current: any) => current ? {
         ...current,
         collected: Number(current.collected || 0) + amount,
+        agentBalance: Number(current.agentBalance || 0) + amount,
         availableBalance: Number(current.availableBalance || 0) + amount,
       } : current);
       setAgentCreditCandidate(null);
@@ -1107,20 +1107,6 @@ export default function Admin() {
                 <View>
                   <Text style={styles.cardText}>Vue d’ensemble de l’activité de TaKo</Text>
                 </View>
-                <View style={styles.periodFilters}>
-                  {([
-                    ['day', 'Jour'],
-                    ['week', 'Semaine'],
-                    ['month', 'Mois'],
-                  ] as const).map(([period, label]) => (
-                    <TouchableOpacity
-                      key={period}
-                      style={[styles.periodButton, dashboardPeriod === period && styles.periodButtonActive]}
-                      onPress={() => setDashboardPeriod(period)}>
-                      <Text style={[styles.periodButtonText, dashboardPeriod === period && styles.periodButtonTextActive]}>{label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
               </View>
 
               {dashboardLoading ? (
@@ -1131,7 +1117,7 @@ export default function Admin() {
                   <StatCard icon="bus-outline" label="Chauffeurs" value={`${dashboardData?.drivers ?? 0}`} tone="green" change={dashboardData?.changes?.drivers} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="person-add-outline" label="Agents" value={`${dashboardData?.agents ?? 0}`} tone="blue" change={dashboardData?.changes?.agents} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="swap-horizontal-outline" label="Transactions (période)" value={`${dashboardData?.transactions ?? 0}`} tone="blue" change={dashboardData?.changes?.transactions} comparison={dashboardData?.comparisonLabel} />
-                  <StatCard icon="cash-outline" label="Montant collecté" value={`${dashboardData?.collected ?? 0} FC`} tone="green" change={dashboardData?.changes?.collected} comparison={dashboardData?.comparisonLabel} />
+                  <StatCard icon="cash-outline" label="Argent agent" value={`${dashboardData?.agentBalance ?? 0} FC`} tone="green" />
                   <StatCard icon="car-outline" label="À verser aux chauffeurs" value={`${dashboardData?.driverAmount ?? 0} FC`} tone="blue" change={dashboardData?.changes?.driverAmount} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" change={dashboardData?.changes?.commission} comparison={dashboardData?.comparisonLabel} />
                   <StatCard icon="checkmark-circle-outline" label="Recharges réussies" value={`${dashboardData?.recharges?.successful ?? 0}`} tone="green" change={dashboardData?.changes?.recharges} comparison={dashboardData?.comparisonLabel} />

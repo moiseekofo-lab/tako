@@ -985,7 +985,11 @@ async function handleRequest(request, response) {
           COALESCE(SUM(balance) FILTER (
             WHERE role IN ('passager', 'chauffeur', 'agent')
               AND status <> 'closed'
-          ), 0)::numeric AS available_balance
+          ), 0)::numeric AS available_balance,
+          COALESCE(SUM(balance) FILTER (
+            WHERE role = 'agent'
+              AND status <> 'closed'
+          ), 0)::numeric AS agent_balance
         FROM users;
       `, [interval]),
       query(
@@ -1086,6 +1090,7 @@ async function handleRequest(request, response) {
         agents: Number(users.agents || 0),
         transactions: Number(payments.transactions || 0),
         collected,
+        agentBalance: Number(users.agent_balance || 0),
         availableBalance: Number(users.available_balance || 0),
         driverAmount: transportCollected - commission,
         commission,
