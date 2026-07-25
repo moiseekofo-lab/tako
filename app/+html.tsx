@@ -29,6 +29,7 @@ export default function Root({ children }: PropsWithChildren) {
         />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon.png" />
+        <script dangerouslySetInnerHTML={{ __html: renderHostRedirect }} />
         <ScrollViewStyleReset />
         <style dangerouslySetInnerHTML={{ __html: globalStyles }} />
       </head>
@@ -36,6 +37,17 @@ export default function Root({ children }: PropsWithChildren) {
     </html>
   );
 }
+
+const renderHostRedirect = `
+  if (window.location.hostname === 'tako-1.onrender.com') {
+    window.location.replace(
+      'https://admin.takotransport.online' +
+      window.location.pathname +
+      window.location.search +
+      window.location.hash
+    );
+  }
+`;
 
 const globalStyles = `
   html,
