@@ -150,6 +150,41 @@ export function updateDriverByAdmin(
   return postJson(`/admin/drivers/${encodeURIComponent(driverId)}/update`, params);
 }
 
+export function getAdminAgents(params: {
+  sessionToken: string;
+  search?: string;
+  status?: string;
+  zone?: string;
+  agentRole?: string;
+  manager?: string;
+  page?: number;
+}) {
+  return postJson('/admin/agents/list', params);
+}
+
+export function updateAgentStatus(
+  agentId: string,
+  sessionToken: string,
+  status: 'active' | 'pending' | 'inactive' | 'blocked' | 'closed',
+) {
+  return postJson(`/admin/agents/${encodeURIComponent(agentId)}/status`, { sessionToken, status });
+}
+
+export function updateAgentByAdmin(
+  agentId: string,
+  params: {
+    sessionToken: string;
+    fullName: string;
+    email: string;
+    phone: string;
+    assignmentZone: string;
+    managerName: string;
+    agentRole: string;
+  },
+) {
+  return postJson(`/admin/agents/${encodeURIComponent(agentId)}/update`, params);
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,

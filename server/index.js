@@ -419,6 +419,16 @@ async function initDatabase() {
   await pool.query(`ALTER TABLE driver_trip_settings ADD COLUMN IF NOT EXISTS vehicle TEXT;`);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS agent_profiles (
+      agent_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      assignment_zone TEXT,
+      manager_name TEXT,
+      agent_role TEXT NOT NULL DEFAULT 'Agent terrain',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS payments (
       id TEXT PRIMARY KEY,
       amount NUMERIC NOT NULL,
@@ -1369,6 +1379,147 @@ async function handleRequest(request, response) {
       [driverId, vehicle, busPlate, route],
     );
     sendJson(response, 200, { ok: true, driver: publicUser(driverResult.rows[0]) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/agents/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const search = String(body.search || '').trim();
+    const status = ['active', 'pending', 'inactive', 'blocked'].includes(body.status) ? body.status : '';
+    const zone = String(body.zone || '').trim();
+    const agentRole = String(body.agentRole || '').trim();
+    const manager = String(body.manager || '').trim();
+    const page = Math.max(1, Number.parseInt(body.page, 10) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    const conditions = [`u.role = 'agent'`, `u.status <> 'closed'`];
+    const params = [];
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(u.full_name ILIKE $${params.length} OR u.phone ILIKE $${params.length} OR u.email ILIKE $${params.length} OR u.id ILIKE $${params.length})`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`u.status = $${params.length}`);
+    }
+    if (zone) {
+      params.push(`%${zone}%`);
+      conditions.push(`a.assignment_zone ILIKE $${params.length}`);
+    }
+    if (agentRole) {
+      params.push(`%${agentRole}%`);
+      conditions.push(`a.agent_role ILIKE $${params.length}`);
+    }
+    if (manager) {
+      params.push(`%${manager}%`);
+      conditions.push(`a.manager_name ILIKE $${params.length}`);
+    }
+    const where = conditions.join(' AND ');
+    const [statsResult, countResult, agentsResult] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*) FILTER (WHERE status <> 'closed')::int AS total,
+          COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+          COUNT(*) FILTER (WHERE status = 'pending')::int AS pending,
+          COUNT(*) FILTER (WHERE status = 'inactive')::int AS inactive,
+          COUNT(*) FILTER (WHERE status = 'blocked')::int AS blocked
+        FROM users WHERE role = 'agent';
+      `),
+      query(`SELECT COUNT(*)::int AS total FROM users u LEFT JOIN agent_profiles a ON a.agent_id = u.id WHERE ${where};`, params),
+      query(
+        `
+          SELECT u.id, u.full_name, u.phone, u.email, u.balance, u.status, u.created_at,
+                 a.assignment_zone, a.manager_name, COALESCE(a.agent_role, 'Agent terrain') AS agent_role
+          FROM users u
+          LEFT JOIN agent_profiles a ON a.agent_id = u.id
+          WHERE ${where}
+          ORDER BY u.created_at DESC
+          LIMIT $${params.length + 1} OFFSET $${params.length + 2};
+        `,
+        [...params, limit, offset],
+      ),
+    ]);
+    sendJson(response, 200, {
+      ok: true,
+      stats: statsResult.rows[0],
+      pagination: { page, limit, total: Number(countResult.rows[0]?.total || 0) },
+      agents: agentsResult.rows.map((agent) => ({
+        id: agent.id,
+        fullName: agent.full_name,
+        phone: agent.phone || '',
+        email: agent.email || '',
+        balance: Number(agent.balance || 0),
+        status: agent.status,
+        createdAt: agent.created_at,
+        lastLoginAt: null,
+        assignmentZone: agent.assignment_zone || null,
+        managerName: agent.manager_name || null,
+        agentRole: agent.agent_role || 'Agent terrain',
+      })),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/agents/') && url.pathname.endsWith('/status')) {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const agentId = decodeURIComponent(url.pathname.replace('/admin/agents/', '').replace('/status', '')).trim();
+    const status = String(body.status || '').trim();
+    if (!['active', 'pending', 'inactive', 'blocked', 'closed'].includes(status)) {
+      sendJson(response, 400, { ok: false, error: 'Statut agent invalide' });
+      return;
+    }
+    const result = await query(`UPDATE users SET status = $1, updated_at = NOW() WHERE id = $2 AND role = 'agent' RETURNING *;`, [status, agentId]);
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Agent introuvable' });
+      return;
+    }
+    sendJson(response, 200, { ok: true, agent: publicUser(result.rows[0]) });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname.startsWith('/admin/agents/') && url.pathname.endsWith('/update')) {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const agentId = decodeURIComponent(url.pathname.replace('/admin/agents/', '').replace('/update', '')).trim();
+    const fullName = String(body.fullName || '').trim();
+    const email = normalizeEmail(body.email);
+    const phone = normalizePhone(body.phone);
+    const assignmentZone = String(body.assignmentZone || '').trim();
+    const managerName = String(body.managerName || '').trim();
+    const agentRole = String(body.agentRole || 'Agent terrain').trim();
+    if (!fullName || !phone) {
+      sendJson(response, 400, { ok: false, error: 'Nom et téléphone obligatoires' });
+      return;
+    }
+    const agentResult = await query(
+      `UPDATE users SET full_name = $1, email = NULLIF($2, ''), phone = $3, updated_at = NOW() WHERE id = $4 AND role = 'agent' RETURNING *;`,
+      [fullName, email, phone, agentId],
+    );
+    if (!agentResult.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Agent introuvable' });
+      return;
+    }
+    await query(
+      `
+        INSERT INTO agent_profiles (agent_id, assignment_zone, manager_name, agent_role, updated_at)
+        VALUES ($1, NULLIF($2, ''), NULLIF($3, ''), $4, NOW())
+        ON CONFLICT (agent_id) DO UPDATE SET assignment_zone = EXCLUDED.assignment_zone,
+          manager_name = EXCLUDED.manager_name, agent_role = EXCLUDED.agent_role, updated_at = NOW();
+      `,
+      [agentId, assignmentZone, managerName, agentRole],
+    );
+    sendJson(response, 200, { ok: true, agent: publicUser(agentResult.rows[0]) });
     return;
   }
 

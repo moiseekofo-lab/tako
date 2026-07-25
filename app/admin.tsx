@@ -9,6 +9,7 @@ import {
   approveUser,
   createInternalRecharge,
   findClientById,
+  getAdminAgents,
   getAdminClients,
   getAdminDashboard,
   getAdminDrivers,
@@ -20,6 +21,8 @@ import {
   setNfcCardBlocked,
   updateClientByAdmin,
   updateClientStatus,
+  updateAgentByAdmin,
+  updateAgentStatus,
   updateDriverByAdmin,
   updateDriverStatus,
   validateAdminSession,
@@ -212,6 +215,19 @@ export default function Admin() {
   const [driverPanelMode, setDriverPanelMode] = useState<'view' | 'edit' | null>(null);
   const [driverDeleteCandidate, setDriverDeleteCandidate] = useState<any>(null);
   const [driverActionLoading, setDriverActionLoading] = useState(false);
+  const [agentSearch, setAgentSearch] = useState('');
+  const [agentStatusFilter, setAgentStatusFilter] = useState('');
+  const [agentZoneFilter, setAgentZoneFilter] = useState('');
+  const [agentRoleFilter, setAgentRoleFilter] = useState('');
+  const [agentManagerFilter, setAgentManagerFilter] = useState('');
+  const [agentPage, setAgentPage] = useState(1);
+  const [agentDirectory, setAgentDirectory] = useState<any>({ agents: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+  const [agentDirectoryLoading, setAgentDirectoryLoading] = useState(false);
+  const [agentDirectoryVersion, setAgentDirectoryVersion] = useState(0);
+  const [selectedAgent, setSelectedAgent] = useState<any>(null);
+  const [agentPanelMode, setAgentPanelMode] = useState<'view' | 'edit' | null>(null);
+  const [agentDeleteCandidate, setAgentDeleteCandidate] = useState<any>(null);
+  const [agentActionLoading, setAgentActionLoading] = useState(false);
   const [pendingAgents, setPendingAgents] = useState<any[]>([]);
   const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
   const [approvingUserId, setApprovingUserId] = useState<string | null>(null);
@@ -442,6 +458,37 @@ export default function Admin() {
     return () => { active = false; clearTimeout(timer); };
   }, [activeSection, driverDirectoryVersion, driverPage, driverSearch, driverStatusFilter, driverZoneFilter, isAuthenticated]);
 
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'agents') return;
+    let active = true;
+    const timer = setTimeout(() => {
+      setAgentDirectoryLoading(true);
+      AsyncStorage.getItem(ADMIN_SESSION_KEY)
+        .then((sessionToken) => {
+          if (!sessionToken) throw new Error('Session absente');
+          return getAdminAgents({
+            sessionToken,
+            search: agentSearch,
+            status: agentStatusFilter,
+            zone: agentZoneFilter,
+            agentRole: agentRoleFilter,
+            manager: agentManagerFilter,
+            page: agentPage,
+          });
+        })
+        .then((result) => {
+          if (active) setAgentDirectory(result || { agents: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+        })
+        .catch(() => {
+          if (active) setAgentDirectory({ agents: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+        })
+        .finally(() => {
+          if (active) setAgentDirectoryLoading(false);
+        });
+    }, 250);
+    return () => { active = false; clearTimeout(timer); };
+  }, [activeSection, agentDirectoryVersion, agentManagerFilter, agentPage, agentRoleFilter, agentSearch, agentStatusFilter, agentZoneFilter, isAuthenticated]);
+
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
   const rechargeTransactions = notifications.filter((item) => item.type === 'recharge').length;
@@ -487,6 +534,49 @@ export default function Admin() {
       Alert.alert('Modification impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
     } finally {
       setDriverActionLoading(false);
+    }
+  };
+
+  const changeAgentStatus = async (agent: any, status: 'active' | 'pending' | 'inactive' | 'blocked' | 'closed') => {
+    try {
+      setAgentActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      await updateAgentStatus(agent.id, sessionToken, status);
+      setAgentDirectoryVersion((value) => value + 1);
+      setSelectedAgent((current: any) => current?.id === agent.id ? { ...current, status } : current);
+      Alert.alert('Agent mis à jour', status === 'closed' ? 'L’agent est retiré de la liste. Son historique est conservé.' : 'Le nouveau statut a été enregistré.');
+      return true;
+    } catch (error) {
+      Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+      return false;
+    } finally {
+      setAgentActionLoading(false);
+    }
+  };
+
+  const saveAgent = async (agent: any) => {
+    try {
+      setAgentActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      const result = await updateAgentByAdmin(agent.id, {
+        sessionToken,
+        fullName: agent.fullName || '',
+        email: agent.email || '',
+        phone: agent.phone || '',
+        assignmentZone: agent.assignmentZone || '',
+        managerName: agent.managerName || '',
+        agentRole: agent.agentRole || 'Agent terrain',
+      });
+      setSelectedAgent({ ...agent, ...(result?.agent || {}) });
+      setAgentDirectoryVersion((value) => value + 1);
+      setAgentPanelMode('view');
+      Alert.alert('Modifications enregistrées', 'Le profil de l’agent a été mis à jour.');
+    } catch (error) {
+      Alert.alert('Modification impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setAgentActionLoading(false);
     }
   };
 
@@ -1234,62 +1324,49 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'agents' ? (
-            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <PendingApprovalsCard
-                title="Agents en attente"
-                users={pendingAgents}
-                approvingUserId={approvingUserId}
-                approve={approvePendingUser}
+            <>
+              <AgentDirectoryScreen
+                directory={agentDirectory}
+                loading={agentDirectoryLoading}
+                search={agentSearch}
+                setSearch={(value) => { setAgentSearch(value); setAgentPage(1); }}
+                status={agentStatusFilter}
+                setStatus={(value) => { setAgentStatusFilter(value); setAgentPage(1); }}
+                zone={agentZoneFilter}
+                setZone={(value) => { setAgentZoneFilter(value); setAgentPage(1); }}
+                agentRole={agentRoleFilter}
+                setAgentRole={(value) => { setAgentRoleFilter(value); setAgentPage(1); }}
+                manager={agentManagerFilter}
+                setManager={(value) => { setAgentManagerFilter(value); setAgentPage(1); }}
+                page={agentPage}
+                setPage={setAgentPage}
+                addAgent={() => router.push('/register' as any)}
+                viewAgent={(agent) => { setSelectedAgent(agent); setAgentPanelMode('view'); }}
+                editAgent={(agent) => { setSelectedAgent({ ...agent }); setAgentPanelMode('edit'); }}
+                closeAgent={setAgentDeleteCandidate}
+                actionLoading={agentActionLoading}
               />
-              <AgentRechargeCard
-                agentId={agentRechargeId}
-                setAgentId={setAgentRechargeId}
-                amount={agentRechargeAmount}
-                setAmount={setAgentRechargeAmount}
-                loading={agentRechargeLoading}
-                confirm={confirmAgentRecharge}
-                lookupLoading={agentLookupLoading}
-                lookup={findAgentAccount}
-                feedback={agentFeedback}
-              />
-              <AgentAccountCard agent={trackedAgent} stats={trackedAgentStats} />
-              <InternalRechargeCard
-                clientId={rechargeClientId}
-                setClientId={setRechargeClientId}
-                cardId={rechargeCardId}
-                clearCardId={() => setRechargeCardId('')}
-                amount={rechargeAmount}
-                setAmount={setRechargeAmount}
-                loading={rechargeLoading}
-                confirm={confirmInternalRecharge}
-                scan={() => router.push('/internal-recharge-scan' as any)}
-                nfcLoading={isReadingNfc}
-                readNfc={readAdminNfcCard}
-                feedback={rechargeFeedback}
-              />
-              <PrepaidCardActivationCard
-                phone={prepaidPhone}
-                setPhone={setPrepaidPhone}
-                code={prepaidCode}
-                setCode={setPrepaidCode}
-                cardId={prepaidCardId}
-                readNfc={readPrepaidNfcCard}
-                nfcLoading={isReadingPrepaidNfc}
-                loading={prepaidLoading}
-                sendCode={sendPrepaidCode}
-                confirm={confirmPrepaidCard}
-                feedback={prepaidFeedback}
-              />
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Compte agent</Text>
-                <ChecklistItem label="Inscription agent disponible" done />
-                <ChecklistItem label="Validation administrateur obligatoire" done />
-                <ChecklistItem label="Solde agent crédité uniquement par administrateur" done />
-                <ChecklistItem label="Recharge par QR client" done />
-                <ChecklistItem label="Recharge par carte NFC dans le mode agent" done />
-                <ChecklistItem label="Remise espèce en fin de journée" done />
-              </View>
-            </View>
+              <Modal visible={!!agentDeleteCandidate} transparent animationType="fade" onRequestClose={() => setAgentDeleteCandidate(null)}>
+                <View style={styles.modalBackdrop}><View style={styles.confirmModal}>
+                  <View style={styles.confirmIcon}><Ionicons name="trash-outline" size={30} color="#DC2626" /></View>
+                  <Text style={styles.confirmTitle}>Confirmer la suppression</Text>
+                  <Text style={styles.confirmText}>Voulez-vous supprimer l’agent {agentDeleteCandidate?.fullName} de la liste ? Son historique sera conservé.</Text>
+                  <View style={styles.confirmActions}>
+                    <TouchableOpacity style={styles.confirmNo} disabled={agentActionLoading} onPress={() => setAgentDeleteCandidate(null)}><Text style={styles.confirmNoText}>Non</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.confirmYes} disabled={agentActionLoading} onPress={async () => {
+                      const deleted = await changeAgentStatus(agentDeleteCandidate, 'closed');
+                      if (deleted) setAgentDeleteCandidate(null);
+                    }}>{agentActionLoading ? <ActivityIndicator color="white" /> : <Text style={styles.confirmYesText}>Oui, supprimer</Text>}</TouchableOpacity>
+                  </View>
+                </View></View>
+              </Modal>
+              <Modal visible={!!selectedAgent && !!agentPanelMode} transparent animationType="fade" onRequestClose={() => setAgentPanelMode(null)}>
+                <View style={styles.modalBackdrop}><View style={styles.profileModalCard}>
+                  <View style={styles.modalHeader}><Text style={styles.referenceTitle}>{agentPanelMode === 'edit' ? 'Modifier l’agent' : 'Profil agent'}</Text><TouchableOpacity onPress={() => setAgentPanelMode(null)}><Ionicons name="close" size={26} color={TAKO_BLUE} /></TouchableOpacity></View>
+                  <ScrollView style={styles.profileModalScroll}><AgentDetails agent={selectedAgent} editing={agentPanelMode === 'edit'} setAgent={setSelectedAgent} loading={agentActionLoading} save={() => saveAgent(selectedAgent)} changeStatus={(status) => changeAgentStatus(selectedAgent, status)} /></ScrollView>
+                </View></View>
+              </Modal>
+            </>
           ) : null}
 
           {activeSection === 'transactions' ? (
@@ -1633,6 +1710,103 @@ function DriverDetails({ driver, editing, setDriver, loading, save, changeStatus
       </View>
     </View>
   );
+}
+
+function AgentDirectoryScreen({
+  directory, loading, search, setSearch, status, setStatus, zone, setZone, agentRole, setAgentRole,
+  manager, setManager, page, setPage, addAgent, viewAgent, editAgent, closeAgent, actionLoading,
+}: {
+  directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
+  status: string; setStatus: (value: string) => void; zone: string; setZone: (value: string) => void;
+  agentRole: string; setAgentRole: (value: string) => void; manager: string; setManager: (value: string) => void;
+  page: number; setPage: (value: number) => void; addAgent: () => void;
+  viewAgent: (agent: any) => void; editAgent: (agent: any) => void; closeAgent: (agent: any) => void; actionLoading: boolean;
+}) {
+  const stats = directory?.stats || {};
+  const agents = directory?.agents || [];
+  const pagination = directory?.pagination || { total: 0, limit: 20 };
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.limit || 20)));
+  const statusLabel = (value: string) => value === 'active' ? 'Actif' : value === 'pending' ? 'En attente' : value === 'inactive' ? 'Désactivé' : value === 'blocked' ? 'Bloqué' : value || 'Non disponible';
+  const statusStyle = (value: string) => value === 'active' ? styles.statusActive : value === 'pending' ? styles.statusInactive : styles.statusBlocked;
+  const reset = () => { setSearch(''); setStatus(''); setZone(''); setAgentRole(''); setManager(''); };
+  const exportAgents = () => {
+    if (Platform.OS !== 'web' || !agents.length) return Alert.alert('Export indisponible', 'Aucun agent à exporter.');
+    const rows = [
+      ['ID', 'Nom', 'Téléphone', 'E-mail', 'Zone', 'Responsable', 'Rôle', 'Statut', 'Date de création'],
+      ...agents.map((agent: any) => [agent.id, agent.fullName, agent.phone, agent.email, agent.assignmentZone, agent.managerName, agent.agentRole, statusLabel(agent.status), agent.createdAt]),
+    ];
+    const csv = rows.map((row) => row.map((value: any) => `"${String(value ?? '').replace(/"/g, '""')}"`).join(';')).join('\n');
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob); link.download = 'agents-tako.csv'; link.click(); URL.revokeObjectURL(link.href);
+  };
+  return (
+    <View style={styles.clientDirectory}>
+      <View style={styles.referenceHeader}>
+        <View><Text style={styles.referenceTitle}>Gestion des agents</Text><Text style={styles.cardText}>Accueil / Agents</Text></View>
+        <View style={styles.driverDetailActions}>
+          <TouchableOpacity style={styles.secondaryAction} onPress={exportAgents}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.referencePrimary} onPress={addAgent}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un agent</Text></TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.clientStats}>
+        <ClientStat icon="people-outline" label="Total agents" value={Number(stats.total || 0)} tone="blue" />
+        <ClientStat icon="checkmark-circle-outline" label="Agents actifs" value={Number(stats.active || 0)} tone="green" total={Number(stats.total || 0)} />
+        <ClientStat icon="time-outline" label="En attente" value={Number(stats.pending || 0)} tone="orange" total={Number(stats.total || 0)} />
+        <ClientStat icon="close-circle-outline" label="Désactivés" value={Number(stats.inactive || 0)} tone="red" total={Number(stats.total || 0)} />
+        <ClientStat icon="shield-outline" label="Bloqués" value={Number(stats.blocked || 0)} tone="red" total={Number(stats.total || 0)} />
+      </View>
+      <View style={styles.clientFilters}>
+        <View style={styles.clientSearchBox}><Ionicons name="search-outline" size={18} color="#64748B" /><TextInput value={search} onChangeText={setSearch} placeholder="Rechercher par nom, téléphone ou e-mail…" placeholderTextColor="#94A3B8" style={styles.clientSearchInput} /></View>
+        <View style={styles.filterChoices}>{[['', 'Tous'], ['active', 'Actifs'], ['pending', 'En attente'], ['inactive', 'Désactivés'], ['blocked', 'Bloqués']].map(([value, label]) => <TouchableOpacity key={label} style={[styles.filterChip, status === value && styles.filterChipActive]} onPress={() => setStatus(value)}><Text style={[styles.filterChipText, status === value && styles.filterChipTextActive]}>{label}</Text></TouchableOpacity>)}</View>
+        <View style={styles.agentFilterInputs}>
+          <TextInput value={zone} onChangeText={setZone} placeholder="Zone d’affectation" placeholderTextColor="#94A3B8" style={styles.agentFilterInput} />
+          <TextInput value={agentRole} onChangeText={setAgentRole} placeholder="Rôle" placeholderTextColor="#94A3B8" style={styles.agentFilterInput} />
+          <TextInput value={manager} onChangeText={setManager} placeholder="Responsable" placeholderTextColor="#94A3B8" style={styles.agentFilterInput} />
+        </View>
+        <TouchableOpacity style={styles.filterChip} onPress={reset}><Text style={styles.filterChipText}>Réinitialiser</Text></TouchableOpacity>
+      </View>
+      <ScrollView horizontal showsHorizontalScrollIndicator><View style={styles.agentTable}>
+        <View style={[styles.clientTableRow, styles.clientTableHeader]}>{['Agent', 'Téléphone', 'E-mail', 'Zone d’affectation', 'Responsable', 'Rôle', 'Statut', 'Date de création', 'Dernière connexion', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}</View>
+        {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : agents.length ? agents.map((agent: any) => <View key={agent.id} style={styles.clientTableRow}>
+          <View style={styles.driverTableCell}><Text style={styles.clientName}>{agent.fullName}</Text><Text style={styles.clientSubtext}>{agent.id}</Text></View>
+          <Text style={styles.driverTableCell}>{agent.phone || 'Non disponible'}</Text><Text style={styles.driverTableCell}>{agent.email || 'Non disponible'}</Text>
+          <Text style={styles.driverTableCell}>{agent.assignmentZone || 'Non disponible'}</Text><Text style={styles.driverTableCell}>{agent.managerName || 'Non disponible'}</Text>
+          <View style={styles.driverTableCell}><Text style={styles.agentRoleBadge}>{agent.agentRole || 'Agent terrain'}</Text></View>
+          <View style={styles.driverTableCell}><Text style={statusStyle(agent.status)}>{statusLabel(agent.status)}</Text></View>
+          <Text style={styles.driverTableCell}>{formatDate(agent.createdAt)}</Text><Text style={styles.driverTableCell}>{agent.lastLoginAt ? formatDate(agent.lastLoginAt) : 'Non disponible'}</Text>
+          <View style={[styles.driverTableCell, styles.clientActions]}>
+            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editAgent(agent)}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="lock-closed-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeAgent(agent)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
+          </View>
+        </View>) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun agent trouvé.</Text></View>}
+      </View></ScrollView>
+      <View style={styles.clientPagination}><Text style={styles.cardText}>{pagination.total || 0} agent(s)</Text><View style={styles.paginationButtons}>
+        <TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity><Text style={styles.pageCurrent}>{page} / {totalPages}</Text><TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity>
+      </View></View>
+    </View>
+  );
+}
+
+function AgentDetails({ agent, editing, setAgent, loading, save, changeStatus }: {
+  agent: any; editing: boolean; setAgent: (agent: any) => void; loading: boolean; save: () => void;
+  changeStatus: (status: 'active' | 'pending' | 'inactive' | 'blocked') => void;
+}) {
+  const fields = [['Nom complet', 'fullName'], ['Téléphone', 'phone'], ['E-mail', 'email'], ['Zone d’affectation', 'assignmentZone'], ['Responsable', 'managerName'], ['Rôle', 'agentRole']];
+  return <View style={styles.driverDetails}>
+    <View style={styles.driverProfileTop}><View style={styles.driverAvatar}><Ionicons name="person-outline" size={34} color={TAKO_BLUE} /></View><View><Text style={styles.referenceTitle}>{agent.fullName}</Text><Text style={styles.cardText}>{agent.id}</Text></View></View>
+    <View style={styles.clientStats}><MiniMetric label="Solde agent" value={`${Number(agent.balance || 0).toLocaleString('fr-FR')} CDF`} /><MiniMetric label="Statut" value={agent.status || 'Non disponible'} /><MiniMetric label="Dernière connexion" value={agent.lastLoginAt ? formatDate(agent.lastLoginAt) : 'Non disponible'} /></View>
+    <Text style={styles.cardTitle}>Informations de l’agent</Text>
+    <View style={styles.driverFormGrid}>{fields.map(([label, key]) => <View key={key} style={styles.driverFormField}><Text style={styles.formLabel}>{label}</Text>{editing ? <TextInput value={agent[key] || ''} onChangeText={(value) => setAgent({ ...agent, [key]: value })} style={styles.driverInput} placeholder="Non disponible" placeholderTextColor="#94A3B8" /> : <Text style={styles.clientTableCellText}>{agent[key] || 'Non disponible'}</Text>}</View>)}</View>
+    <View style={styles.driverDetailActions}>
+      {editing ? <TouchableOpacity style={styles.referencePrimary} disabled={loading} onPress={save}>{loading ? <ActivityIndicator color="white" /> : <Text style={styles.referencePrimaryText}>Enregistrer</Text>}</TouchableOpacity> : null}
+      {agent.status !== 'active' ? <TouchableOpacity style={styles.referencePrimary} disabled={loading} onPress={() => changeStatus('active')}><Text style={styles.referencePrimaryText}>Activer</Text></TouchableOpacity> : null}
+      {agent.status === 'active' ? <TouchableOpacity style={styles.secondaryAction} disabled={loading} onPress={() => changeStatus('inactive')}><Text style={styles.secondaryActionText}>Désactiver</Text></TouchableOpacity> : null}
+      {agent.status !== 'blocked' ? <TouchableOpacity style={styles.confirmYes} disabled={loading} onPress={() => changeStatus('blocked')}><Text style={styles.confirmYesText}>Bloquer l’accès</Text></TouchableOpacity> : null}
+    </View>
+  </View>;
 }
 
 function DashboardRecentTable({
@@ -3083,6 +3257,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
   },
+  agentTable: {
+    minWidth: 1500,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
   driverTableCell: {
     width: 145,
     color: '#475569',
@@ -3343,6 +3525,31 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginTop: 4,
+  },
+  agentFilterInputs: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  agentFilterInput: {
+    minWidth: 150,
+    minHeight: 36,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    color: '#111827',
+    paddingHorizontal: 10,
+    fontSize: 11,
+  },
+  agentRoleBadge: {
+    alignSelf: 'flex-start',
+    color: '#0369A1',
+    fontSize: 10,
+    fontWeight: '900',
+    backgroundColor: '#E0F2FE',
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
   },
   cardManagerRow: {
     flexDirection: 'row',
