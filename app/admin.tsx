@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import {
   activatePrepaidCard,
@@ -217,6 +217,7 @@ export default function Admin() {
   const [cardManagerClient, setCardManagerClient] = useState<any>(null);
   const [managedCardId, setManagedCardId] = useState('');
   const [clientActionLoading, setClientActionLoading] = useState(false);
+  const [clientPanelMode, setClientPanelMode] = useState<'view' | 'edit' | null>(null);
 
   useEffect(() => {
     if (params.clientId) {
@@ -416,7 +417,7 @@ export default function Admin() {
     router.replace('/login' as any);
   };
 
-  const openClientProfile = async (clientIdToOpen: string) => {
+  const openClientProfile = async (clientIdToOpen: string, mode: 'view' | 'edit') => {
     try {
       setClientActionLoading(true);
       const result = await findClientById(clientIdToOpen);
@@ -425,6 +426,7 @@ export default function Admin() {
       }
       setSelectedClient(result.client);
       setClientId(clientIdToOpen);
+      setClientPanelMode(mode);
     } catch (error) {
       Alert.alert('Profil indisponible', error instanceof Error ? error.message : 'Impossible de charger ce client.');
     } finally {
@@ -997,8 +999,8 @@ export default function Admin() {
                 page={clientPage}
                 setPage={setClientPage}
                 addClient={() => router.push('/register' as any)}
-                viewClient={(client) => openClientProfile(client.id)}
-                editClient={(client) => openClientProfile(client.id)}
+                viewClient={(client) => openClientProfile(client.id, 'view')}
+                editClient={(client) => openClientProfile(client.id, 'edit')}
                 manageCard={(client) => {
                   setCardManagerClient(client);
                   setManagedCardId(client.nfcCard?.cardId || '');
@@ -1013,46 +1015,56 @@ export default function Admin() {
                 )}
                 actionLoading={clientActionLoading}
               />
-              {cardManagerClient ? (
-                <View style={[styles.card, styles.cardManager]}>
-                  <View style={styles.referenceHeader}>
-                    <View>
-                      <Text style={styles.cardTitle}>Carte NFC — {cardManagerClient.fullName}</Text>
-                      <Text style={styles.cardText}>Une carte ne peut être associée qu’à un seul client.</Text>
+              <Modal visible={!!cardManagerClient} transparent animationType="fade" onRequestClose={() => setCardManagerClient(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={[styles.card, styles.modalCard]}>
+                    <View style={styles.referenceHeader}>
+                      <View>
+                        <Text style={styles.cardTitle}>Carte NFC — {cardManagerClient?.fullName}</Text>
+                        <Text style={styles.cardText}>Une carte ne peut être associée qu’à un seul client.</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => setCardManagerClient(null)}><Ionicons name="close" size={24} color={TAKO_BLUE} /></TouchableOpacity>
                     </View>
-                    <TouchableOpacity onPress={() => setCardManagerClient(null)}><Ionicons name="close" size={24} color={TAKO_BLUE} /></TouchableOpacity>
-                  </View>
-                  <View style={styles.cardManagerRow}>
-                    <TextInput
-                      value={managedCardId}
-                      onChangeText={setManagedCardId}
-                      placeholder="UID ou numéro de série NFC"
-                      placeholderTextColor="#94A3B8"
-                      style={styles.cardManagerInput}
-                    />
-                    <TouchableOpacity style={styles.referencePrimary} disabled={clientActionLoading} onPress={saveManagedCard}>
-                      <Text style={styles.referencePrimaryText}>Associer la carte</Text>
-                    </TouchableOpacity>
-                    {cardManagerClient.nfcCard ? (
-                      <TouchableOpacity style={styles.secondaryAction} disabled={clientActionLoading} onPress={toggleManagedCard}>
-                        <Text style={styles.secondaryActionText}>{cardManagerClient.nfcCard.blocked ? 'Réactiver la carte' : 'Suspendre la carte'}</Text>
+                    <View style={styles.cardManagerRow}>
+                      <TextInput
+                        value={managedCardId}
+                        onChangeText={setManagedCardId}
+                        placeholder="UID ou numéro de série NFC"
+                        placeholderTextColor="#94A3B8"
+                        style={styles.cardManagerInput}
+                      />
+                      <TouchableOpacity style={styles.referencePrimary} disabled={clientActionLoading} onPress={saveManagedCard}>
+                        <Text style={styles.referencePrimaryText}>Associer la carte</Text>
                       </TouchableOpacity>
-                    ) : null}
+                      {cardManagerClient?.nfcCard ? (
+                        <TouchableOpacity style={styles.secondaryAction} disabled={clientActionLoading} onPress={toggleManagedCard}>
+                          <Text style={styles.secondaryActionText}>{cardManagerClient.nfcCard.blocked ? 'Réactiver la carte' : 'Suspendre la carte'}</Text>
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
-              ) : null}
-              {activeClient ? (
-                <View style={[styles.grid, styles.clientProfilePanel, isNarrow && styles.mobileGrid]}>
-                  <ClientDetails
-                    client={activeClient}
-                    balance={Number(activeClient.balance || 0)}
-                    trips={trips.length}
-                    notifications={notifications.length}
-                    updating={clientUpdateLoading}
-                    updateClient={updateSelectedClient}
-                  />
+              </Modal>
+              <Modal visible={!!activeClient && !!clientPanelMode} transparent animationType="fade" onRequestClose={() => setClientPanelMode(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.profileModalCard}>
+                    <View style={styles.modalHeader}>
+                      <Text style={styles.referenceTitle}>{clientPanelMode === 'edit' ? 'Modifier le client' : 'Profil client'}</Text>
+                      <TouchableOpacity onPress={() => setClientPanelMode(null)}><Ionicons name="close" size={26} color={TAKO_BLUE} /></TouchableOpacity>
+                    </View>
+                    <ScrollView style={styles.profileModalScroll}>
+                      <ClientDetails
+                        client={activeClient}
+                        balance={Number(activeClient?.balance || 0)}
+                        trips={trips.length}
+                        notifications={notifications.length}
+                        updating={clientUpdateLoading}
+                        updateClient={updateSelectedClient}
+                      />
+                    </ScrollView>
+                  </View>
                 </View>
-              ) : null}
+              </Modal>
             </>
           ) : null}
 
@@ -1311,10 +1323,10 @@ function ClientDirectoryScreen({
               <Text style={styles.clientTableCellText}>{formatDate(client.createdAt)}</Text>
               <Text style={styles.clientTableCellText}>{client.lastLoginAt ? formatDate(client.lastLoginAt) : 'Non disponible'}</Text>
               <View style={[styles.clientTableCell, styles.clientActions]}>
-                <TouchableOpacity disabled={actionLoading} onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity disabled={actionLoading} onPress={() => editClient(client)} accessibilityLabel={`Modifier ${client.fullName}`}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity disabled={actionLoading} onPress={() => manageCard(client)} accessibilityLabel={`Gérer la carte de ${client.fullName}`}><Ionicons name="card-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity disabled={actionLoading || client.status === 'closed'} onPress={() => closeClient(client)} accessibilityLabel={`Fermer le compte de ${client.fullName}`}><Ionicons name="trash-outline" size={19} color={client.status === 'closed' ? '#CBD5E1' : '#DC2626'} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editClient(client)} accessibilityLabel={`Modifier ${client.fullName}`}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => manageCard(client)} accessibilityLabel={`Gérer la carte de ${client.fullName}`}><Ionicons name="card-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading || client.status === 'closed'} onPress={() => closeClient(client)} accessibilityLabel={`Fermer le compte de ${client.fullName}`}><Ionicons name="trash-outline" size={19} color={client.status === 'closed' ? '#CBD5E1' : '#DC2626'} /></TouchableOpacity>
               </View>
             </View>
           )) : (
@@ -2863,7 +2875,15 @@ const styles = StyleSheet.create({
   clientActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 4,
+  },
+  clientActionButton: {
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    backgroundColor: '#F8FAFC',
   },
   clientTableLoading: {
     minHeight: 180,
@@ -2900,6 +2920,34 @@ const styles = StyleSheet.create({
   },
   cardManager: {
     marginTop: 20,
+  },
+  modalBackdrop: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(6, 31, 104, 0.55)',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 760,
+  },
+  profileModalCard: {
+    width: '100%',
+    maxWidth: 980,
+    maxHeight: '90%',
+    borderRadius: 10,
+    backgroundColor: PAGE_BG,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 14,
+  },
+  profileModalScroll: {
+    flexGrow: 0,
   },
   cardManagerRow: {
     flexDirection: 'row',
