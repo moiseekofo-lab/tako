@@ -764,8 +764,7 @@ export default function Admin() {
             <>
               <View style={styles.dashboardToolbar}>
                 <View>
-                  <Text style={styles.cardTitle}>Vue générale</Text>
-                  <Text style={styles.cardText}>Données actualisées depuis le serveur TaKo.</Text>
+                  <Text style={styles.cardText}>Vue d’ensemble de l’activité de TaKo</Text>
                 </View>
                 <View style={styles.periodFilters}>
                   {([
@@ -789,28 +788,19 @@ export default function Admin() {
                 <View style={[styles.statsGrid, isNarrow && styles.mobileStatsGrid]}>
                   <StatCard icon="people-outline" label="Clients" value={`${dashboardData?.clients ?? 0}`} tone="blue" onPress={() => setActiveSection('clients')} />
                   <StatCard icon="bus-outline" label="Chauffeurs" value={`${dashboardData?.drivers ?? 0}`} tone="green" onPress={() => setActiveSection('drivers')} />
-                  <StatCard icon="checkmark-circle-outline" label="Chauffeurs actifs" value={`${dashboardData?.activeDrivers ?? 0}`} tone="green" onPress={() => setActiveSection('drivers')} />
                   <StatCard icon="person-add-outline" label="Agents" value={`${dashboardData?.agents ?? 0}`} tone="blue" onPress={() => setActiveSection('agents')} />
-                  <StatCard icon="receipt-outline" label="Transactions" value={`${dashboardData?.transactions ?? 0}`} tone="blue" onPress={() => setActiveSection('transactions')} />
+                  <StatCard icon="swap-horizontal-outline" label="Transactions (période)" value={`${dashboardData?.transactions ?? 0}`} tone="blue" onPress={() => setActiveSection('transactions')} />
                   <StatCard icon="cash-outline" label="Montant collecté" value={`${dashboardData?.collected ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
                   <StatCard icon="car-outline" label="À verser aux chauffeurs" value={`${dashboardData?.driverAmount ?? 0} FC`} tone="blue" onPress={() => setActiveSection('payouts')} />
                   <StatCard icon="trending-up-outline" label="Commission TaKo" value={`${dashboardData?.commission ?? 0} FC`} tone="green" onPress={() => setActiveSection('reports')} />
+                  <StatCard icon="checkmark-circle-outline" label="Recharges réussies" value={`${dashboardData?.recharges?.successful ?? 0}`} tone="green" onPress={() => setActiveSection('recharges')} />
+                  <StatCard icon="checkmark-done-outline" label="Versements réussis" value={`${dashboardData?.payouts?.successful ?? 0}`} tone="blue" onPress={() => setActiveSection('payouts')} />
+                  <StatCard icon="wallet-outline" label="Solde disponible total" value={`${balance} FC`} tone="green" onPress={() => setActiveSection('treasury')} />
                 </View>
               )}
 
               <View style={styles.dashboardCharts}>
-                <View style={[styles.card, styles.dashboardChartCard]}>
-                  <Text style={styles.cardTitle}>Répartition des transactions</Text>
-                  <View style={styles.donutChart}>
-                    <View style={styles.donutCenter}><Text style={styles.donutValue}>{dashboardData?.transactions ?? 0}</Text></View>
-                  </View>
-                  <View style={styles.chartLegend}>
-                    <Text style={styles.legendBlue}>● QR Code</Text>
-                    <Text style={styles.legendGreen}>● NFC</Text>
-                    <Text style={styles.legendOrange}>● Recharges</Text>
-                  </View>
-                </View>
-                <View style={[styles.card, styles.dashboardChartCard]}>
+                <View style={[styles.card, styles.dashboardChartWide]}>
                   <Text style={styles.cardTitle}>Évolution des transactions</Text>
                   <View style={styles.lineChart}>
                     {[28, 52, 40, 64, 46, 72, 58, 91].map((height, index) => (
@@ -818,24 +808,42 @@ export default function Admin() {
                     ))}
                   </View>
                 </View>
+                <View style={[styles.card, styles.dashboardChartCard]}>
+                  <Text style={styles.cardTitle}>Répartition des transactions</Text>
+                  <View style={styles.donutChart}>
+                    <View style={styles.donutCenter}><Text style={styles.donutValue}>{dashboardData?.transactions ?? 0}</Text></View>
+                  </View>
+                  <View style={styles.chartLegend}>
+                    <Text style={styles.legendBlue}>● QR</Text>
+                    <Text style={styles.legendGreen}>● NFC</Text>
+                    <Text style={styles.legendOrange}>● Recharge</Text>
+                  </View>
+                </View>
+                <View style={[styles.card, styles.dashboardActivityCard]}>
+                  <Text style={styles.cardTitle}>Activité en temps réel</Text>
+                  {notifications.length ? notifications.slice(0, 5).map((item) => (
+                    <View key={item.id} style={styles.activityRow}>
+                      <View style={styles.activityIcon}><Ionicons name="flash-outline" size={15} color={TAKO_ACTION} /></View>
+                      <View style={styles.activityBody}>
+                        <Text style={styles.activityMessage} numberOfLines={1}>{item.message}</Text>
+                        <Text style={styles.activityDate}>{formatDate(item.createdAt)}</Text>
+                      </View>
+                    </View>
+                  )) : <Text style={styles.cardText}>Aucune activité récente.</Text>}
+                </View>
               </View>
 
-              <View style={styles.statusPanels}>
-                <StatusPanel title="Recharges" values={dashboardData?.recharges} />
-                <StatusPanel title="Versements" values={dashboardData?.payouts} />
-                <View style={[styles.card, styles.alertPanel]}>
-                  <Text style={styles.cardTitle}>Alertes importantes</Text>
-                  {dashboardData?.alerts?.length ? (
-                    dashboardData.alerts.map((alert: any, index: number) => (
-                      <View key={`${alert.message}-${index}`} style={styles.alertRow}>
-                        <Ionicons name="warning-outline" size={20} color="#B45309" />
-                        <Text style={styles.alertText}>{alert.message}</Text>
-                      </View>
-                    ))
-                  ) : (
-                    <Text style={styles.cardText}>Aucune alerte importante.</Text>
-                  )}
-                </View>
+              <View style={styles.dashboardRecentGrid}>
+                <DashboardRecentTable
+                  title="Dernières recharges"
+                  headers={['Client', 'Montant', 'Type', 'Statut', 'Date']}
+                  items={notifications.filter((item) => item.type === 'recharge').slice(0, 5)}
+                />
+                <DashboardRecentTable
+                  title="Derniers versements"
+                  headers={['Chauffeur', 'Montant', 'Type', 'Statut', 'Date']}
+                  items={[]}
+                />
               </View>
             </>
           ) : null}
@@ -1020,13 +1028,35 @@ export default function Admin() {
   );
 }
 
-function StatusPanel({ title, values }: { title: string; values?: { successful?: number; failed?: number; pending?: number } }) {
+function DashboardRecentTable({
+  title,
+  headers,
+  items,
+}: {
+  title: string;
+  headers: string[];
+  items: TransactionNotification[];
+}) {
   return (
-    <View style={[styles.card, styles.statusPanel]}>
-      <Text style={styles.cardTitle}>{title}</Text>
-      <View style={styles.statusLine}><Text style={styles.statusLabel}>Réussies</Text><Text style={styles.statusSuccess}>{values?.successful ?? 0}</Text></View>
-      <View style={styles.statusLine}><Text style={styles.statusLabel}>En attente</Text><Text style={styles.statusPending}>{values?.pending ?? 0}</Text></View>
-      <View style={styles.statusLine}><Text style={styles.statusLabel}>Échouées</Text><Text style={styles.statusFailed}>{values?.failed ?? 0}</Text></View>
+    <View style={[styles.card, styles.recentTableCard]}>
+      <View style={styles.recentTableTitleRow}>
+        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.moreLink}>Voir tout</Text>
+      </View>
+      <View style={styles.recentHeader}>
+        {headers.map((header) => <Text key={header} style={styles.recentHeaderCell}>{header}</Text>)}
+      </View>
+      {items.length ? items.map((item) => (
+        <View key={item.id} style={styles.recentRow}>
+          <Text style={styles.recentCell}>Client TaKo</Text>
+          <Text style={styles.recentCell}>{item.amount || 0} FC</Text>
+          <Text style={styles.recentCell}>Recharge</Text>
+          <Text style={styles.recentStatus}>Réussie</Text>
+          <Text style={styles.recentCell}>{formatDate(item.createdAt)}</Text>
+        </View>
+      )) : (
+        <View style={styles.recentEmpty}><Text style={styles.cardText}>Aucune opération enregistrée.</Text></View>
+      )}
     </View>
   );
 }
@@ -2055,8 +2085,108 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   dashboardChartCard: {
-    minWidth: 300,
+    minWidth: 260,
     flex: 1,
+  },
+  dashboardChartWide: {
+    minWidth: 440,
+    flexGrow: 2,
+    flexBasis: 420,
+  },
+  dashboardActivityCard: {
+    minWidth: 280,
+    flex: 1,
+  },
+  activityRow: {
+    minHeight: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+  },
+  activityIcon: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 14,
+    backgroundColor: '#EAF3FF',
+  },
+  activityBody: {
+    flex: 1,
+  },
+  activityMessage: {
+    color: '#334155',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  activityDate: {
+    color: '#94A3B8',
+    fontSize: 10,
+    marginTop: 3,
+  },
+  dashboardRecentGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 18,
+    marginBottom: 20,
+  },
+  recentTableCard: {
+    minWidth: 440,
+    flex: 1,
+    padding: 0,
+    overflow: 'hidden',
+  },
+  recentTableTitleRow: {
+    minHeight: 58,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 18,
+  },
+  moreLink: {
+    color: TAKO_ACTION,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  recentHeader: {
+    minHeight: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+  },
+  recentHeaderCell: {
+    flex: 1,
+    color: '#475569',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  recentRow: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#EEF2F7',
+    paddingHorizontal: 14,
+  },
+  recentCell: {
+    flex: 1,
+    color: '#475569',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  recentStatus: {
+    flex: 1,
+    color: '#087B35',
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  recentEmpty: {
+    minHeight: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   donutChart: {
     width: 150,
@@ -2172,9 +2302,9 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   statCard: {
-    minWidth: 0,
+    minWidth: 180,
     flexGrow: 1,
-    flexBasis: 0,
+    flexBasis: '18%',
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#DCE5F2',
