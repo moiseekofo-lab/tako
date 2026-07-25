@@ -1078,6 +1078,102 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/clients/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    const search = String(body.search || '').trim();
+    const status = ['active', 'inactive', 'blocked', 'suspended', 'pending'].includes(body.status)
+      ? body.status
+      : '';
+    const cardFilter = body.cardFilter === 'with' || body.cardFilter === 'without' ? body.cardFilter : '';
+    const page = Math.max(1, Number.parseInt(body.page, 10) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    const conditions = [`u.role = 'passager'`];
+    const params = [];
+
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(u.full_name ILIKE $${params.length} OR u.phone ILIKE $${params.length} OR u.email ILIKE $${params.length} OR u.id ILIKE $${params.length})`);
+    }
+    if (status) {
+      params.push(status);
+      conditions.push(`u.status = $${params.length}`);
+    }
+    if (cardFilter === 'with') {
+      conditions.push('c.card_id IS NOT NULL');
+    } else if (cardFilter === 'without') {
+      conditions.push('c.card_id IS NULL');
+    }
+
+    const where = conditions.join(' AND ');
+    const listParams = [...params, limit, offset];
+    const [statsResult, countResult, clientsResult] = await Promise.all([
+      query(`
+        SELECT
+          COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE status = 'active')::int AS active,
+          COUNT(*) FILTER (WHERE status IN ('inactive', 'suspended', 'pending'))::int AS inactive,
+          COUNT(*) FILTER (WHERE status = 'blocked')::int AS blocked
+        FROM users
+        WHERE role = 'passager';
+      `),
+      query(
+        `SELECT COUNT(*)::int AS total FROM users u LEFT JOIN nfc_cards c ON c.client_id = u.id WHERE ${where};`,
+        params,
+      ),
+      query(
+        `
+          SELECT
+            u.id,
+            u.full_name,
+            u.phone,
+            u.email,
+            u.balance,
+            u.status,
+            u.created_at,
+            c.card_id,
+            c.blocked AS card_blocked
+          FROM users u
+          LEFT JOIN nfc_cards c ON c.client_id = u.id
+          WHERE ${where}
+          ORDER BY u.created_at DESC
+          LIMIT $${params.length + 1}
+          OFFSET $${params.length + 2};
+        `,
+        listParams,
+      ),
+    ]);
+
+    sendJson(response, 200, {
+      ok: true,
+      stats: statsResult.rows[0],
+      pagination: {
+        page,
+        limit,
+        total: Number(countResult.rows[0]?.total || 0),
+      },
+      clients: clientsResult.rows.map((client) => ({
+        id: client.id,
+        fullName: client.full_name,
+        phone: client.phone || '',
+        email: client.email || '',
+        balance: Number(client.balance || 0),
+        status: client.status,
+        createdAt: client.created_at,
+        lastLoginAt: null,
+        nfcCard: client.card_id
+          ? { cardId: client.card_id, blocked: Boolean(client.card_blocked) }
+          : null,
+      })),
+    });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/auth/reset-password') {
     const body = await readJson(request);
     const contact = normalizeContact(body.contact);

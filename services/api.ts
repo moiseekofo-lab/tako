@@ -100,6 +100,16 @@ export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' |
   });
 }
 
+export function getAdminClients(params: {
+  sessionToken: string;
+  search?: string;
+  status?: string;
+  cardFilter?: 'with' | 'without' | '';
+  page?: number;
+}) {
+  return postJson('/admin/clients/list', params);
+}
+
 export function resetPassword(contact: string, code: string, password: string) {
   return postJson('/auth/reset-password', {
     contact,

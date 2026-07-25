@@ -9,6 +9,7 @@ import {
   approveUser,
   createInternalRecharge,
   findClientById,
+  getAdminClients,
   getAdminDashboard,
   getAgentAccount,
   getPendingUsers,
@@ -203,6 +204,12 @@ export default function Admin() {
   const [dashboardPeriod, setDashboardPeriod] = useState<'day' | 'week' | 'month'>('day');
   const [dashboardData, setDashboardData] = useState<any>(null);
   const [dashboardLoading, setDashboardLoading] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [clientStatusFilter, setClientStatusFilter] = useState('');
+  const [clientCardFilter, setClientCardFilter] = useState<'' | 'with' | 'without'>('');
+  const [clientPage, setClientPage] = useState(1);
+  const [clientDirectory, setClientDirectory] = useState<any>({ clients: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+  const [clientDirectoryLoading, setClientDirectoryLoading] = useState(false);
 
   useEffect(() => {
     if (params.clientId) {
@@ -339,6 +346,50 @@ export default function Admin() {
       clearInterval(refreshTimer);
     };
   }, [activeSection, dashboardPeriod, isAuthenticated]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'clients') {
+      return;
+    }
+
+    let active = true;
+    const timer = setTimeout(() => {
+      setClientDirectoryLoading(true);
+      AsyncStorage.getItem(ADMIN_SESSION_KEY)
+        .then((sessionToken) => {
+          if (!sessionToken) {
+            throw new Error('Session absente');
+          }
+          return getAdminClients({
+            sessionToken,
+            search: clientSearch,
+            status: clientStatusFilter,
+            cardFilter: clientCardFilter,
+            page: clientPage,
+          });
+        })
+        .then((result) => {
+          if (active) {
+            setClientDirectory(result || { clients: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setClientDirectory({ clients: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+          }
+        })
+        .finally(() => {
+          if (active) {
+            setClientDirectoryLoading(false);
+          }
+        });
+    }, 250);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [activeSection, clientCardFilter, clientPage, clientSearch, clientStatusFilter, isAuthenticated]);
 
   const qrTransactions = notifications.filter((item) => item.type === 'qr').length;
   const nfcTransactions = notifications.filter((item) => item.type === 'nfc').length;
@@ -855,50 +906,37 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'clients' ? (
-            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <ClientSearchCard
-                clientId={clientId}
-                setClientId={setClientId}
-                findClient={findClient}
-                loading={clientLookupLoading}
-                feedback={clientFeedback}
+            <>
+              <ClientDirectoryScreen
+                directory={clientDirectory}
+                loading={clientDirectoryLoading}
+                search={clientSearch}
+                setSearch={(value) => { setClientSearch(value); setClientPage(1); }}
+                status={clientStatusFilter}
+                setStatus={(value) => { setClientStatusFilter(value); setClientPage(1); }}
+                cardFilter={clientCardFilter}
+                setCardFilter={(value) => { setClientCardFilter(value); setClientPage(1); }}
+                page={clientPage}
+                setPage={setClientPage}
+                addClient={() => router.push('/register' as any)}
+                viewClient={(client) => {
+                  setSelectedClient(client);
+                  setClientId(client.id);
+                }}
               />
-              <InternalRechargeCard
-                clientId={rechargeClientId}
-                setClientId={setRechargeClientId}
-                cardId={rechargeCardId}
-                clearCardId={() => setRechargeCardId('')}
-                amount={rechargeAmount}
-                setAmount={setRechargeAmount}
-                loading={rechargeLoading}
-                confirm={confirmInternalRecharge}
-                scan={() => router.push('/internal-recharge-scan' as any)}
-                nfcLoading={isReadingNfc}
-                readNfc={readAdminNfcCard}
-                feedback={rechargeFeedback}
-              />
-              <PrepaidCardActivationCard
-                phone={prepaidPhone}
-                setPhone={setPrepaidPhone}
-                code={prepaidCode}
-                setCode={setPrepaidCode}
-                cardId={prepaidCardId}
-                readNfc={readPrepaidNfcCard}
-                nfcLoading={isReadingPrepaidNfc}
-                loading={prepaidLoading}
-                sendCode={sendPrepaidCode}
-                confirm={confirmPrepaidCard}
-                feedback={prepaidFeedback}
-              />
-              <ClientDetails
-                client={activeClient}
-                balance={balance}
-                trips={trips.length}
-                notifications={notifications.length}
-                updating={clientUpdateLoading}
-                updateClient={updateSelectedClient}
-              />
-            </View>
+              {activeClient ? (
+                <View style={[styles.grid, styles.clientProfilePanel, isNarrow && styles.mobileGrid]}>
+                  <ClientDetails
+                    client={activeClient}
+                    balance={Number(activeClient.balance || 0)}
+                    trips={trips.length}
+                    notifications={notifications.length}
+                    updating={clientUpdateLoading}
+                    updateClient={updateSelectedClient}
+                  />
+                </View>
+              ) : null}
+            </>
           ) : null}
 
           {activeSection === 'drivers' ? (
@@ -1029,6 +1067,156 @@ export default function Admin() {
 
           {moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
+      </View>
+    </View>
+  );
+}
+
+function ClientDirectoryScreen({
+  directory,
+  loading,
+  search,
+  setSearch,
+  status,
+  setStatus,
+  cardFilter,
+  setCardFilter,
+  page,
+  setPage,
+  addClient,
+  viewClient,
+}: {
+  directory: any;
+  loading: boolean;
+  search: string;
+  setSearch: (value: string) => void;
+  status: string;
+  setStatus: (value: string) => void;
+  cardFilter: '' | 'with' | 'without';
+  setCardFilter: (value: '' | 'with' | 'without') => void;
+  page: number;
+  setPage: (value: number) => void;
+  addClient: () => void;
+  viewClient: (client: any) => void;
+}) {
+  const stats = directory?.stats || {};
+  const clients = directory?.clients || [];
+  const pagination = directory?.pagination || { total: 0, limit: 20 };
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.limit || 20)));
+
+  return (
+    <View style={styles.clientDirectory}>
+      <View style={styles.referenceHeader}>
+        <View>
+          <Text style={styles.referenceTitle}>Clients</Text>
+          <Text style={styles.cardText}>Accueil / Clients</Text>
+        </View>
+        <TouchableOpacity style={styles.referencePrimary} onPress={addClient}>
+          <Ionicons name="add-outline" size={18} color="white" />
+          <Text style={styles.referencePrimaryText}>Ajouter un client</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.clientStats}>
+        <ClientStat icon="people-outline" label="Total clients" value={Number(stats.total || 0)} tone="blue" />
+        <ClientStat icon="checkmark-circle-outline" label="Clients actifs" value={Number(stats.active || 0)} tone="green" total={Number(stats.total || 0)} />
+        <ClientStat icon="pause-circle-outline" label="Clients inactifs" value={Number(stats.inactive || 0)} tone="orange" total={Number(stats.total || 0)} />
+        <ClientStat icon="lock-closed-outline" label="Clients bloqués" value={Number(stats.blocked || 0)} tone="red" total={Number(stats.total || 0)} />
+      </View>
+
+      <View style={styles.clientFilters}>
+        <View style={styles.clientSearchBox}>
+          <Ionicons name="search-outline" size={18} color="#64748B" />
+          <TextInput
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Rechercher par nom, téléphone, e-mail ou ID…"
+            placeholderTextColor="#94A3B8"
+            style={styles.clientSearchInput}
+          />
+        </View>
+        <View style={styles.filterChoices}>
+          {[
+            ['', 'Tous'],
+            ['active', 'Actifs'],
+            ['inactive', 'Inactifs'],
+            ['blocked', 'Bloqués'],
+          ].map(([value, label]) => (
+            <TouchableOpacity key={label} style={[styles.filterChip, status === value && styles.filterChipActive]} onPress={() => setStatus(value)}>
+              <Text style={[styles.filterChipText, status === value && styles.filterChipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+        <View style={styles.filterChoices}>
+          {[
+            ['', 'Toutes cartes'],
+            ['with', 'Avec NFC'],
+            ['without', 'Sans NFC'],
+          ].map(([value, label]) => (
+            <TouchableOpacity key={label} style={[styles.filterChip, cardFilter === value && styles.filterChipActive]} onPress={() => setCardFilter(value as '' | 'with' | 'without')}>
+              <Text style={[styles.filterChipText, cardFilter === value && styles.filterChipTextActive]}>{label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View style={styles.clientTable}>
+          <View style={[styles.clientTableRow, styles.clientTableHeader]}>
+            {['Client', 'Téléphone', 'E-mail', 'Solde (CDF)', 'Carte NFC', 'Statut', 'Inscription', 'Dernière connexion', 'Actions'].map((header) => (
+              <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>
+            ))}
+          </View>
+          {loading ? (
+            <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View>
+          ) : clients.length ? clients.map((client: any) => (
+            <View key={client.id} style={styles.clientTableRow}>
+              <View style={styles.clientTableCell}>
+                <Text style={styles.clientName}>{client.fullName}</Text>
+                <Text style={styles.clientSubtext}>{client.id}</Text>
+              </View>
+              <Text style={styles.clientTableCellText}>{client.phone || 'Non disponible'}</Text>
+              <Text style={styles.clientTableCellText}>{client.email || 'Non disponible'}</Text>
+              <Text style={styles.clientBalance}>{Number(client.balance || 0).toLocaleString('fr-FR')} CDF</Text>
+              <View style={styles.clientTableCell}>
+                <Text style={styles.clientTableCellText}>{client.nfcCard?.cardId || 'Aucune'}</Text>
+                {client.nfcCard ? <Text style={client.nfcCard.blocked ? styles.statusBlocked : styles.statusActive}>{client.nfcCard.blocked ? 'Suspendue' : 'Active'}</Text> : null}
+              </View>
+              <View style={styles.clientTableCell}><Text style={client.status === 'active' ? styles.statusActive : client.status === 'blocked' ? styles.statusBlocked : styles.statusInactive}>{client.status || 'Non disponible'}</Text></View>
+              <Text style={styles.clientTableCellText}>{formatDate(client.createdAt)}</Text>
+              <Text style={styles.clientTableCellText}>{client.lastLoginAt ? formatDate(client.lastLoginAt) : 'Non disponible'}</Text>
+              <View style={[styles.clientTableCell, styles.clientActions]}>
+                <TouchableOpacity onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={20} color={TAKO_BLUE} /></TouchableOpacity>
+              </View>
+            </View>
+          )) : (
+            <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun client trouvé.</Text></View>
+          )}
+        </View>
+      </ScrollView>
+
+      <View style={styles.clientPagination}>
+        <Text style={styles.cardText}>{pagination.total || 0} client(s)</Text>
+        <View style={styles.paginationButtons}>
+          <TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity>
+          <Text style={styles.pageCurrent}>{page} / {totalPages}</Text>
+          <TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function ClientStat({ icon, label, value, tone, total }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: number; tone: 'blue' | 'green' | 'orange' | 'red'; total?: number }) {
+  const percentage = total && total > 0 ? `${Math.round((value / total) * 1000) / 10}% du total` : 'Données réelles';
+  const toneColor = tone === 'green' ? '#087B35' : tone === 'orange' ? '#B45309' : tone === 'red' ? '#B91C1C' : TAKO_BLUE;
+  return (
+    <View style={styles.clientStat}>
+      <View style={styles.clientStatIcon}><Ionicons name={icon} size={25} color={toneColor} /></View>
+      <View>
+        <Text style={styles.clientStatLabel}>{label}</Text>
+        <Text style={styles.clientStatValue}>{value.toLocaleString('fr-FR')}</Text>
+        <Text style={styles.clientSubtext}>{total ? percentage : 'Tous les clients'}</Text>
       </View>
     </View>
   );
@@ -2368,6 +2556,219 @@ const styles = StyleSheet.create({
   },
   referencePage: {
     gap: 18,
+  },
+  clientDirectory: {
+    gap: 18,
+  },
+  clientStats: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 14,
+  },
+  clientStat: {
+    minWidth: 210,
+    flexGrow: 1,
+    flexBasis: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    padding: 18,
+  },
+  clientStatIcon: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 9,
+    backgroundColor: '#F1F5FF',
+  },
+  clientStatLabel: {
+    color: '#475569',
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  clientStatValue: {
+    color: '#111827',
+    fontSize: 23,
+    fontWeight: '900',
+    marginVertical: 3,
+  },
+  clientSubtext: {
+    color: '#94A3B8',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  clientFilters: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    padding: 14,
+  },
+  clientSearchBox: {
+    minWidth: 320,
+    minHeight: 44,
+    flexGrow: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    paddingHorizontal: 13,
+  },
+  clientSearchInput: {
+    flex: 1,
+    color: '#111827',
+    fontSize: 13,
+  },
+  filterChoices: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  filterChip: {
+    minHeight: 36,
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    paddingHorizontal: 11,
+  },
+  filterChipActive: {
+    borderColor: TAKO_BLUE,
+    backgroundColor: TAKO_BLUE,
+  },
+  filterChipText: {
+    color: '#64748B',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+  },
+  clientTable: {
+    minWidth: 1320,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+    overflow: 'hidden',
+  },
+  clientTableRow: {
+    minHeight: 68,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEF2F7',
+    paddingHorizontal: 14,
+  },
+  clientTableHeader: {
+    minHeight: 48,
+    backgroundColor: '#F8FAFC',
+  },
+  clientTableCell: {
+    width: 145,
+    paddingRight: 10,
+  },
+  clientTableHeaderText: {
+    color: '#334155',
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  clientTableCellText: {
+    width: 145,
+    color: '#475569',
+    fontSize: 11,
+    fontWeight: '700',
+    paddingRight: 10,
+  },
+  clientName: {
+    color: '#111827',
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  clientBalance: {
+    width: 145,
+    color: TAKO_BLUE,
+    fontSize: 12,
+    fontWeight: '900',
+    paddingRight: 10,
+  },
+  statusActive: {
+    alignSelf: 'flex-start',
+    color: '#087B35',
+    fontSize: 10,
+    fontWeight: '900',
+    backgroundColor: '#E9FFF1',
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  statusInactive: {
+    alignSelf: 'flex-start',
+    color: '#B45309',
+    fontSize: 10,
+    fontWeight: '900',
+    backgroundColor: '#FFF7ED',
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  statusBlocked: {
+    alignSelf: 'flex-start',
+    color: '#B91C1C',
+    fontSize: 10,
+    fontWeight: '900',
+    backgroundColor: '#FEF2F2',
+    borderRadius: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+  },
+  clientActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  clientTableLoading: {
+    minHeight: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clientPagination: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paginationButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pageButton: {
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    backgroundColor: '#FFFFFF',
+  },
+  pageCurrent: {
+    color: TAKO_BLUE,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  clientProfilePanel: {
+    marginTop: 20,
   },
   referenceHeader: {
     flexDirection: 'row',
