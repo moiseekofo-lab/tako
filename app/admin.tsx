@@ -227,6 +227,8 @@ export default function Admin() {
   const [selectedAgent, setSelectedAgent] = useState<any>(null);
   const [agentPanelMode, setAgentPanelMode] = useState<'view' | 'edit' | null>(null);
   const [agentDeleteCandidate, setAgentDeleteCandidate] = useState<any>(null);
+  const [agentCreditCandidate, setAgentCreditCandidate] = useState<any>(null);
+  const [agentCreditAmount, setAgentCreditAmount] = useState('');
   const [agentActionLoading, setAgentActionLoading] = useState(false);
   const [pendingAgents, setPendingAgents] = useState<any[]>([]);
   const [pendingDrivers, setPendingDrivers] = useState<any[]>([]);
@@ -580,6 +582,33 @@ export default function Admin() {
     }
   };
 
+  const creditSelectedAgent = async () => {
+    const amount = Number(agentCreditAmount.replace(/\s/g, ''));
+    if (!agentCreditCandidate || !Number.isFinite(amount) || amount <= 0) {
+      Alert.alert('Montant invalide', 'Entrez un montant supérieur à zéro.');
+      return;
+    }
+    try {
+      setAgentActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      const result = await rechargeAgent(agentCreditCandidate.id, amount, sessionToken);
+      setAgentDirectoryVersion((value) => value + 1);
+      setDashboardData((current: any) => current ? {
+        ...current,
+        collected: Number(current.collected || 0) + amount,
+        availableBalance: Number(current.availableBalance || 0) + amount,
+      } : current);
+      setAgentCreditCandidate(null);
+      setAgentCreditAmount('');
+      Alert.alert('Crédit envoyé', `${amount.toLocaleString('fr-FR')} FC ajouté au compte de ${result?.agent?.fullName || agentCreditCandidate.fullName}.`);
+    } catch (error) {
+      Alert.alert('Crédit impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setAgentActionLoading(false);
+    }
+  };
+
   const logout = async () => {
     setSelectedClient(null);
     setClientId('');
@@ -922,7 +951,9 @@ export default function Admin() {
 
     try {
       setAgentRechargeLoading(true);
-      const result = await rechargeAgent(cleanAgentId, value);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      const result = await rechargeAgent(cleanAgentId, value, sessionToken);
       if (!result?.agent) {
         throw new Error('Agent actif introuvable. Vérifiez l’ID agent.');
       }
@@ -1343,9 +1374,29 @@ export default function Admin() {
                 addAgent={() => router.push('/register' as any)}
                 viewAgent={(agent) => { setSelectedAgent(agent); setAgentPanelMode('view'); }}
                 editAgent={(agent) => { setSelectedAgent({ ...agent }); setAgentPanelMode('edit'); }}
+                creditAgent={(agent) => { setAgentCreditCandidate(agent); setAgentCreditAmount(''); }}
                 closeAgent={setAgentDeleteCandidate}
                 actionLoading={agentActionLoading}
               />
+              <Modal visible={!!agentCreditCandidate} transparent animationType="fade" onRequestClose={() => setAgentCreditCandidate(null)}>
+                <View style={styles.modalBackdrop}><View style={styles.confirmModal}>
+                  <View style={[styles.confirmIcon, styles.creditIcon]}><Ionicons name="cash-outline" size={30} color="#087B35" /></View>
+                  <Text style={styles.confirmTitle}>Créditer l’agent</Text>
+                  <Text style={styles.confirmText}>Ajoutez de l’argent au compte de {agentCreditCandidate?.fullName}.</Text>
+                  <TextInput
+                    value={agentCreditAmount}
+                    onChangeText={setAgentCreditAmount}
+                    keyboardType="number-pad"
+                    placeholder="Montant en FC"
+                    placeholderTextColor="#94A3B8"
+                    style={styles.creditAmountInput}
+                  />
+                  <View style={styles.confirmActions}>
+                    <TouchableOpacity style={styles.confirmNo} disabled={agentActionLoading} onPress={() => setAgentCreditCandidate(null)}><Text style={styles.confirmNoText}>Annuler</Text></TouchableOpacity>
+                    <TouchableOpacity style={styles.creditConfirmButton} disabled={agentActionLoading} onPress={creditSelectedAgent}>{agentActionLoading ? <ActivityIndicator color="white" /> : <Text style={styles.confirmYesText}>Confirmer le crédit</Text>}</TouchableOpacity>
+                  </View>
+                </View></View>
+              </Modal>
               <Modal visible={!!agentDeleteCandidate} transparent animationType="fade" onRequestClose={() => setAgentDeleteCandidate(null)}>
                 <View style={styles.modalBackdrop}><View style={styles.confirmModal}>
                   <View style={styles.confirmIcon}><Ionicons name="trash-outline" size={30} color="#DC2626" /></View>
@@ -1714,13 +1765,13 @@ function DriverDetails({ driver, editing, setDriver, loading, save, changeStatus
 
 function AgentDirectoryScreen({
   directory, loading, search, setSearch, status, setStatus, zone, setZone, agentRole, setAgentRole,
-  manager, setManager, page, setPage, addAgent, viewAgent, editAgent, closeAgent, actionLoading,
+  manager, setManager, page, setPage, addAgent, viewAgent, editAgent, creditAgent, closeAgent, actionLoading,
 }: {
   directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
   status: string; setStatus: (value: string) => void; zone: string; setZone: (value: string) => void;
   agentRole: string; setAgentRole: (value: string) => void; manager: string; setManager: (value: string) => void;
   page: number; setPage: (value: number) => void; addAgent: () => void;
-  viewAgent: (agent: any) => void; editAgent: (agent: any) => void; closeAgent: (agent: any) => void; actionLoading: boolean;
+  viewAgent: (agent: any) => void; editAgent: (agent: any) => void; creditAgent: (agent: any) => void; closeAgent: (agent: any) => void; actionLoading: boolean;
 }) {
   const stats = directory?.stats || {};
   const agents = directory?.agents || [];
@@ -1778,6 +1829,7 @@ function AgentDirectoryScreen({
           <View style={[styles.driverTableCell, styles.clientActions]}>
             <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
             <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editAgent(agent)}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
+            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading || agent.status !== 'active'} onPress={() => creditAgent(agent)} accessibilityLabel={`Créditer ${agent.fullName}`}><Ionicons name="cash-outline" size={19} color={agent.status === 'active' ? '#087B35' : '#CBD5E1'} /></TouchableOpacity>
             <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="lock-closed-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
             <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeAgent(agent)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
           </View>
@@ -3418,6 +3470,29 @@ const styles = StyleSheet.create({
     borderRadius: 32,
     backgroundColor: '#FEF2F2',
     marginBottom: 16,
+  },
+  creditIcon: {
+    backgroundColor: '#E9FFF1',
+  },
+  creditAmountInput: {
+    width: '100%',
+    minHeight: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    color: '#111827',
+    fontSize: 16,
+    fontWeight: '800',
+    paddingHorizontal: 14,
+    marginTop: 20,
+  },
+  creditConfirmButton: {
+    minHeight: 44,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 6,
+    backgroundColor: '#087B35',
   },
   confirmTitle: {
     color: '#111827',

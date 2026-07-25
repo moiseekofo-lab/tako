@@ -1752,6 +1752,10 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname.startsWith('/admin/agents/') && url.pathname.endsWith('/recharge')) {
     const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
     const agentId = decodeURIComponent(url.pathname.replace('/admin/agents/', '').replace('/recharge', '')).trim();
     const amount = Number(body.amount);
 

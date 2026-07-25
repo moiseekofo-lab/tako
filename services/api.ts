@@ -222,9 +222,10 @@ export function approveUser(userId: string) {
   return postJson(`/admin/users/${encodeURIComponent(userId)}/approve`, {});
 }
 
-export function rechargeAgent(agentId: string, amount: number) {
+export function rechargeAgent(agentId: string, amount: number, sessionToken: string) {
   return postJson(`/admin/agents/${encodeURIComponent(agentId)}/recharge`, {
     amount,
+    sessionToken,
   });
 }
 
