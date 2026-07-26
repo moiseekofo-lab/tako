@@ -4,7 +4,9 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  ActivityIndicator,
   Animated,
+  Image,
   ImageBackground,
   Keyboard,
   PanResponder,
@@ -385,6 +387,80 @@ export default function Login() {
     } as any);
   };
 
+  if (chauffeurOnly && isWeb && authMode === 'login') {
+    return (
+      <View style={styles.driverWebPage}>
+        <View style={styles.driverWebBrand}><TakoLogo size="small" color="#061F68" /></View>
+        <View style={styles.driverWebLanguage}><Text style={styles.driverWebLanguageText}>FR</Text></View>
+        <View style={styles.driverWebAccent} />
+        <View style={styles.driverWebDot} />
+
+        <View style={[styles.driverWebLayout, isNarrowWeb && styles.driverWebLayoutNarrow]}>
+          {!isNarrowWeb ? (
+            <View style={styles.driverWebIntro}>
+              <Text style={styles.driverWebHeadline}>TaKo, la simplicité{'\n'}au service de vos trajets.</Text>
+              <Text style={styles.driverWebCopy}>Connectez-vous pour accéder à votre espace{'\n'}chauffeur et gérer vos courses en toute simplicité.</Text>
+              <View style={styles.driverWebIllustration}>
+                <Image source={require('../assets/images/decor-kinshasa-illustration.png')} resizeMode="contain" style={styles.driverWebCity} />
+                <View style={styles.driverWebCar}><Ionicons name="car-sport" size={76} color="#0B45AA" /></View>
+                <View style={styles.driverWebPhone}>
+                  <Ionicons name="qr-code" size={70} color="#061F68" />
+                  <View style={styles.driverWebCheck}><Ionicons name="checkmark" size={30} color="white" /></View>
+                </View>
+              </View>
+            </View>
+          ) : null}
+
+          <View style={[styles.driverWebCard, isNarrowWeb && styles.driverWebCardNarrow]}>
+            <View style={styles.driverWebUserIcon}><Ionicons name="person" size={32} color="#0B70E8" /></View>
+            <Text style={styles.driverWebTitle}>Connexion chauffeur</Text>
+            <Text style={styles.driverWebSubtitle}>Connectez-vous à votre compte chauffeur</Text>
+
+            <Text style={styles.driverWebLabel}>Email</Text>
+            <View style={styles.driverWebField}>
+              <Ionicons name="mail-outline" size={21} color="#8B95A5" />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Email, numéro ou ID chauffeur"
+                placeholderTextColor="#8B95A5"
+                autoCapitalize="none"
+                style={styles.driverWebInput}
+              />
+            </View>
+            <Text style={styles.driverWebLabel}>Mot de passe</Text>
+            <View style={styles.driverWebField}>
+              <Ionicons name="lock-closed-outline" size={21} color="#8B95A5" />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Votre mot de passe"
+                placeholderTextColor="#8B95A5"
+                secureTextEntry={!showPassword}
+                style={styles.driverWebInput}
+              />
+              <TouchableOpacity onPress={() => setShowPassword((value) => !value)}><Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#64748B" /></TouchableOpacity>
+            </View>
+
+            <View style={styles.driverWebOptions}>
+              <TouchableOpacity style={styles.driverWebRemember} onPress={() => setRememberAccess((value) => !value)}>
+                <View style={[styles.driverWebCheckbox, rememberAccess && styles.driverWebCheckboxActive]}>{rememberAccess ? <Ionicons name="checkmark" size={15} color="white" /> : null}</View>
+                <Text style={styles.driverWebOptionText}>Se souvenir de moi</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={startPasswordRecovery}><Text style={styles.driverWebLink}>Mot de passe oublié ?</Text></TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.driverWebSubmit} disabled={isLoggingIn} onPress={handleLogin}>
+              {isLoggingIn ? <ActivityIndicator color="white" /> : <><Ionicons name="arrow-forward" size={22} color="white" /><Text style={styles.driverWebSubmitText}>Se connecter</Text></>}
+            </TouchableOpacity>
+            <View style={styles.driverWebDivider}><View style={styles.driverWebDividerLine} /><Text style={styles.driverWebDividerText}>ou</Text><View style={styles.driverWebDividerLine} /></View>
+            <View style={styles.driverWebRequest}><Text style={styles.driverWebRequestText}>Vous n’avez pas de compte ?</Text><TouchableOpacity onPress={() => router.push('/register' as any)}><Text style={styles.driverWebLink}>Demander un accès</Text></TouchableOpacity></View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ImageBackground
       source={require('../assets/images/login-background.jpeg')}
@@ -741,6 +817,272 @@ export default function Login() {
 }
 
 const styles = StyleSheet.create({
+  driverWebPage: {
+    flex: 1,
+    minHeight: '100%',
+    backgroundColor: '#F8FAFF',
+    overflow: 'hidden',
+  },
+  driverWebBrand: {
+    position: 'absolute',
+    top: 38,
+    left: 54,
+    zIndex: 3,
+  },
+  driverWebLanguage: {
+    position: 'absolute',
+    top: 38,
+    right: 54,
+    zIndex: 3,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF4FF',
+  },
+  driverWebLanguageText: {
+    color: '#061F68',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  driverWebAccent: {
+    position: 'absolute',
+    right: -42,
+    top: 170,
+    width: 105,
+    height: 240,
+    borderRadius: 60,
+    backgroundColor: '#FFF0C9',
+    transform: [{ rotate: '34deg' }],
+  },
+  driverWebDot: {
+    position: 'absolute',
+    right: 110,
+    bottom: 90,
+    width: 62,
+    height: 62,
+    borderRadius: 31,
+    backgroundColor: '#E0EDFF',
+  },
+  driverWebLayout: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 66,
+    paddingHorizontal: 70,
+    paddingTop: 80,
+  },
+  driverWebLayoutNarrow: {
+    paddingHorizontal: 18,
+    paddingTop: 85,
+  },
+  driverWebIntro: {
+    width: 440,
+    maxWidth: '42%',
+  },
+  driverWebHeadline: {
+    color: '#061F68',
+    fontSize: 35,
+    fontWeight: '900',
+    lineHeight: 43,
+  },
+  driverWebCopy: {
+    color: '#5F6B7A',
+    fontSize: 17,
+    fontWeight: '600',
+    lineHeight: 25,
+    marginTop: 18,
+  },
+  driverWebIllustration: {
+    height: 310,
+    marginTop: 22,
+  },
+  driverWebCity: {
+    position: 'absolute',
+    left: -25,
+    right: 0,
+    bottom: 0,
+    width: 440,
+    height: 245,
+    opacity: 0.48,
+  },
+  driverWebCar: {
+    position: 'absolute',
+    left: 20,
+    bottom: 38,
+  },
+  driverWebPhone: {
+    position: 'absolute',
+    right: 55,
+    bottom: 35,
+    width: 138,
+    height: 220,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 23,
+    borderWidth: 8,
+    borderColor: '#061F68',
+    backgroundColor: '#FFFFFF',
+    transform: [{ rotate: '6deg' }],
+  },
+  driverWebCheck: {
+    position: 'absolute',
+    right: -30,
+    bottom: 18,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1277E8',
+  },
+  driverWebCard: {
+    width: 570,
+    minHeight: 650,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 50,
+    paddingVertical: 44,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.13,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 8,
+  },
+  driverWebCardNarrow: {
+    width: '100%',
+    maxWidth: 570,
+    minHeight: 0,
+    paddingHorizontal: 24,
+    paddingVertical: 30,
+  },
+  driverWebUserIcon: {
+    alignSelf: 'center',
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF3FF',
+  },
+  driverWebTitle: {
+    color: '#061F68',
+    fontSize: 29,
+    fontWeight: '900',
+    textAlign: 'center',
+    marginTop: 22,
+  },
+  driverWebSubtitle: {
+    color: '#64748B',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginTop: 7,
+    marginBottom: 32,
+  },
+  driverWebLabel: {
+    color: '#111827',
+    fontSize: 13,
+    fontWeight: '900',
+    marginBottom: 9,
+  },
+  driverWebField: {
+    minHeight: 54,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#D6DEE9',
+    paddingHorizontal: 15,
+    marginBottom: 20,
+  },
+  driverWebInput: {
+    flex: 1,
+    color: '#111827',
+    fontSize: 15,
+    outlineStyle: 'none',
+  } as any,
+  driverWebOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 28,
+  },
+  driverWebRemember: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  driverWebCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#AAB5C4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  driverWebCheckboxActive: {
+    borderColor: '#1277E8',
+    backgroundColor: '#1277E8',
+  },
+  driverWebOptionText: {
+    color: '#5F6B7A',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  driverWebLink: {
+    color: '#0B70D1',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  driverWebSubmit: {
+    minHeight: 55,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    borderRadius: 8,
+    backgroundColor: '#1277E8',
+    shadowColor: '#1277E8',
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  driverWebSubmitText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  driverWebDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginVertical: 28,
+  },
+  driverWebDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E2E8F0',
+  },
+  driverWebDividerText: {
+    color: '#64748B',
+    fontSize: 13,
+  },
+  driverWebRequest: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  driverWebRequestText: {
+    color: '#64748B',
+    fontSize: 13,
+    fontWeight: '600',
+  },
   background: {
     flex: 1,
   },
