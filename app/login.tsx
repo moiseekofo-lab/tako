@@ -401,12 +401,11 @@ export default function Login() {
               <Text style={styles.driverWebHeadline}>TaKo, la simplicité{'\n'}au service de vos trajets.</Text>
               <Text style={styles.driverWebCopy}>Connectez-vous pour accéder à votre espace{'\n'}chauffeur et gérer vos courses en toute simplicité.</Text>
               <View style={styles.driverWebIllustration}>
-                <Image source={require('../assets/images/decor-kinshasa-illustration.png')} resizeMode="contain" style={styles.driverWebCity} />
-                <View style={styles.driverWebCar}><Ionicons name="car-sport" size={76} color="#0B45AA" /></View>
-                <View style={styles.driverWebPhone}>
-                  <Ionicons name="qr-code" size={70} color="#061F68" />
-                  <View style={styles.driverWebCheck}><Ionicons name="checkmark" size={30} color="white" /></View>
-                </View>
+                <Image
+                  source={require('../assets/images/driver-login-illustration.png')}
+                  resizeMode="contain"
+                  style={styles.driverWebIllustrationImage}
+                />
               </View>
             </View>
           ) : null}
@@ -870,7 +869,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 66,
+    gap: 72,
     paddingHorizontal: 70,
     paddingTop: 80,
   },
@@ -879,7 +878,7 @@ const styles = StyleSheet.create({
     paddingTop: 85,
   },
   driverWebIntro: {
-    width: 440,
+    width: 455,
     maxWidth: '42%',
   },
   driverWebHeadline: {
@@ -896,55 +895,21 @@ const styles = StyleSheet.create({
     marginTop: 18,
   },
   driverWebIllustration: {
-    height: 310,
-    marginTop: 22,
+    width: 455,
+    height: 300,
+    marginTop: 28,
   },
-  driverWebCity: {
-    position: 'absolute',
-    left: -25,
-    right: 0,
-    bottom: 0,
-    width: 440,
-    height: 245,
-    opacity: 0.48,
-  },
-  driverWebCar: {
-    position: 'absolute',
-    left: 20,
-    bottom: 38,
-  },
-  driverWebPhone: {
-    position: 'absolute',
-    right: 55,
-    bottom: 35,
-    width: 138,
-    height: 220,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 23,
-    borderWidth: 8,
-    borderColor: '#061F68',
-    backgroundColor: '#FFFFFF',
-    transform: [{ rotate: '6deg' }],
-  },
-  driverWebCheck: {
-    position: 'absolute',
-    right: -30,
-    bottom: 18,
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#1277E8',
+  driverWebIllustrationImage: {
+    width: '100%',
+    height: '100%',
   },
   driverWebCard: {
-    width: 570,
-    minHeight: 650,
+    width: 585,
+    minHeight: 735,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    paddingHorizontal: 50,
-    paddingVertical: 44,
+    paddingHorizontal: 48,
+    paddingVertical: 50,
     shadowColor: '#061F68',
     shadowOpacity: 0.13,
     shadowRadius: 30,
@@ -953,7 +918,7 @@ const styles = StyleSheet.create({
   },
   driverWebCardNarrow: {
     width: '100%',
-    maxWidth: 570,
+    maxWidth: 585,
     minHeight: 0,
     paddingHorizontal: 24,
     paddingVertical: 30,
