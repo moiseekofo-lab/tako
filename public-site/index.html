@@ -279,8 +279,20 @@
 
       .visual {
         position: relative;
-        min-height: 320px;
+        min-height: 455px;
         z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .hero-product-visual {
+        display: block;
+        width: min(680px, 125%);
+        max-width: none;
+        height: auto;
+        object-fit: contain;
+        filter: drop-shadow(0 28px 38px rgba(8, 18, 46, 0.18));
       }
 
       .phone {
@@ -488,7 +500,8 @@
         .menu { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 2px; }
         .menu a { padding: 9px 0; white-space: nowrap; }
         .hero { grid-template-columns: 1fr; padding-top: 34px; }
-        .visual { min-height: 330px; }
+        .visual { min-height: 430px; }
+        .hero-product-visual { width: min(720px, 100%); }
         .feature-grid { grid-template-columns: repeat(2, 1fr); }
         .solutions, .contact-panel { grid-template-columns: 1fr; }
         .footer-grid { grid-template-columns: minmax(180px, 1.35fr) repeat(3, minmax(100px, 1fr)); gap: 18px; }
@@ -503,9 +516,8 @@
         .feature-grid, .testimonials, .contact-links { grid-template-columns: 1fr; }
         .solution-card { grid-template-columns: 48px 1fr; }
         .solution-card .person-blob { display: none; }
-        .phone { left: 0; width: 170px; height: 326px; }
-        .card-tilt { right: 0; width: 218px; height: 132px; }
-        .terminal { width: 190px; }
+        .visual { min-height: 310px; }
+        .hero-product-visual { width: 112%; }
         .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .footer-brand { grid-column: 1 / -1; }
       }
@@ -547,20 +559,11 @@
           </div>
 
           <div class="visual" aria-label="Apercu TaKo">
-            <div class="phone">
-              <div class="phone-logo">TaKo</div>
-              <div class="balance"><small>Solde actuel</small><strong>125.000 FC</strong></div>
-              <div class="mini-list">
-                <div class="mini-row"><span class="mini-icon"></span> QR Code</div>
-                <div class="mini-row"><span class="mini-icon"></span> Carte NFC</div>
-                <div class="mini-row"><span class="mini-icon"></span> Historique</div>
-              </div>
-            </div>
-            <div class="card-tilt">
-              <div class="brand-word">TaKo</div>
-              <p>Le transport de demain commence aujourd'hui.</p>
-            </div>
-            <div class="terminal"><span class="wave"></span></div>
+            <img
+              class="hero-product-visual"
+              src="/tako-hero-products-final.png"
+              alt="Application TaKo, carte NFC et terminal de paiement QR Code"
+            />
           </div>
         </section>
 
