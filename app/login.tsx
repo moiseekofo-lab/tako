@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -31,6 +31,8 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 export default function Login() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ access?: string }>();
+  const chauffeurOnly = params.access === 'chauffeur';
   const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isNarrowWeb = isWeb && width < 760;
@@ -290,6 +292,11 @@ export default function Login() {
     try {
       const result = await loginAccount(cleanLogin, password);
       if (result?.user) {
+        if (chauffeurOnly && result.user.role !== 'chauffeur') {
+          setIsLoggingIn(false);
+          Alert.alert('Accès chauffeur uniquement', 'Ce bouton est réservé aux comptes chauffeurs.');
+          return;
+        }
         setCurrentUser({
           id: result.user.id,
           fullName: result.user.fullName,
@@ -316,7 +323,7 @@ export default function Login() {
         return;
       }
     } catch (error: any) {
-      if (API_URL) {
+      if (API_URL && !chauffeurOnly) {
         try {
           const adminResult = await loginAdmin(cleanLogin, password);
           if (adminResult?.user) {
@@ -346,6 +353,12 @@ export default function Login() {
         Alert.alert('Erreur', error?.message || 'Connexion impossible.');
         return;
       }
+    }
+
+    if (chauffeurOnly) {
+      setIsLoggingIn(false);
+      Alert.alert('Connexion impossible', 'Utilisez un compte chauffeur actif.');
+      return;
     }
 
     if (rememberAccess && guessedName) {
@@ -418,9 +431,9 @@ export default function Login() {
             {authMode === 'login' ? (
               <>
                 <Text style={[styles.greeting, isWeb && styles.webGreeting]}>
-                  {isWeb ? 'Bonjour, cher administrateur' : `${greeting}, ${displayName}`}
+                  {isWeb ? (chauffeurOnly ? 'Connexion chauffeur' : 'Bonjour, cher administrateur') : `${greeting}, ${displayName}`}
                 </Text>
-                <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{text.loginTitle}</Text>
+                <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{chauffeurOnly ? 'Connectez-vous à votre compte chauffeur' : text.loginTitle}</Text>
 
                 <View style={styles.fieldWrap}>
                   <TextInput
