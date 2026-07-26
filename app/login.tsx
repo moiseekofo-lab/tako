@@ -421,8 +421,6 @@ export default function Login() {
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="contact@takotransport.online"
-                placeholderTextColor="#8B95A5"
                 autoCapitalize="none"
                 style={styles.driverWebInput}
               />
@@ -433,8 +431,6 @@ export default function Login() {
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="••••••••••••••••••"
-                placeholderTextColor="#8B95A5"
                 secureTextEntry={!showPassword}
                 style={styles.driverWebInput}
               />
@@ -452,8 +448,6 @@ export default function Login() {
             <TouchableOpacity style={styles.driverWebSubmit} disabled={isLoggingIn} onPress={handleLogin}>
               {isLoggingIn ? <ActivityIndicator color="white" /> : <><Ionicons name="arrow-forward" size={22} color="white" /><Text style={styles.driverWebSubmitText}>Se connecter</Text></>}
             </TouchableOpacity>
-            <View style={styles.driverWebDivider}><View style={styles.driverWebDividerLine} /><Text style={styles.driverWebDividerText}>ou</Text><View style={styles.driverWebDividerLine} /></View>
-            <View style={styles.driverWebRequest}><Text style={styles.driverWebRequestText}>Vous n’avez pas de compte ?</Text><TouchableOpacity onPress={() => router.push('/register' as any)}><Text style={styles.driverWebLink}>Demander un accès</Text></TouchableOpacity></View>
           </View>
         </View>
       </View>
