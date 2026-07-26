@@ -42,7 +42,7 @@ export default function Login() {
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [rememberAccess, setRememberAccess] = useState(!isWeb);
+  const [rememberAccess, setRememberAccess] = useState(!isWeb || chauffeurOnly);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [resetContact, setResetContact] = useState('');
@@ -422,7 +422,7 @@ export default function Login() {
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="Email, numéro ou ID chauffeur"
+                placeholder="contact@takotransport.online"
                 placeholderTextColor="#8B95A5"
                 autoCapitalize="none"
                 style={styles.driverWebInput}
@@ -434,7 +434,7 @@ export default function Login() {
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Votre mot de passe"
+                placeholder="••••••••••••••••••"
                 placeholderTextColor="#8B95A5"
                 secureTextEntry={!showPassword}
                 style={styles.driverWebInput}
