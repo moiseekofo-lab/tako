@@ -971,7 +971,7 @@ const styles = StyleSheet.create({
   },
   adminLoginBadgeText: {
     color: 'white',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '700',
   },
   adminLoginIntro: {
@@ -992,23 +992,23 @@ const styles = StyleSheet.create({
   },
   adminWelcomeText: {
     color: '#68A3FF',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '500',
   },
   adminLoginHeadline: {
     color: 'white',
-    fontSize: 39,
+    fontSize: 44,
     fontWeight: '700',
-    lineHeight: 50,
+    lineHeight: 48,
   },
   adminLoginHeadlineAccent: {
     color: '#FFC35C',
   },
   adminLoginCopy: {
     color: 'rgba(255,255,255,0.78)',
-    fontSize: 17,
+    fontSize: 19,
     fontWeight: '400',
-    lineHeight: 29,
+    lineHeight: 28,
     marginTop: 23,
   },
   adminLoginLaptop: {
@@ -1034,7 +1034,7 @@ const styles = StyleSheet.create({
   },
   adminLoginCopyrightText: {
     color: 'rgba(255,255,255,0.7)',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400',
   },
   adminLoginFormPanel: {
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
   },
   adminLanguageText: {
     color: '#344054',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
   },
   adminLoginCard: {
@@ -1152,14 +1152,14 @@ const styles = StyleSheet.create({
   },
   adminLoginTitle: {
     color: '#071B3B',
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
     textAlign: 'center',
     marginTop: 20,
   },
   adminLoginSubtitle: {
     color: '#667085',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '400',
     textAlign: 'center',
     marginTop: 10,
@@ -1171,7 +1171,7 @@ const styles = StyleSheet.create({
   },
   adminLoginLabel: {
     color: '#101828',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '600',
     marginBottom: 10,
   },
@@ -1193,7 +1193,7 @@ const styles = StyleSheet.create({
   adminLoginInput: {
     flex: 1,
     color: '#101828',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '400',
     outlineStyle: 'none',
   } as any,
@@ -1227,12 +1227,12 @@ const styles = StyleSheet.create({
   },
   adminOptionText: {
     color: '#596579',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '400',
   },
   adminForgotLink: {
     color: '#1769D2',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
   },
   adminSubmitButton: {
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
   },
   adminSubmitText: {
     color: 'white',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   adminOrRow: {
@@ -1269,7 +1269,7 @@ const styles = StyleSheet.create({
   },
   adminOrText: {
     color: '#667085',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400',
   },
   adminAccessCodeButton: {
@@ -1284,7 +1284,7 @@ const styles = StyleSheet.create({
   },
   adminAccessCodeText: {
     color: '#1769D2',
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
   },
   adminReservedRow: {
@@ -1299,7 +1299,7 @@ const styles = StyleSheet.create({
   },
   adminReservedText: {
     color: '#7C8799',
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: '400',
   },
   driverWebPage: {
