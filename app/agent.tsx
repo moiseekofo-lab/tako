@@ -186,14 +186,14 @@ export default function Agent() {
         <Text style={styles.sectionHeading}>Actions rapides</Text>
         <View style={styles.quickActions}>
           <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.82} onPress={() => router.push('/agent-recharge-menu' as any)}>
-            <View style={[styles.quickIcon, styles.quickIconBlue]}><Ionicons name="person-add" size={28} color="#0B6FF4" /></View>
+            <View style={[styles.quickIcon, styles.quickIconBlue]}><Ionicons name="person-add" size={23} color="#0B6FF4" /></View>
             <View style={styles.quickTextBox}><Text style={styles.quickTitle}>Recharger un client</Text><Text style={styles.quickSubtitle}>Rechargez le compte d’un client.</Text></View>
-            <Ionicons name="chevron-forward" size={24} color="#64748B" />
+            <Ionicons name="chevron-forward" size={19} color="#64748B" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.82} onPress={() => router.push('/agent-prepaid' as any)}>
-            <View style={[styles.quickIcon, styles.quickIconGreen]}><MaterialCommunityIcons name="credit-card-check" size={29} color="#09B85A" /></View>
+            <View style={[styles.quickIcon, styles.quickIconGreen]}><MaterialCommunityIcons name="credit-card-check" size={24} color="#09B85A" /></View>
             <View style={styles.quickTextBox}><Text style={styles.quickTitle}>Activer une carte</Text><Text style={styles.quickSubtitle}>Scannez le QR code ou saisissez le numéro de série.</Text></View>
-            <Ionicons name="chevron-forward" size={24} color="#64748B" />
+            <Ionicons name="chevron-forward" size={19} color="#64748B" />
           </TouchableOpacity>
         </View>
 
@@ -726,32 +726,34 @@ const styles = StyleSheet.create({
   },
   quickActions: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 10,
     marginBottom: 30,
   },
   quickActionCard: {
     flex: 1,
-    minHeight: 132,
+    minWidth: 0,
+    minHeight: 98,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
     borderRadius: 18,
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#E5EBF5',
-    padding: 18,
+    paddingHorizontal: 11,
+    paddingVertical: 12,
     shadowColor: '#061F68',
     shadowOpacity: 0.07,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
   },
-  quickIcon: { width: 62, height: 62, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  quickIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   quickIconBlue: { backgroundColor: '#E5EFFF' },
   quickIconGreen: { backgroundColor: '#E5F8ED' },
   quickTextBox: { flex: 1 },
-  quickTitle: { color: TAKO_BLUE, fontSize: 15, fontWeight: '900' },
-  quickSubtitle: { color: '#667085', fontSize: 13, fontWeight: '600', lineHeight: 19, marginTop: 6 },
+  quickTitle: { color: TAKO_BLUE, fontSize: 13, fontWeight: '900', lineHeight: 17 },
+  quickSubtitle: { color: '#667085', fontSize: 12, fontWeight: '600', lineHeight: 17, marginTop: 4 },
   historySectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   viewAll: { color: '#0B6FF4', fontSize: 14, fontWeight: '900', marginBottom: 14 },
   historyCard: {
