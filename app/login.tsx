@@ -525,7 +525,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
           <View style={[styles.adminLoginIntro, isCompactAdmin && styles.adminLoginIntroCompact]}>
             <View style={styles.adminWelcomePill}><Text style={styles.adminWelcomeText}>{adminText.welcome}</Text></View>
-            <Text style={styles.adminLoginHeadline}>{adminText.headlineStart} <Text style={styles.adminLoginHeadlineAccent}>TaKo</Text>{'\n'}{adminText.headlineEnd}</Text>
+            <Text style={styles.adminLoginHeadline}>{adminText.headlineStart}{'\n'}{adminText.headlineEnd}</Text>
             <Text style={styles.adminLoginCopy}>{adminText.copy}</Text>
           </View>
 
