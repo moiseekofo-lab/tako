@@ -455,25 +455,24 @@
       }
 
       .solution-card {
-        min-height: 120px;
-        padding: 22px;
+        min-height: 138px;
+        padding: 18px 18px 18px 22px;
         display: grid;
-        grid-template-columns: 58px 1fr 104px;
+        grid-template-columns: 58px 1fr 122px;
         align-items: center;
         gap: 18px;
         overflow: hidden;
       }
 
-      .person-blob {
-        width: 96px;
-        height: 96px;
-        border-radius: 50% 50% 44% 56%;
-        background: linear-gradient(160deg, #dcecff, #ffffff);
-        position: relative;
+      .solution-illustration {
+        width: 122px;
+        height: 122px;
+        display: block;
+        object-fit: contain;
+        object-position: center bottom;
+        align-self: end;
+        margin-bottom: -18px;
       }
-
-      .person-blob::before { content: ""; position: absolute; width: 34px; height: 34px; border-radius: 50%; background: var(--blue); left: 31px; top: 18px; }
-      .person-blob::after { content: ""; position: absolute; width: 62px; height: 35px; border-radius: 50% 50% 0 0; background: #edf5ff; left: 17px; bottom: 16px; border: 2px solid var(--blue); }
 
       .testimonials {
         display: grid;
@@ -546,7 +545,7 @@
         .feature-grid, .testimonials, .contact-links { grid-template-columns: 1fr; }
         #fonctionnalites { padding: 20px; }
         .solution-card { grid-template-columns: 48px 1fr; }
-        .solution-card .person-blob { display: none; }
+        .solution-card .solution-illustration { display: none; }
         .visual { min-height: 310px; }
         .hero-product-visual { width: 112%; }
         .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -622,7 +621,7 @@
                 </svg>
               </div>
               <div><h3>Pour les passagers</h3><p>Payez avec smartphone ou carte NFC, et gardez votre historique.</p></div>
-              <div class="person-blob"></div>
+              <img class="solution-illustration" src="/solution-passenger.png" alt="" />
             </article>
             <article class="solution-card">
               <div class="iconbox" aria-hidden="true">
@@ -633,7 +632,7 @@
                 </svg>
               </div>
               <div><h3>Pour les chauffeurs</h3><p>Recevez les paiements, renseignez trajet et plaque, puis validez rapidement.</p></div>
-              <div class="person-blob"></div>
+              <img class="solution-illustration" src="/solution-driver.png" alt="" />
             </article>
           </div>
         </section>
