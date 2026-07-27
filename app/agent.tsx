@@ -170,11 +170,11 @@ export default function Agent() {
           <View style={styles.agentCardDivider} />
           <View style={styles.agentInfoRow}>
             <View style={styles.agentHintRow}>
-              <View style={styles.infoCircle}><Ionicons name="information" size={20} color="white" /></View>
+              <View style={styles.infoCircle}><Ionicons name="information" size={17} color="white" /></View>
               <Text style={styles.agentHint}>Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.</Text>
             </View>
             <View style={styles.syncBox}>
-              <Ionicons name="calendar-outline" size={24} color="#0B6FF4" />
+              <Ionicons name="calendar-outline" size={20} color="#0B6FF4" />
               <View>
                 <Text style={styles.syncLabel}>Dernière mise à jour</Text>
                 <Text style={styles.syncTime}>{lastSync || '--:--'}</Text>
@@ -211,7 +211,7 @@ export default function Agent() {
               <Text style={styles.emptyHistoryText}>Les crédits administrateur et recharges client apparaîtront ici automatiquement.</Text>
             </View>
           ) : (
-            transactions.slice(0, showAllTransactions ? transactions.length : 6).map((transaction) => {
+            transactions.slice(0, showAllTransactions ? transactions.length : 4).map((transaction) => {
               const isCredit = transaction.method === 'agent_float_recharge';
               const amount = Number(transaction.amount || 0);
 
@@ -236,16 +236,16 @@ export default function Agent() {
 
         <View style={styles.bottomNavigation}>
           <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(false)}>
-            <Ionicons name="home-outline" size={28} color="#71809C" /><Text style={styles.bottomNavText}>Accueil</Text>
+            <Ionicons name="home-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Accueil</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(true)}>
-            <Ionicons name="receipt-outline" size={28} color="#71809C" /><Text style={styles.bottomNavText}>Transactions</Text>
+            <Ionicons name="receipt-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Transactions</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => router.push('/agent-recharge-menu' as any)}>
-            <View style={styles.activeNavIcon}><MaterialCommunityIcons name="credit-card-check-outline" size={26} color="white" /></View><Text style={styles.bottomNavTextActive}>Actions</Text>
+            <View style={styles.activeNavIcon}><MaterialCommunityIcons name="credit-card-check-outline" size={22} color="white" /></View><Text style={styles.bottomNavTextActive}>Actions</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={openMenu}>
-            <Ionicons name="person-outline" size={28} color="#71809C" /><Text style={styles.bottomNavText}>Profil</Text>
+            <Ionicons name="person-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Profil</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -328,20 +328,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 920,
     alignSelf: 'center',
-    paddingHorizontal: 26,
-    paddingTop: 54,
-    paddingBottom: 34,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 34,
+    marginBottom: 18,
   },
   menuButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: 42,
+    height: 42,
+    borderRadius: 11,
     borderWidth: 1,
     borderColor: '#BBDFFF',
     alignItems: 'center',
@@ -593,7 +593,7 @@ const styles = StyleSheet.create({
   },
   kicker: {
     color: '#0B6FF4',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
@@ -604,28 +604,28 @@ const styles = StyleSheet.create({
     gap: 7,
     borderRadius: 20,
     backgroundColor: '#E7F0FF',
-    paddingHorizontal: 13,
-    paddingVertical: 7,
-    marginBottom: 16,
+    paddingHorizontal: 11,
+    paddingVertical: 5,
+    marginBottom: 10,
   },
   title: {
     color: TAKO_BLUE,
-    fontSize: 34,
+    fontSize: 27,
     fontWeight: '900',
-    marginBottom: 8,
+    marginBottom: 5,
   },
   subtitle: {
     color: '#5C667A',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '700',
-    lineHeight: 23,
-    marginBottom: 24,
+    lineHeight: 18,
+    marginBottom: 14,
   },
   agentBalanceCard: {
     borderRadius: 20,
     backgroundColor: '#062379',
-    padding: 24,
-    marginBottom: 28,
+    padding: 16,
+    marginBottom: 16,
     shadowColor: '#061F68',
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
   },
   agentBalanceBox: {
     flex: 1,
-    paddingLeft: 22,
+    paddingLeft: 14,
   },
   agentTopRow: {
     flexDirection: 'row',
@@ -650,62 +650,62 @@ const styles = StyleSheet.create({
   },
   balanceDivider: {
     width: 1,
-    height: 70,
+    height: 54,
     backgroundColor: 'rgba(255,255,255,0.2)',
   },
   copyButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0B42AD',
   },
   agentLabel: {
     color: 'rgba(255,255,255,0.72)',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '900',
     textTransform: 'uppercase',
   },
   agentValue: {
     color: 'white',
-    fontSize: 26,
+    fontSize: 20,
     fontWeight: '900',
     marginTop: 4,
   },
   agentBalance: {
     color: '#09D457',
-    fontSize: 29,
+    fontSize: 23,
     fontWeight: '900',
     marginTop: 4,
   },
   agentHint: {
     flex: 1,
     color: 'white',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    lineHeight: 21,
+    lineHeight: 17,
   },
   agentCardDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 20,
+    marginVertical: 12,
   },
   agentInfoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 22,
+    gap: 12,
   },
   agentHintRow: {
     flex: 1.4,
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: 12,
+    gap: 8,
   },
   infoCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0B6FF4',
@@ -714,25 +714,25 @@ const styles = StyleSheet.create({
     flex: 0.8,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 7,
   },
-  syncLabel: { color: 'white', fontSize: 12, fontWeight: '700' },
-  syncTime: { color: 'white', fontSize: 20, fontWeight: '900', marginTop: 4 },
+  syncLabel: { color: 'white', fontSize: 11, fontWeight: '700' },
+  syncTime: { color: 'white', fontSize: 17, fontWeight: '900', marginTop: 2 },
   sectionHeading: {
     color: TAKO_BLUE,
-    fontSize: 19,
+    fontSize: 16,
     fontWeight: '900',
-    marginBottom: 14,
+    marginBottom: 8,
   },
   quickActions: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 30,
+    marginBottom: 16,
   },
   quickActionCard: {
     flex: 1,
     minWidth: 0,
-    minHeight: 98,
+    minHeight: 82,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -740,29 +740,29 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#E5EBF5',
-    paddingHorizontal: 11,
-    paddingVertical: 12,
+    paddingHorizontal: 9,
+    paddingVertical: 8,
     shadowColor: '#061F68',
     shadowOpacity: 0.07,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 8 },
     elevation: 2,
   },
-  quickIcon: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  quickIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   quickIconBlue: { backgroundColor: '#E5EFFF' },
   quickIconGreen: { backgroundColor: '#E5F8ED' },
   quickTextBox: { flex: 1 },
-  quickTitle: { color: TAKO_BLUE, fontSize: 13, fontWeight: '900', lineHeight: 17 },
-  quickSubtitle: { color: '#667085', fontSize: 12, fontWeight: '600', lineHeight: 17, marginTop: 4 },
+  quickTitle: { color: TAKO_BLUE, fontSize: 12, fontWeight: '900', lineHeight: 15 },
+  quickSubtitle: { color: '#667085', fontSize: 11, fontWeight: '600', lineHeight: 14, marginTop: 2 },
   historySectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  viewAll: { color: '#0B6FF4', fontSize: 14, fontWeight: '900', marginBottom: 14 },
+  viewAll: { color: '#0B6FF4', fontSize: 12, fontWeight: '900', marginBottom: 8 },
   historyCard: {
     borderRadius: 18,
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#D7E0EF',
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
     shadowColor: '#061F68',
     shadowOpacity: 0.08,
     shadowRadius: 14,
@@ -805,7 +805,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: '#F5F8FF',
     alignItems: 'center',
-    padding: 18,
+    padding: 10,
   },
   emptyHistoryTitle: {
     color: TAKO_BLUE,
@@ -822,17 +822,17 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   transactionRow: {
-    minHeight: 94,
+    minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
     borderTopColor: '#EEF2F7',
-    gap: 11,
+    gap: 8,
   },
   transactionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -847,18 +847,18 @@ const styles = StyleSheet.create({
   },
   transactionTitle: {
     color: TAKO_BLUE,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '900',
   },
   transactionDate: {
     color: '#7B8798',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
-    marginTop: 3,
+    marginTop: 1,
   },
-  transactionMeta: { color: '#7B8798', fontSize: 12, fontWeight: '700', marginTop: 3 },
+  transactionMeta: { color: '#7B8798', fontSize: 11, fontWeight: '700', marginTop: 1 },
   transactionAmount: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '900',
   },
   transactionAmountCredit: {
@@ -868,7 +868,7 @@ const styles = StyleSheet.create({
     color: '#FF3347',
   },
   bottomNavigation: {
-    minHeight: 102,
+    minHeight: 72,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -876,7 +876,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#E5EBF5',
-    marginTop: 26,
+    marginTop: 12,
     paddingHorizontal: 12,
     shadowColor: '#061F68',
     shadowOpacity: 0.08,
@@ -885,12 +885,12 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   bottomNavItem: { minWidth: 68, alignItems: 'center', justifyContent: 'center', gap: 6 },
-  bottomNavText: { color: '#71809C', fontSize: 12, fontWeight: '800' },
-  bottomNavTextActive: { color: '#0B6FF4', fontSize: 12, fontWeight: '900' },
+  bottomNavText: { color: '#71809C', fontSize: 11, fontWeight: '800' },
+  bottomNavTextActive: { color: '#0B6FF4', fontSize: 11, fontWeight: '900' },
   activeNavIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#0B6FF4',
