@@ -300,30 +300,33 @@
 
       .store-badges {
         position: absolute;
-        left: 1%;
-        bottom: 0;
+        left: -2%;
+        bottom: 14px;
+        width: 58%;
         z-index: 3;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 10px;
         pointer-events: none;
         user-select: none;
       }
 
       .store-badge {
-        width: 128px;
-        height: 42px;
+        width: 126px;
+        height: 43px;
         padding: 5px 10px;
-        border: 1px solid #222;
-        border-radius: 8px;
+        border: 1px solid var(--gold);
+        border-radius: 9px;
         display: flex;
         align-items: center;
         gap: 8px;
         color: #fff;
-        background: #050505;
+        background: linear-gradient(135deg, var(--blue), #0b45aa);
+        box-shadow: 0 8px 18px rgba(6, 31, 104, 0.2);
       }
 
-      .store-badge i { width: 25px; font-size: 25px; text-align: center; }
+      .store-badge i { width: 25px; color: var(--gold); font-size: 25px; text-align: center; }
       .store-badge-copy { display: flex; flex-direction: column; line-height: 1; }
       .store-badge-small { font-size: 8px; font-weight: 500; margin-bottom: 3px; }
       .store-badge-name { font-size: 14px; font-weight: 600; white-space: nowrap; }
@@ -559,7 +562,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 34px; }
         .visual { min-height: 430px; }
         .hero-product-visual { width: min(720px, 100%); }
-        .store-badges { left: 8%; }
+        .store-badges { left: 4%; width: 48%; }
         .feature-grid { grid-template-columns: repeat(2, 1fr); }
         .feature-card { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; }
         .feature-card:last-child { border-bottom: 0; }
@@ -579,7 +582,7 @@
         .solution-card .solution-illustration { display: none; }
         .visual { min-height: 310px; }
         .hero-product-visual { width: 112%; }
-        .store-badges { left: 50%; bottom: -12px; transform: translateX(-50%); }
+        .store-badges { left: 50%; bottom: -12px; width: auto; transform: translateX(-50%); }
         .store-badge { width: 116px; height: 38px; padding-inline: 8px; }
         .store-badge i { font-size: 21px; }
         .store-badge-name { font-size: 12px; }
