@@ -169,6 +169,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       or: 'ou',
       accessCode: "Connexion avec code d’accès",
       reserved: 'Accès réservé aux administrateurs autorisés',
+      copyright: 'Tous droits réservés 2026',
     },
     en: {
       welcome: 'Welcome, administrator',
@@ -185,6 +186,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       or: 'or',
       accessCode: 'Sign in with access code',
       reserved: 'Access restricted to authorized administrators',
+      copyright: 'All rights reserved 2026',
     },
     pt: {
       welcome: 'Bem-vindo, administrador',
@@ -201,6 +203,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       or: 'ou',
       accessCode: 'Entrar com código de acesso',
       reserved: 'Acesso reservado a administradores autorizados',
+      copyright: 'Todos os direitos reservados 2026',
     },
   }[language];
 
@@ -537,7 +540,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
           <View style={styles.adminLoginCopyright}>
             <Ionicons name="shield-checkmark-outline" size={16} color="rgba(255,255,255,0.72)" />
-            <Text style={styles.adminLoginCopyrightText}>TaKo Transport  •  Tous droits réservés 2026</Text>
+            <Text style={styles.adminLoginCopyrightText}>TaKo Transport  •  {adminText.copyright}</Text>
           </View>
         </View>
 
