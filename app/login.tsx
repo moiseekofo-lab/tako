@@ -486,14 +486,14 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
         <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact]}>
           <View style={styles.adminLoginControls}>
             <View style={styles.adminThemeControl}>
-              <Ionicons name="sunny-outline" size={17} color="#667085" />
+              <Ionicons name="sunny-outline" size={18} color="#344054" />
               <TouchableOpacity
-                style={styles.adminThemeTrack}
+                style={[styles.adminThemeTrack, !adminThemeLight && styles.adminThemeTrackDark]}
                 activeOpacity={0.8}
                 onPress={() => setAdminThemeLight((value) => !value)}>
                 <View style={[styles.adminThemeThumb, !adminThemeLight && styles.adminThemeThumbDark]} />
               </TouchableOpacity>
-              <Ionicons name="moon-outline" size={17} color="#667085" />
+              <Ionicons name="moon-outline" size={18} color="#071B3B" />
             </View>
             <View style={styles.adminLanguageControl}>
               <Text style={styles.adminLanguageText}>FR</Text>
@@ -1055,15 +1055,19 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   adminThemeControl: {
-    height: 40,
-    borderRadius: 20,
+    height: 42,
+    borderRadius: 21,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderColor: '#E4E9F2',
+    borderColor: '#D2DAE7',
     backgroundColor: 'white',
     paddingHorizontal: 12,
+    shadowColor: '#071B3B',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   adminThemeTrack: {
     width: 43,
@@ -1072,6 +1076,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#E8ECF3',
     paddingHorizontal: 3,
+  },
+  adminThemeTrackDark: {
+    backgroundColor: '#071B3B',
   },
   adminThemeThumb: {
     width: 17,
