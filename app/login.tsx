@@ -36,8 +36,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const params = useLocalSearchParams<{ access?: string }>();
   const chauffeurOnly = chauffeurOnlyOverride || params.access === 'chauffeur';
   const isWeb = Platform.OS === 'web';
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isNarrowWeb = isWeb && width < 760;
+  const isCompactAdmin = isWeb && height < 900;
   const [showLoginForm, setShowLoginForm] = useState(Platform.OS === 'web');
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
@@ -464,7 +465,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             <View style={styles.adminLoginBadge}><Text style={styles.adminLoginBadgeText}>ADMIN</Text></View>
           </View>
 
-          <View style={styles.adminLoginIntro}>
+          <View style={[styles.adminLoginIntro, isCompactAdmin && styles.adminLoginIntroCompact]}>
             <View style={styles.adminWelcomePill}><Text style={styles.adminWelcomeText}>Bienvenue, administrateur</Text></View>
             <Text style={styles.adminLoginHeadline}>Gérez <Text style={styles.adminLoginHeadlineAccent}>TaKo</Text>{'\n'}en toute simplicité</Text>
             <Text style={styles.adminLoginCopy}>Accédez à votre tableau de bord, gérez les chauffeurs,{'\n'}les courses, les paiements et plus encore.</Text>
@@ -473,7 +474,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           <Image
             source={require('../assets/images/admin-login-laptop.png')}
             resizeMode="contain"
-            style={styles.adminLoginLaptop}
+            style={[styles.adminLoginLaptop, isCompactAdmin && styles.adminLoginLaptopCompact]}
           />
 
           <View style={styles.adminLoginCopyright}>
@@ -482,7 +483,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           </View>
         </View>
 
-        <View style={styles.adminLoginFormPanel}>
+        <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact]}>
           <View style={styles.adminLoginControls}>
             <View style={styles.adminThemeControl}>
               <Ionicons name="sunny-outline" size={17} color="#667085" />
@@ -500,16 +501,16 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             </View>
           </View>
 
-          <View style={styles.adminLoginCard}>
-            <View style={styles.adminShieldIcon}>
+          <View style={[styles.adminLoginCard, isCompactAdmin && styles.adminLoginCardCompact]}>
+            <View style={[styles.adminShieldIcon, isCompactAdmin && styles.adminShieldIconCompact]}>
               <Ionicons name="shield-checkmark" size={40} color="#2475E8" />
               <Ionicons name="person" size={17} color="white" style={styles.adminShieldPerson} />
             </View>
             <Text style={styles.adminLoginTitle}>Connexion administrateur</Text>
-            <Text style={styles.adminLoginSubtitle}>Connectez-vous à votre espace d’administration</Text>
+            <Text style={[styles.adminLoginSubtitle, isCompactAdmin && styles.adminLoginSubtitleCompact]}>Connectez-vous à votre espace d’administration</Text>
 
             <Text style={styles.adminLoginLabel}>Email ou téléphone</Text>
-            <View style={styles.adminLoginField}>
+            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact]}>
               <Ionicons name="mail-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={email}
@@ -522,7 +523,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             </View>
 
             <Text style={styles.adminLoginLabel}>Mot de passe</Text>
-            <View style={styles.adminLoginField}>
+            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact]}>
               <Ionicons name="lock-closed-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={password}
@@ -537,7 +538,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               </TouchableOpacity>
             </View>
 
-            <View style={styles.adminLoginOptions}>
+            <View style={[styles.adminLoginOptions, isCompactAdmin && styles.adminLoginOptionsCompact]}>
               <TouchableOpacity style={styles.adminRemember} onPress={() => setRememberAccess((value) => !value)}>
                 <View style={[styles.adminCheckbox, rememberAccess && styles.adminCheckboxActive]}>
                   {rememberAccess ? <Ionicons name="checkmark" size={15} color="white" /> : null}
@@ -560,7 +561,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               )}
             </TouchableOpacity>
 
-            <View style={styles.adminOrRow}>
+            <View style={[styles.adminOrRow, isCompactAdmin && styles.adminOrRowCompact]}>
               <View style={styles.adminOrLine} />
               <Text style={styles.adminOrText}>ou</Text>
               <View style={styles.adminOrLine} />
@@ -571,7 +572,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               <Text style={styles.adminAccessCodeText}>Connexion avec code d’accès</Text>
             </TouchableOpacity>
 
-            <View style={styles.adminReservedRow}>
+            <View style={[styles.adminReservedRow, isCompactAdmin && styles.adminReservedRowCompact]}>
               <Ionicons name="lock-closed-outline" size={16} color="#7C8799" />
               <Text style={styles.adminReservedText}>Accès réservé aux administrateurs autorisés</Text>
             </View>
@@ -976,6 +977,9 @@ const styles = StyleSheet.create({
   adminLoginIntro: {
     marginTop: 98,
   },
+  adminLoginIntroCompact: {
+    marginTop: 52,
+  },
   adminWelcomePill: {
     alignSelf: 'flex-start',
     minHeight: 40,
@@ -1014,6 +1018,12 @@ const styles = StyleSheet.create({
     width: '91%',
     height: 300,
   },
+  adminLoginLaptopCompact: {
+    left: 18,
+    bottom: 58,
+    width: '82%',
+    height: 220,
+  },
   adminLoginCopyright: {
     position: 'absolute',
     left: 56,
@@ -1035,6 +1045,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F9FD',
     paddingHorizontal: 54,
     paddingTop: 80,
+  },
+  adminLoginFormPanelCompact: {
+    paddingTop: 46,
   },
   adminLoginControls: {
     position: 'absolute',
@@ -1110,6 +1123,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 7,
   },
+  adminLoginCardCompact: {
+    minHeight: 0,
+    height: 650,
+    paddingHorizontal: 47,
+    paddingTop: 30,
+    paddingBottom: 24,
+  },
   adminShieldIcon: {
     position: 'relative',
     alignSelf: 'center',
@@ -1119,6 +1139,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#EAF2FF',
+  },
+  adminShieldIconCompact: {
+    width: 68,
+    height: 68,
+    borderRadius: 34,
   },
   adminShieldPerson: {
     position: 'absolute',
@@ -1140,6 +1165,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     marginBottom: 43,
   },
+  adminLoginSubtitleCompact: {
+    marginTop: 6,
+    marginBottom: 23,
+  },
   adminLoginLabel: {
     color: '#101828',
     fontSize: 13,
@@ -1157,6 +1186,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 24,
   },
+  adminLoginFieldCompact: {
+    minHeight: 48,
+    marginBottom: 16,
+  },
   adminLoginInput: {
     flex: 1,
     color: '#101828',
@@ -1170,6 +1203,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: -2,
     marginBottom: 28,
+  },
+  adminLoginOptionsCompact: {
+    marginBottom: 18,
   },
   adminRemember: {
     flexDirection: 'row',
@@ -1223,6 +1259,9 @@ const styles = StyleSheet.create({
     gap: 18,
     marginVertical: 30,
   },
+  adminOrRowCompact: {
+    marginVertical: 18,
+  },
   adminOrLine: {
     flex: 1,
     height: 1,
@@ -1254,6 +1293,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 9,
     marginTop: 38,
+  },
+  adminReservedRowCompact: {
+    marginTop: 22,
   },
   adminReservedText: {
     color: '#7C8799',
