@@ -131,139 +131,76 @@ export default function Agent() {
     Alert.alert('ID agent', agentId);
   };
 
-  const totalCredits = transactions
-    .filter((transaction) => transaction.method === 'agent_float_recharge')
-    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
-  const totalDebits = transactions
-    .filter((transaction) => transaction.method !== 'agent_float_recharge')
-    .reduce((total, transaction) => total + Number(transaction.amount || 0), 0);
-  const agentName = currentUser?.fullName || 'Agent Tako';
-
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <View style={styles.agentLogo}><TakoLogo /></View>
-          <View style={styles.headerActions}>
-            <TouchableOpacity style={styles.notificationButton} activeOpacity={0.85}>
-              <Ionicons name="notifications-outline" size={22} color={TAKO_BLUE} />
-              <View style={styles.notificationBadge}><Text style={styles.notificationBadgeText}>2</Text></View>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.menuButton}
-              activeOpacity={0.85}
-              onPress={menuOpen ? closeMenu : openMenu}>
-              <Ionicons name={menuOpen ? 'close' : 'menu'} size={24} color={TAKO_BLUE} />
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.menuButton}
+            activeOpacity={0.85}
+            onPress={menuOpen ? closeMenu : openMenu}>
+            <Ionicons name={menuOpen ? 'close' : 'menu'} size={24} color={TAKO_BLUE} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.kickerPill}>
           <Ionicons name="person" size={16} color="#0B6FF4" />
           <Text style={styles.kicker}>Mode agent</Text>
         </View>
+        <Text style={styles.title}>Bonjour, Agent</Text>
+        <Text style={styles.subtitle}>Gérez vos recharges clients et activez les cartes prépayées.</Text>
 
-        <View style={styles.homeProfileCard}>
-          <View style={styles.homeProfileMain}>
-            <View style={styles.homeAvatar}>
-              <Ionicons name="person" size={48} color="#0B6FF4" />
-              <View style={styles.onlineDot} />
-            </View>
-            <View style={styles.homeIdentity}>
-              <Text style={styles.homeGreeting}>Bonjour, Agent</Text>
-              <Text style={styles.homeAgentName}>{agentName}</Text>
-              <Text style={styles.homeIdLabel}>ID agent</Text>
-              <View style={styles.homeIdRow}>
-                <Text style={styles.homeId}>{currentUser?.id || 'AGENT'}</Text>
-                <TouchableOpacity activeOpacity={0.8} onPress={copyAgentId}>
-                  <Ionicons name="copy-outline" size={16} color="white" />
+        <View style={styles.agentBalanceCard}>
+          <View style={styles.agentTopRow}>
+            <View style={styles.agentIdentityBox}>
+              <Text style={styles.agentLabel}>ID agent</Text>
+              <View style={styles.agentIdRow}>
+                <Text style={styles.agentValue}>{currentUser?.id || 'AGENT'}</Text>
+                <TouchableOpacity style={styles.copyButton} activeOpacity={0.8} onPress={copyAgentId}>
+                  <Ionicons name="copy-outline" size={18} color="white" />
                 </TouchableOpacity>
               </View>
             </View>
-            <View style={styles.homeProfileDivider} />
-            <View style={styles.homeBalanceBox}>
-              <Text style={styles.homeBalanceLabel}>Solde disponible</Text>
-              <Text style={styles.homeBalance}>{Number(balance || 0).toLocaleString('fr-FR')} FC</Text>
-              <TouchableOpacity
-                style={styles.addCreditButton}
-                activeOpacity={0.85}
-                onPress={() => Alert.alert('Crédit agent', 'Le crédit est ajouté uniquement par l’administrateur.')}>
-                <Text style={styles.addCreditText}>Ajouter du crédit</Text>
-                <Ionicons name="add-circle-outline" size={18} color="white" />
-              </TouchableOpacity>
+            <View style={styles.balanceDivider} />
+            <View style={styles.agentBalanceBox}>
+              <Text style={styles.agentLabel}>Solde disponible</Text>
+              <Text style={styles.agentBalance}>{Number(balance || 0).toLocaleString('fr-FR')} FC</Text>
             </View>
           </View>
-          <View style={styles.homeInfoStrip}>
-            <View style={styles.homeInfoItem}>
-              <Ionicons name="time-outline" size={17} color="#3165B8" />
-              <Text style={styles.homeInfoText}>Dernière mise à jour : <Text style={styles.homeInfoStrong}>{lastSync || '--:--'}</Text></Text>
+          <View style={styles.agentCardDivider} />
+          <View style={styles.agentInfoRow}>
+            <View style={styles.agentHintRow}>
+              <View style={styles.infoCircle}><Ionicons name="information" size={17} color="white" /></View>
+              <Text style={styles.agentHint}>Ce solde est crédité uniquement par l’administrateur. L’espèce est remise en fin de journée.</Text>
             </View>
-            <View style={styles.homeInfoSeparator} />
-            <View style={styles.homeInfoItem}>
-              <Ionicons name="information-circle-outline" size={17} color="#3165B8" />
-              <Text style={styles.homeInfoText}>L’espèce est remise en fin de journée.</Text>
+            <View style={styles.syncBox}>
+              <Ionicons name="calendar-outline" size={20} color="#0B6FF4" />
+              <View>
+                <Text style={styles.syncLabel}>Dernière mise à jour</Text>
+                <Text style={styles.syncTime}>{lastSync || '--:--'}</Text>
+              </View>
             </View>
           </View>
         </View>
 
         <Text style={styles.sectionHeading}>Actions rapides</Text>
-        <View style={styles.homeQuickActions}>
-          <TouchableOpacity style={styles.homeQuickCard} activeOpacity={0.82} onPress={() => router.push('/agent-recharge-menu' as any)}>
-            <View style={[styles.homeQuickIcon, styles.quickIconBlue]}><Ionicons name="person-add" size={23} color="#0B6FF4" /></View>
-            <Text style={styles.homeQuickTitle}>Recharger{'\n'}un client</Text>
-            <Text style={styles.homeQuickText}>Ajouter du crédit au compte client</Text>
-            <Ionicons style={styles.homeQuickArrow} name="chevron-forward" size={18} color="#64748B" />
+        <View style={styles.quickActions}>
+          <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.82} onPress={() => router.push('/agent-recharge-menu' as any)}>
+            <View style={[styles.quickIcon, styles.quickIconBlue]}><Ionicons name="person-add" size={23} color="#0B6FF4" /></View>
+            <View style={styles.quickTextBox}><Text style={styles.quickTitle}>Recharger un client</Text><Text style={styles.quickSubtitle}>Rechargez le compte d’un client.</Text></View>
+            <Ionicons name="chevron-forward" size={19} color="#64748B" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.homeQuickCard} activeOpacity={0.82} onPress={() => router.push('/agent-prepaid' as any)}>
-            <View style={[styles.homeQuickIcon, styles.quickIconGreen]}><MaterialCommunityIcons name="credit-card-check" size={24} color="#09B85A" /></View>
-            <Text style={styles.homeQuickTitle}>Activer une{'\n'}carte</Text>
-            <Text style={styles.homeQuickText}>Scanner et activer une carte prépayée</Text>
-            <Ionicons style={styles.homeQuickArrow} name="chevron-forward" size={18} color="#64748B" />
+          <TouchableOpacity style={styles.quickActionCard} activeOpacity={0.82} onPress={() => router.push('/agent-prepaid' as any)}>
+            <View style={[styles.quickIcon, styles.quickIconGreen]}><MaterialCommunityIcons name="credit-card-check" size={24} color="#09B85A" /></View>
+            <View style={styles.quickTextBox}><Text style={styles.quickTitle}>Activer une carte</Text><Text style={styles.quickSubtitle}>Scannez le QR code ou saisissez le numéro de série.</Text></View>
+            <Ionicons name="chevron-forward" size={19} color="#64748B" />
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.homeQuickCard}
-            activeOpacity={0.82}
-            onPress={() => router.push({ pathname: '/internal-recharge-scan', params: { returnTo: 'agent' } } as any)}>
-            <View style={[styles.homeQuickIcon, styles.quickIconPurple]}><MaterialCommunityIcons name="qrcode-scan" size={23} color="#963DDE" /></View>
-            <Text style={styles.homeQuickTitle}>Scanner QR</Text>
-            <Text style={styles.homeQuickText}>Scanner le QR code d’une carte client</Text>
-            <Ionicons style={styles.homeQuickArrow} name="chevron-forward" size={18} color="#64748B" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.homeQuickCard} activeOpacity={0.82} onPress={() => router.push('/agent-recharge-nfc' as any)}>
-            <View style={[styles.homeQuickIcon, styles.quickIconOrange]}><MaterialCommunityIcons name="contactless-payment" size={26} color="#F59E0B" /></View>
-            <Text style={styles.homeQuickTitle}>Lire carte NFC</Text>
-            <Text style={styles.homeQuickText}>Approcher la carte sur votre téléphone</Text>
-            <Ionicons style={styles.homeQuickArrow} name="chevron-forward" size={18} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.sectionHeading}>Résumé</Text>
-        <View style={styles.summaryCard}>
-          <View style={styles.summaryItem}>
-            <View style={[styles.summaryIcon, styles.summaryCreditIcon]}><Ionicons name="arrow-down" size={19} color="#09B85A" /></View>
-            <Text style={styles.summaryLabel}>Total crédits</Text>
-            <Text style={styles.summaryCredit}>+{totalCredits.toLocaleString('fr-FR')} FC</Text>
-            <Text style={styles.summaryMeta}>Aujourd’hui</Text>
-          </View>
-          <View style={styles.summarySeparator} />
-          <View style={styles.summaryItem}>
-            <View style={[styles.summaryIcon, styles.summaryDebitIcon]}><Ionicons name="arrow-up" size={19} color="#FF3347" /></View>
-            <Text style={styles.summaryLabel}>Total débits</Text>
-            <Text style={styles.summaryDebit}>-{totalDebits.toLocaleString('fr-FR')} FC</Text>
-            <Text style={styles.summaryMeta}>Aujourd’hui</Text>
-          </View>
-          <View style={styles.summarySeparator} />
-          <View style={styles.summaryItem}>
-            <View style={[styles.summaryIcon, styles.summaryTransactionIcon]}><Ionicons name="stats-chart" size={18} color="#0B6FF4" /></View>
-            <Text style={styles.summaryLabel}>Transactions</Text>
-            <Text style={styles.summaryTransactions}>{transactions.length}</Text>
-            <Text style={styles.summaryMeta}>Aujourd’hui</Text>
-          </View>
         </View>
 
         <View style={styles.historySectionHeader}>
-          <Text style={styles.sectionHeading}>Transactions récentes</Text>
+          <Text style={styles.sectionHeading}>Historique des transactions</Text>
           <TouchableOpacity activeOpacity={0.8} onPress={() => setShowAllTransactions((value) => !value)}>
             <Text style={styles.viewAll}>{showAllTransactions ? 'Réduire' : 'Voir tout'}  ›</Text>
           </TouchableOpacity>
@@ -303,13 +240,13 @@ export default function Agent() {
 
       <View style={styles.bottomNavigation}>
         <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(false)}>
-          <Ionicons name="home" size={23} color="#0B6FF4" /><Text style={styles.bottomNavTextActive}>Accueil</Text>
+          <Ionicons name="home-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Accueil</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(true)}>
           <Ionicons name="receipt-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Transactions</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => router.push('/agent-recharge-menu' as any)}>
-          <MaterialCommunityIcons name="credit-card-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Actions</Text>
+          <View style={styles.activeNavIcon}><MaterialCommunityIcons name="credit-card-check-outline" size={22} color="white" /></View><Text style={styles.bottomNavTextActive}>Actions</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={openMenu}>
           <Ionicons name="person-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Profil</Text>
@@ -404,38 +341,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 10,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  notificationButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5EBF5',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-  },
-  notificationBadge: {
-    position: 'absolute',
-    right: -4,
-    top: -5,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
-    paddingHorizontal: 4,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#0B6FF4',
-  },
-  notificationBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '900',
   },
   agentLogo: {
     width: 190,
@@ -714,147 +619,6 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     marginBottom: 7,
   },
-  homeProfileCard: {
-    borderRadius: 18,
-    overflow: 'hidden',
-    backgroundColor: '#062B91',
-    marginBottom: 12,
-    shadowColor: '#061F68',
-    shadowOpacity: 0.14,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 8 },
-    elevation: 4,
-  },
-  homeProfileMain: {
-    minHeight: 124,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 13,
-    paddingVertical: 14,
-  },
-  homeAvatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: 'white',
-    marginRight: 12,
-  },
-  onlineDot: {
-    position: 'absolute',
-    right: 2,
-    bottom: 2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    borderWidth: 3,
-    borderColor: 'white',
-    backgroundColor: '#09D457',
-  },
-  homeIdentity: {
-    flex: 1.15,
-    minWidth: 0,
-  },
-  homeGreeting: {
-    color: 'rgba(255,255,255,0.82)',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  homeAgentName: {
-    color: 'white',
-    fontSize: 17,
-    fontWeight: '900',
-    marginTop: 2,
-  },
-  homeIdLabel: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-    marginTop: 7,
-  },
-  homeIdRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-    marginTop: 2,
-  },
-  homeId: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '900',
-  },
-  homeProfileDivider: {
-    width: 1,
-    height: 76,
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    marginHorizontal: 10,
-  },
-  homeBalanceBox: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  homeBalanceLabel: {
-    color: 'rgba(255,255,255,0.76)',
-    fontSize: 10,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-  },
-  homeBalance: {
-    color: '#09D457',
-    fontSize: 21,
-    fontWeight: '900',
-    marginTop: 3,
-  },
-  addCreditButton: {
-    minHeight: 31,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.75)',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    marginTop: 9,
-  },
-  addCreditText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  homeInfoStrip: {
-    minHeight: 47,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#F4F7FC',
-    paddingHorizontal: 13,
-  },
-  homeInfoItem: {
-    flex: 1,
-    minWidth: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 7,
-  },
-  homeInfoText: {
-    flex: 1,
-    color: '#53617A',
-    fontSize: 10,
-    fontWeight: '700',
-    lineHeight: 14,
-  },
-  homeInfoStrong: {
-    color: TAKO_BLUE,
-    fontWeight: '900',
-  },
-  homeInfoSeparator: {
-    width: 1,
-    height: 25,
-    backgroundColor: '#D8E0EC',
-    marginHorizontal: 10,
-  },
   title: {
     color: TAKO_BLUE,
     fontSize: 24,
@@ -976,106 +740,6 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 12,
   },
-  homeQuickActions: {
-    flexDirection: 'row',
-    gap: 6,
-    marginBottom: 11,
-  },
-  homeQuickCard: {
-    flex: 1,
-    minWidth: 0,
-    height: 126,
-    alignItems: 'center',
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: '#E5EBF5',
-    backgroundColor: 'white',
-    paddingHorizontal: 5,
-    paddingTop: 9,
-    paddingBottom: 7,
-    shadowColor: '#061F68',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  homeQuickIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 5,
-  },
-  quickIconPurple: { backgroundColor: '#F4E7FF' },
-  quickIconOrange: { backgroundColor: '#FFF2DF' },
-  homeQuickTitle: {
-    color: TAKO_BLUE,
-    fontSize: 10,
-    fontWeight: '900',
-    lineHeight: 13,
-    textAlign: 'center',
-  },
-  homeQuickText: {
-    color: '#667085',
-    fontSize: 9,
-    fontWeight: '600',
-    lineHeight: 12,
-    textAlign: 'center',
-    marginTop: 3,
-  },
-  homeQuickArrow: {
-    position: 'absolute',
-    right: 3,
-    bottom: 7,
-  },
-  summaryCard: {
-    minHeight: 88,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 17,
-    borderWidth: 1,
-    borderColor: '#E5EBF5',
-    backgroundColor: 'white',
-    paddingVertical: 8,
-    marginBottom: 11,
-    shadowColor: '#061F68',
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 2,
-  },
-  summaryItem: {
-    flex: 1,
-    minWidth: 0,
-    alignItems: 'center',
-  },
-  summaryIcon: {
-    width: 31,
-    height: 31,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 3,
-  },
-  summaryCreditIcon: { backgroundColor: '#DDF8E8' },
-  summaryDebitIcon: { backgroundColor: '#FFE5E8' },
-  summaryTransactionIcon: { backgroundColor: '#E6F0FF' },
-  summarySeparator: {
-    width: 1,
-    height: 56,
-    backgroundColor: '#E5EBF5',
-  },
-  summaryLabel: {
-    color: '#657089',
-    fontSize: 9,
-    fontWeight: '900',
-    textTransform: 'uppercase',
-  },
-  summaryCredit: { color: '#09A84F', fontSize: 13, fontWeight: '900', marginTop: 2 },
-  summaryDebit: { color: '#FF3347', fontSize: 13, fontWeight: '900', marginTop: 2 },
-  summaryTransactions: { color: '#0B6FF4', fontSize: 15, fontWeight: '900', marginTop: 2 },
-  summaryMeta: { color: '#7B8798', fontSize: 9, fontWeight: '700', marginTop: 1 },
   quickActionCard: {
     flex: 1,
     minWidth: 0,
