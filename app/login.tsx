@@ -36,7 +36,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const params = useLocalSearchParams<{ access?: string }>();
   const chauffeurOnly = chauffeurOnlyOverride || params.access === 'chauffeur';
   const isWeb = Platform.OS === 'web';
-  const { width, height } = useWindowDimensions();
+  const { width } = useWindowDimensions();
   const isNarrowWeb = isWeb && width < 760;
   const [showLoginForm, setShowLoginForm] = useState(Platform.OS === 'web');
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
@@ -500,13 +500,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             </View>
           </View>
 
-          <View
-            style={[
-              styles.adminLoginCard,
-              height < 1000 && {
-                transform: [{ scale: Math.max(0.78, (height - 110) / 826) }],
-              },
-            ]}>
+          <View style={styles.adminLoginCard}>
             <View style={styles.adminShieldIcon}>
               <Ionicons name="shield-checkmark" size={40} color="#2475E8" />
               <Ionicons name="person" size={17} color="white" style={styles.adminShieldPerson} />
@@ -1015,10 +1009,10 @@ const styles = StyleSheet.create({
   },
   adminLoginLaptop: {
     position: 'absolute',
-    left: -18,
-    bottom: 142,
-    width: '94%',
-    height: 360,
+    left: -4,
+    bottom: 82,
+    width: '91%',
+    height: 300,
   },
   adminLoginCopyright: {
     position: 'absolute',
