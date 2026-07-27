@@ -43,7 +43,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
-  const [adminThemeLight, setAdminThemeLight] = useState(true);
+  const adminThemeLight = true;
   const [rememberAccess, setRememberAccess] = useState(!isWeb || chauffeurOnly);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -485,16 +485,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
         <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact, !adminThemeLight && styles.adminLoginFormPanelDark]}>
           <View style={styles.adminLoginControls}>
-            <View style={[styles.adminThemeControl, !adminThemeLight && styles.adminTopControlDark]}>
-              <Ionicons name="sunny-outline" size={18} color="#344054" />
-              <TouchableOpacity
-                style={[styles.adminThemeTrack, !adminThemeLight && styles.adminThemeTrackDark]}
-                activeOpacity={0.8}
-                onPress={() => setAdminThemeLight((value) => !value)}>
-                <View style={[styles.adminThemeThumb, !adminThemeLight && styles.adminThemeThumbDark]} />
-              </TouchableOpacity>
-              <Ionicons name="moon-outline" size={18} color="#071B3B" />
-            </View>
             <View style={[styles.adminLanguageControl, !adminThemeLight && styles.adminTopControlDark]}>
               <Text style={[styles.adminLanguageText, !adminThemeLight && styles.adminLoginTitleDark]}>FR</Text>
               <Ionicons name="chevron-down" size={15} color="#475467" />
