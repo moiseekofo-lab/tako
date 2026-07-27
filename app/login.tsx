@@ -458,7 +458,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
   if (isWeb && !chauffeurOnly && authMode === 'login') {
     return (
-      <View style={styles.adminLoginPage}>
+      <View style={[styles.adminLoginPage, !adminThemeLight && styles.adminLoginPageDark]}>
         <View style={styles.adminLoginBrandPanel}>
           <View style={styles.adminLoginBrandRow}>
             <TakoLogo size="small" color="white" />
@@ -483,9 +483,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           </View>
         </View>
 
-        <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact]}>
+        <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact, !adminThemeLight && styles.adminLoginFormPanelDark]}>
           <View style={styles.adminLoginControls}>
-            <View style={styles.adminThemeControl}>
+            <View style={[styles.adminThemeControl, !adminThemeLight && styles.adminTopControlDark]}>
               <Ionicons name="sunny-outline" size={18} color="#344054" />
               <TouchableOpacity
                 style={[styles.adminThemeTrack, !adminThemeLight && styles.adminThemeTrackDark]}
@@ -495,22 +495,22 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               </TouchableOpacity>
               <Ionicons name="moon-outline" size={18} color="#071B3B" />
             </View>
-            <View style={styles.adminLanguageControl}>
-              <Text style={styles.adminLanguageText}>FR</Text>
+            <View style={[styles.adminLanguageControl, !adminThemeLight && styles.adminTopControlDark]}>
+              <Text style={[styles.adminLanguageText, !adminThemeLight && styles.adminLoginTitleDark]}>FR</Text>
               <Ionicons name="chevron-down" size={15} color="#475467" />
             </View>
           </View>
 
-          <View style={[styles.adminLoginCard, isCompactAdmin && styles.adminLoginCardCompact]}>
+          <View style={[styles.adminLoginCard, isCompactAdmin && styles.adminLoginCardCompact, !adminThemeLight && styles.adminLoginCardDark]}>
             <View style={[styles.adminShieldIcon, isCompactAdmin && styles.adminShieldIconCompact]}>
               <Ionicons name="shield-checkmark" size={40} color="#2475E8" />
               <Ionicons name="person" size={17} color="white" style={styles.adminShieldPerson} />
             </View>
-            <Text style={styles.adminLoginTitle}>Connexion administrateur</Text>
-            <Text style={[styles.adminLoginSubtitle, isCompactAdmin && styles.adminLoginSubtitleCompact]}>Connectez-vous à votre espace d’administration</Text>
+            <Text style={[styles.adminLoginTitle, !adminThemeLight && styles.adminLoginTitleDark]}>Connexion administrateur</Text>
+            <Text style={[styles.adminLoginSubtitle, isCompactAdmin && styles.adminLoginSubtitleCompact, !adminThemeLight && styles.adminLoginMutedTextDark]}>Connectez-vous à votre espace d’administration</Text>
 
-            <Text style={styles.adminLoginLabel}>Email ou téléphone</Text>
-            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact]}>
+            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>Email ou téléphone</Text>
+            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact, !adminThemeLight && styles.adminLoginFieldDark]}>
               <Ionicons name="mail-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={email}
@@ -518,12 +518,12 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                 placeholder="exemple@takotransport.online"
                 placeholderTextColor="#8B95A5"
                 autoCapitalize="none"
-                style={styles.adminLoginInput}
+                style={[styles.adminLoginInput, !adminThemeLight && styles.adminLoginInputDark]}
               />
             </View>
 
-            <Text style={styles.adminLoginLabel}>Mot de passe</Text>
-            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact]}>
+            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>Mot de passe</Text>
+            <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact, !adminThemeLight && styles.adminLoginFieldDark]}>
               <Ionicons name="lock-closed-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={password}
@@ -531,7 +531,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                 placeholder="Entrez votre mot de passe"
                 placeholderTextColor="#8B95A5"
                 secureTextEntry={!showPassword}
-                style={styles.adminLoginInput}
+                style={[styles.adminLoginInput, !adminThemeLight && styles.adminLoginInputDark]}
               />
               <TouchableOpacity onPress={() => setShowPassword((value) => !value)}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#7C8799" />
@@ -543,7 +543,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                 <View style={[styles.adminCheckbox, rememberAccess && styles.adminCheckboxActive]}>
                   {rememberAccess ? <Ionicons name="checkmark" size={15} color="white" /> : null}
                 </View>
-                <Text style={styles.adminOptionText}>Se souvenir de moi</Text>
+                <Text style={[styles.adminOptionText, !adminThemeLight && styles.adminLoginMutedTextDark]}>Se souvenir de moi</Text>
               </TouchableOpacity>
             </View>
 
@@ -559,19 +559,19 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             </TouchableOpacity>
 
             <View style={[styles.adminOrRow, isCompactAdmin && styles.adminOrRowCompact]}>
-              <View style={styles.adminOrLine} />
-              <Text style={styles.adminOrText}>ou</Text>
-              <View style={styles.adminOrLine} />
+              <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
+              <Text style={[styles.adminOrText, !adminThemeLight && styles.adminLoginMutedTextDark]}>ou</Text>
+              <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
             </View>
 
-            <TouchableOpacity style={styles.adminAccessCodeButton} activeOpacity={1}>
+            <TouchableOpacity style={[styles.adminAccessCodeButton, !adminThemeLight && styles.adminAccessCodeButtonDark]} activeOpacity={1}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#1769D2" />
               <Text style={styles.adminAccessCodeText}>Connexion avec code d’accès</Text>
             </TouchableOpacity>
 
             <View style={[styles.adminReservedRow, isCompactAdmin && styles.adminReservedRowCompact]}>
               <Ionicons name="lock-closed-outline" size={16} color="#7C8799" />
-              <Text style={styles.adminReservedText}>Accès réservé aux administrateurs autorisés</Text>
+              <Text style={[styles.adminReservedText, !adminThemeLight && styles.adminLoginMutedTextDark]}>Accès réservé aux administrateurs autorisés</Text>
             </View>
           </View>
         </View>
@@ -942,6 +942,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#F7F9FD',
     overflow: 'hidden',
   },
+  adminLoginPageDark: {
+    backgroundColor: '#07111F',
+  },
   adminLoginBrandPanel: {
     position: 'relative',
     width: '42.4%',
@@ -1043,6 +1046,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     paddingTop: 0,
   },
+  adminLoginFormPanelDark: {
+    backgroundColor: '#07111F',
+  },
   adminLoginFormPanelCompact: {
     paddingTop: 0,
   },
@@ -1053,6 +1059,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 16,
+    zIndex: 20,
+    elevation: 20,
   },
   adminThemeControl: {
     height: 42,
@@ -1068,6 +1076,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
     shadowOffset: { width: 0, height: 3 },
+  },
+  adminTopControlDark: {
+    borderColor: '#344054',
+    backgroundColor: '#111C2E',
   },
   adminThemeTrack: {
     width: 43,
@@ -1127,6 +1139,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     elevation: 7,
   },
+  adminLoginCardDark: {
+    backgroundColor: '#111C2E',
+    shadowColor: '#000000',
+    shadowOpacity: 0.32,
+  },
   adminLoginCardCompact: {
     minHeight: 0,
     height: 610,
@@ -1161,6 +1178,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
   },
+  adminLoginTitleDark: {
+    color: '#F8FAFC',
+  },
+  adminLoginMutedTextDark: {
+    color: '#AAB6C8',
+  },
   adminLoginSubtitle: {
     color: '#667085',
     fontSize: 17,
@@ -1190,6 +1213,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     marginBottom: 24,
   },
+  adminLoginFieldDark: {
+    borderColor: '#3A4960',
+    backgroundColor: '#182538',
+  },
   adminLoginFieldCompact: {
     minHeight: 48,
     marginBottom: 16,
@@ -1201,6 +1228,9 @@ const styles = StyleSheet.create({
     fontWeight: '400',
     outlineStyle: 'none',
   } as any,
+  adminLoginInputDark: {
+    color: '#F8FAFC',
+  },
   adminLoginOptions: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1271,6 +1301,9 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: '#E5EAF2',
   },
+  adminOrLineDark: {
+    backgroundColor: '#344054',
+  },
   adminOrText: {
     color: '#667085',
     fontSize: 15,
@@ -1285,6 +1318,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,
+  },
+  adminAccessCodeButtonDark: {
+    borderColor: '#3A4960',
+    backgroundColor: '#182538',
   },
   adminAccessCodeText: {
     color: '#1769D2',
