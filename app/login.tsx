@@ -545,9 +545,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                 </View>
                 <Text style={styles.adminOptionText}>Se souvenir de moi</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={startPasswordRecovery}>
-                <Text style={styles.adminForgotLink}>Mot de passe oublié ?</Text>
-              </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={styles.adminSubmitButton} disabled={isLoggingIn} activeOpacity={0.86} onPress={handleLogin}>
@@ -1044,10 +1041,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#F7F9FD',
     paddingHorizontal: 54,
-    paddingTop: 80,
+    paddingTop: 0,
   },
   adminLoginFormPanelCompact: {
-    paddingTop: 46,
+    paddingTop: 0,
   },
   adminLoginControls: {
     position: 'absolute',
@@ -1200,7 +1197,7 @@ const styles = StyleSheet.create({
   adminLoginOptions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-start',
     marginTop: -2,
     marginBottom: 28,
   },
