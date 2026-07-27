@@ -837,7 +837,7 @@ const styles = StyleSheet.create({
   driverWebLanguageText: {
     color: '#061F68',
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   driverWebAccent: {
     position: 'absolute',
@@ -878,13 +878,13 @@ const styles = StyleSheet.create({
   driverWebHeadline: {
     color: '#061F68',
     fontSize: 35,
-    fontWeight: '900',
+    fontWeight: '700',
     lineHeight: 43,
   },
   driverWebCopy: {
     color: '#5F6B7A',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '400',
     lineHeight: 25,
     marginTop: 18,
   },
@@ -929,14 +929,14 @@ const styles = StyleSheet.create({
   driverWebTitle: {
     color: '#061F68',
     fontSize: 29,
-    fontWeight: '900',
+    fontWeight: '700',
     textAlign: 'center',
     marginTop: 16,
   },
   driverWebSubtitle: {
     color: '#64748B',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '400',
     textAlign: 'center',
     marginTop: 7,
     marginBottom: 24,
@@ -944,7 +944,7 @@ const styles = StyleSheet.create({
   driverWebLabel: {
     color: '#111827',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '600',
     marginBottom: 9,
   },
   driverWebField: {
@@ -991,12 +991,12 @@ const styles = StyleSheet.create({
   driverWebOptionText: {
     color: '#5F6B7A',
     fontSize: 13,
-    fontWeight: '600',
+    fontWeight: '400',
   },
   driverWebLink: {
     color: '#0B70D1',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   driverWebSubmit: {
     minHeight: 55,
@@ -1014,7 +1014,7 @@ const styles = StyleSheet.create({
   driverWebSubmitText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '600',
   },
   driverWebDivider: {
     flexDirection: 'row',

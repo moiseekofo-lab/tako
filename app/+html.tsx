@@ -24,7 +24,7 @@ export default function Root({ children }: PropsWithChildren) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Alkatra:wght@400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Alkatra:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap"
           rel="stylesheet"
         />
         <link rel="manifest" href="/manifest.json" />
@@ -67,6 +67,7 @@ const globalStyles = `
 
   body {
     overflow: hidden;
+    font-family: Inter, Arial, sans-serif;
   }
 
   * {

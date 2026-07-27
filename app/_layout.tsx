@@ -7,7 +7,7 @@ const FONT_SCALE = 0.88;
 const APP_FONT_FAMILY = Platform.select({
   android: 'Roboto',
   ios: 'System',
-  web: 'Roboto, Arial, sans-serif',
+  web: 'Inter',
   default: 'Arial',
 });
 
