@@ -36,12 +36,13 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const params = useLocalSearchParams<{ access?: string }>();
   const chauffeurOnly = chauffeurOnlyOverride || params.access === 'chauffeur';
   const isWeb = Platform.OS === 'web';
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
   const isNarrowWeb = isWeb && width < 760;
   const [showLoginForm, setShowLoginForm] = useState(Platform.OS === 'web');
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [adminThemeLight, setAdminThemeLight] = useState(true);
   const [rememberAccess, setRememberAccess] = useState(!isWeb || chauffeurOnly);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -454,6 +455,138 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
     );
   }
 
+  if (isWeb && !chauffeurOnly && authMode === 'login') {
+    return (
+      <View style={styles.adminLoginPage}>
+        <View style={styles.adminLoginBrandPanel}>
+          <View style={styles.adminLoginBrandRow}>
+            <TakoLogo size="small" color="white" />
+            <View style={styles.adminLoginBadge}><Text style={styles.adminLoginBadgeText}>ADMIN</Text></View>
+          </View>
+
+          <View style={styles.adminLoginIntro}>
+            <View style={styles.adminWelcomePill}><Text style={styles.adminWelcomeText}>Bienvenue, administrateur</Text></View>
+            <Text style={styles.adminLoginHeadline}>Gérez <Text style={styles.adminLoginHeadlineAccent}>TaKo</Text>{'\n'}en toute simplicité</Text>
+            <Text style={styles.adminLoginCopy}>Accédez à votre tableau de bord, gérez les chauffeurs,{'\n'}les courses, les paiements et plus encore.</Text>
+          </View>
+
+          <Image
+            source={require('../assets/images/admin-login-laptop.png')}
+            resizeMode="contain"
+            style={styles.adminLoginLaptop}
+          />
+
+          <View style={styles.adminLoginCopyright}>
+            <Ionicons name="shield-checkmark-outline" size={16} color="rgba(255,255,255,0.72)" />
+            <Text style={styles.adminLoginCopyrightText}>TaKo Transport  •  Tous droits réservés 2026</Text>
+          </View>
+        </View>
+
+        <View style={styles.adminLoginFormPanel}>
+          <View style={styles.adminLoginControls}>
+            <View style={styles.adminThemeControl}>
+              <Ionicons name="sunny-outline" size={17} color="#667085" />
+              <TouchableOpacity
+                style={styles.adminThemeTrack}
+                activeOpacity={0.8}
+                onPress={() => setAdminThemeLight((value) => !value)}>
+                <View style={[styles.adminThemeThumb, !adminThemeLight && styles.adminThemeThumbDark]} />
+              </TouchableOpacity>
+              <Ionicons name="moon-outline" size={17} color="#667085" />
+            </View>
+            <View style={styles.adminLanguageControl}>
+              <Text style={styles.adminLanguageText}>FR</Text>
+              <Ionicons name="chevron-down" size={15} color="#475467" />
+            </View>
+          </View>
+
+          <View
+            style={[
+              styles.adminLoginCard,
+              height < 1000 && {
+                transform: [{ scale: Math.max(0.78, (height - 110) / 826) }],
+              },
+            ]}>
+            <View style={styles.adminShieldIcon}>
+              <Ionicons name="shield-checkmark" size={40} color="#2475E8" />
+              <Ionicons name="person" size={17} color="white" style={styles.adminShieldPerson} />
+            </View>
+            <Text style={styles.adminLoginTitle}>Connexion administrateur</Text>
+            <Text style={styles.adminLoginSubtitle}>Connectez-vous à votre espace d’administration</Text>
+
+            <Text style={styles.adminLoginLabel}>Email ou téléphone</Text>
+            <View style={styles.adminLoginField}>
+              <Ionicons name="mail-outline" size={21} color="#8B95A5" />
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="exemple@takotransport.online"
+                placeholderTextColor="#8B95A5"
+                autoCapitalize="none"
+                style={styles.adminLoginInput}
+              />
+            </View>
+
+            <Text style={styles.adminLoginLabel}>Mot de passe</Text>
+            <View style={styles.adminLoginField}>
+              <Ionicons name="lock-closed-outline" size={21} color="#8B95A5" />
+              <TextInput
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Entrez votre mot de passe"
+                placeholderTextColor="#8B95A5"
+                secureTextEntry={!showPassword}
+                style={styles.adminLoginInput}
+              />
+              <TouchableOpacity onPress={() => setShowPassword((value) => !value)}>
+                <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#7C8799" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.adminLoginOptions}>
+              <TouchableOpacity style={styles.adminRemember} onPress={() => setRememberAccess((value) => !value)}>
+                <View style={[styles.adminCheckbox, rememberAccess && styles.adminCheckboxActive]}>
+                  {rememberAccess ? <Ionicons name="checkmark" size={15} color="white" /> : null}
+                </View>
+                <Text style={styles.adminOptionText}>Se souvenir de moi</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={startPasswordRecovery}>
+                <Text style={styles.adminForgotLink}>Mot de passe oublié ?</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity style={styles.adminSubmitButton} disabled={isLoggingIn} activeOpacity={0.86} onPress={handleLogin}>
+              {isLoggingIn ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <>
+                  <Ionicons name="arrow-forward" size={22} color="white" />
+                  <Text style={styles.adminSubmitText}>Se connecter</Text>
+                </>
+              )}
+            </TouchableOpacity>
+
+            <View style={styles.adminOrRow}>
+              <View style={styles.adminOrLine} />
+              <Text style={styles.adminOrText}>ou</Text>
+              <View style={styles.adminOrLine} />
+            </View>
+
+            <TouchableOpacity style={styles.adminAccessCodeButton} activeOpacity={1}>
+              <Ionicons name="shield-checkmark-outline" size={20} color="#1769D2" />
+              <Text style={styles.adminAccessCodeText}>Connexion avec code d’accès</Text>
+            </TouchableOpacity>
+
+            <View style={styles.adminReservedRow}>
+              <Ionicons name="lock-closed-outline" size={16} color="#7C8799" />
+              <Text style={styles.adminReservedText}>Accès réservé aux administrateurs autorisés</Text>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <ImageBackground
       source={require('../assets/images/login-background.jpeg')}
@@ -810,6 +943,329 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 }
 
 const styles = StyleSheet.create({
+  adminLoginPage: {
+    flex: 1,
+    minHeight: '100%',
+    flexDirection: 'row',
+    backgroundColor: '#F7F9FD',
+    overflow: 'hidden',
+  },
+  adminLoginBrandPanel: {
+    position: 'relative',
+    width: '42.4%',
+    minWidth: 500,
+    height: '100%',
+    overflow: 'hidden',
+    backgroundColor: '#082662',
+    paddingHorizontal: 56,
+    paddingTop: 54,
+    paddingBottom: 46,
+  },
+  adminLoginBrandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+  },
+  adminLoginBadge: {
+    height: 33,
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1D57C2',
+    paddingHorizontal: 13,
+  },
+  adminLoginBadgeText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  adminLoginIntro: {
+    marginTop: 98,
+  },
+  adminWelcomePill: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(58,117,226,0.16)',
+    paddingHorizontal: 18,
+    marginBottom: 26,
+  },
+  adminWelcomeText: {
+    color: '#68A3FF',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  adminLoginHeadline: {
+    color: 'white',
+    fontSize: 39,
+    fontWeight: '700',
+    lineHeight: 50,
+  },
+  adminLoginHeadlineAccent: {
+    color: '#FFC35C',
+  },
+  adminLoginCopy: {
+    color: 'rgba(255,255,255,0.78)',
+    fontSize: 17,
+    fontWeight: '400',
+    lineHeight: 29,
+    marginTop: 23,
+  },
+  adminLoginLaptop: {
+    position: 'absolute',
+    left: -18,
+    bottom: 142,
+    width: '94%',
+    height: 360,
+  },
+  adminLoginCopyright: {
+    position: 'absolute',
+    left: 56,
+    bottom: 45,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  adminLoginCopyrightText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  adminLoginFormPanel: {
+    position: 'relative',
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F7F9FD',
+    paddingHorizontal: 54,
+    paddingTop: 80,
+  },
+  adminLoginControls: {
+    position: 'absolute',
+    top: 50,
+    right: 36,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  adminThemeControl: {
+    height: 40,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#E4E9F2',
+    backgroundColor: 'white',
+    paddingHorizontal: 12,
+  },
+  adminThemeTrack: {
+    width: 43,
+    height: 23,
+    borderRadius: 12,
+    justifyContent: 'center',
+    backgroundColor: '#E8ECF3',
+    paddingHorizontal: 3,
+  },
+  adminThemeThumb: {
+    width: 17,
+    height: 17,
+    borderRadius: 9,
+    backgroundColor: 'white',
+    shadowColor: '#344054',
+    shadowOpacity: 0.16,
+    shadowRadius: 3,
+    shadowOffset: { width: 0, height: 1 },
+  },
+  adminThemeThumbDark: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#667085',
+  },
+  adminLanguageControl: {
+    minWidth: 78,
+    height: 40,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 14,
+    borderWidth: 1,
+    borderColor: '#E4E9F2',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+  },
+  adminLanguageText: {
+    color: '#344054',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  adminLoginCard: {
+    width: 600,
+    maxWidth: '100%',
+    minHeight: 826,
+    borderRadius: 17,
+    backgroundColor: 'white',
+    paddingHorizontal: 47,
+    paddingTop: 52,
+    paddingBottom: 38,
+    shadowColor: '#061F68',
+    shadowOpacity: 0.1,
+    shadowRadius: 26,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 7,
+  },
+  adminShieldIcon: {
+    position: 'relative',
+    alignSelf: 'center',
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EAF2FF',
+  },
+  adminShieldPerson: {
+    position: 'absolute',
+    top: 35,
+    left: 36,
+  },
+  adminLoginTitle: {
+    color: '#071B3B',
+    fontSize: 28,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginTop: 20,
+  },
+  adminLoginSubtitle: {
+    color: '#667085',
+    fontSize: 15,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 43,
+  },
+  adminLoginLabel: {
+    color: '#101828',
+    fontSize: 13,
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  adminLoginField: {
+    minHeight: 52,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 13,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#D7DEE9',
+    paddingHorizontal: 15,
+    marginBottom: 24,
+  },
+  adminLoginInput: {
+    flex: 1,
+    color: '#101828',
+    fontSize: 15,
+    fontWeight: '400',
+    outlineStyle: 'none',
+  } as any,
+  adminLoginOptions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: -2,
+    marginBottom: 28,
+  },
+  adminRemember: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  adminCheckbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#AAB5C4',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  adminCheckboxActive: {
+    borderColor: '#2475E8',
+    backgroundColor: '#2475E8',
+  },
+  adminOptionText: {
+    color: '#596579',
+    fontSize: 14,
+    fontWeight: '400',
+  },
+  adminForgotLink: {
+    color: '#1769D2',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  adminSubmitButton: {
+    minHeight: 54,
+    borderRadius: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 12,
+    backgroundColor: '#2475E8',
+    shadowColor: '#2475E8',
+    shadowOpacity: 0.23,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
+  adminSubmitText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  adminOrRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 18,
+    marginVertical: 30,
+  },
+  adminOrLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5EAF2',
+  },
+  adminOrText: {
+    color: '#667085',
+    fontSize: 13,
+    fontWeight: '400',
+  },
+  adminAccessCodeButton: {
+    minHeight: 52,
+    borderRadius: 7,
+    borderWidth: 1,
+    borderColor: '#D7DEE9',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  adminAccessCodeText: {
+    color: '#1769D2',
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  adminReservedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 9,
+    marginTop: 38,
+  },
+  adminReservedText: {
+    color: '#7C8799',
+    fontSize: 13,
+    fontWeight: '400',
+  },
   driverWebPage: {
     flex: 1,
     minHeight: '100%',
