@@ -5,6 +5,10 @@ services:
     rootDir: public-site
     staticPublishPath: .
     autoDeploy: true
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
 
   - type: web
     name: tako-1
