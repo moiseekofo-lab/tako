@@ -298,6 +298,36 @@
         filter: drop-shadow(0 28px 38px rgba(8, 18, 46, 0.18));
       }
 
+      .store-badges {
+        position: absolute;
+        left: 1%;
+        bottom: 0;
+        z-index: 3;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none;
+        user-select: none;
+      }
+
+      .store-badge {
+        width: 128px;
+        height: 42px;
+        padding: 5px 10px;
+        border: 1px solid #222;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        color: #fff;
+        background: #050505;
+      }
+
+      .store-badge i { width: 25px; font-size: 25px; text-align: center; }
+      .store-badge-copy { display: flex; flex-direction: column; line-height: 1; }
+      .store-badge-small { font-size: 8px; font-weight: 500; margin-bottom: 3px; }
+      .store-badge-name { font-size: 14px; font-weight: 600; white-space: nowrap; }
+
       .phone {
         position: absolute;
         left: 14%;
@@ -529,6 +559,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 34px; }
         .visual { min-height: 430px; }
         .hero-product-visual { width: min(720px, 100%); }
+        .store-badges { left: 8%; }
         .feature-grid { grid-template-columns: repeat(2, 1fr); }
         .feature-card { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; }
         .feature-card:last-child { border-bottom: 0; }
@@ -548,6 +579,10 @@
         .solution-card .solution-illustration { display: none; }
         .visual { min-height: 310px; }
         .hero-product-visual { width: 112%; }
+        .store-badges { left: 50%; bottom: -12px; transform: translateX(-50%); }
+        .store-badge { width: 116px; height: 38px; padding-inline: 8px; }
+        .store-badge i { font-size: 21px; }
+        .store-badge-name { font-size: 12px; }
         .footer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .footer-brand { grid-column: 1 / -1; }
       }
@@ -594,6 +629,22 @@
               src="/tako-hero-products-final.png"
               alt="Application TaKo, carte NFC et terminal de paiement QR Code"
             />
+            <div class="store-badges" aria-label="Applications bientôt disponibles">
+              <div class="store-badge">
+                <i class="fa-brands fa-apple" aria-hidden="true"></i>
+                <span class="store-badge-copy">
+                  <span class="store-badge-small">Télécharger dans</span>
+                  <span class="store-badge-name">App Store</span>
+                </span>
+              </div>
+              <div class="store-badge">
+                <i class="fa-brands fa-google-play" aria-hidden="true"></i>
+                <span class="store-badge-copy">
+                  <span class="store-badge-small">DISPONIBLE SUR</span>
+                  <span class="store-badge-name">Google Play</span>
+                </span>
+              </div>
+            </div>
           </div>
         </section>
 
