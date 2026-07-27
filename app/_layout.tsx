@@ -81,8 +81,9 @@ function AdminDesktopGate({ children }: { children: ReactNode }) {
     Platform.OS === 'web' &&
     browserReady &&
     typeof window !== 'undefined' &&
-    window.location.pathname === '/login' &&
-    new URLSearchParams(window.location.search).get('access') === 'chauffeur';
+    (window.location.pathname === '/driver-login' ||
+      (window.location.pathname === '/login' &&
+        new URLSearchParams(window.location.search).get('access') === 'chauffeur'));
 
   if (isAdminDomain && !isDriverLogin && (isMobileDevice || width < ADMIN_DESKTOP_MIN_WIDTH)) {
     return (
@@ -119,6 +120,7 @@ export default function Layout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="login" />
+        <Stack.Screen name="driver-login" />
         <Stack.Screen name="register" />
         <Stack.Screen name="home" />
         <Stack.Screen name="admin" />

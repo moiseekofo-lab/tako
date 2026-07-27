@@ -31,10 +31,10 @@ const SHEET_DISMISS_Y = 560;
 const SHEET_DISMISS_THRESHOLD = 120;
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-export default function Login() {
+export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnlyOverride?: boolean } = {}) {
   const router = useRouter();
   const params = useLocalSearchParams<{ access?: string }>();
-  const chauffeurOnly = params.access === 'chauffeur';
+  const chauffeurOnly = chauffeurOnlyOverride || params.access === 'chauffeur';
   const isWeb = Platform.OS === 'web';
   const { width } = useWindowDimensions();
   const isNarrowWeb = isWeb && width < 760;
