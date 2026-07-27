@@ -43,6 +43,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const [authMode, setAuthMode] = useState<'login' | 'forgotContact' | 'forgotCode' | 'newPassword'>('login');
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showAdminLanguageMenu, setShowAdminLanguageMenu] = useState(false);
   const adminThemeLight = true;
   const [rememberAccess, setRememberAccess] = useState(!isWeb || chauffeurOnly);
   const [email, setEmail] = useState('');
@@ -69,8 +70,10 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
         }
       });
     }
-    AsyncStorage.getItem(LANGUAGE_KEY).then((storedLanguage) => {
-      if (storedLanguage === 'fr' || storedLanguage === 'en' || storedLanguage === 'es') {
+    const storedWebLanguage = isWeb && typeof window !== 'undefined' ? window.sessionStorage.getItem(LANGUAGE_KEY) : null;
+    const languagePromise = storedWebLanguage ? Promise.resolve(storedWebLanguage) : AsyncStorage.getItem(LANGUAGE_KEY);
+    languagePromise.then((storedLanguage) => {
+      if (storedLanguage === 'fr' || storedLanguage === 'en' || storedLanguage === 'pt') {
         setGlobalLanguage(storedLanguage);
       }
     });
@@ -143,8 +146,63 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
   const changeLanguage = (nextLanguage: Language) => {
     setGlobalLanguage(nextLanguage);
-    AsyncStorage.setItem(LANGUAGE_KEY, nextLanguage).catch(() => {});
+    if (isWeb && typeof window !== 'undefined') {
+      window.sessionStorage.setItem(LANGUAGE_KEY, nextLanguage);
+    } else {
+      AsyncStorage.setItem(LANGUAGE_KEY, nextLanguage).catch(() => {});
+    }
   };
+
+  const adminText = {
+    fr: {
+      welcome: 'Bienvenue, administrateur',
+      headlineStart: 'Gérez',
+      headlineEnd: 'en toute simplicité',
+      copy: 'Accédez à votre tableau de bord, gérez les chauffeurs,\nles courses, les paiements et plus encore.',
+      title: 'Connexion administrateur',
+      subtitle: "Connectez-vous à votre espace d’administration",
+      email: 'Email ou téléphone',
+      emailPlaceholder: 'Saisissez votre email ou téléphone',
+      password: 'Mot de passe',
+      passwordPlaceholder: 'Entrez votre mot de passe',
+      connect: 'Se connecter',
+      or: 'ou',
+      accessCode: "Connexion avec code d’accès",
+      reserved: 'Accès réservé aux administrateurs autorisés',
+    },
+    en: {
+      welcome: 'Welcome, administrator',
+      headlineStart: 'Manage',
+      headlineEnd: 'with complete simplicity',
+      copy: 'Access your dashboard and manage drivers,\ntrips, payments and much more.',
+      title: 'Administrator login',
+      subtitle: 'Sign in to your administration area',
+      email: 'Email or phone',
+      emailPlaceholder: 'Enter your email or phone',
+      password: 'Password',
+      passwordPlaceholder: 'Enter your password',
+      connect: 'Sign in',
+      or: 'or',
+      accessCode: 'Sign in with access code',
+      reserved: 'Access restricted to authorized administrators',
+    },
+    pt: {
+      welcome: 'Bem-vindo, administrador',
+      headlineStart: 'Gerencie',
+      headlineEnd: 'com toda simplicidade',
+      copy: 'Acesse o painel e gerencie motoristas,\nviagens, pagamentos e muito mais.',
+      title: 'Login do administrador',
+      subtitle: 'Entre no seu espaço de administração',
+      email: 'E-mail ou telefone',
+      emailPlaceholder: 'Digite seu e-mail ou telefone',
+      password: 'Senha',
+      passwordPlaceholder: 'Digite sua senha',
+      connect: 'Entrar',
+      or: 'ou',
+      accessCode: 'Entrar com código de acesso',
+      reserved: 'Acesso reservado a administradores autorizados',
+    },
+  }[language];
 
   const getNameFromEmail = (value: string) => {
     const namePart = value.split('@')[0].split(/[._-]/)[0].trim();
@@ -466,9 +524,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           </View>
 
           <View style={[styles.adminLoginIntro, isCompactAdmin && styles.adminLoginIntroCompact]}>
-            <View style={styles.adminWelcomePill}><Text style={styles.adminWelcomeText}>Bienvenue, administrateur</Text></View>
-            <Text style={styles.adminLoginHeadline}>Gérez <Text style={styles.adminLoginHeadlineAccent}>TaKo</Text>{'\n'}en toute simplicité</Text>
-            <Text style={styles.adminLoginCopy}>Accédez à votre tableau de bord, gérez les chauffeurs,{'\n'}les courses, les paiements et plus encore.</Text>
+            <View style={styles.adminWelcomePill}><Text style={styles.adminWelcomeText}>{adminText.welcome}</Text></View>
+            <Text style={styles.adminLoginHeadline}>{adminText.headlineStart} <Text style={styles.adminLoginHeadlineAccent}>TaKo</Text>{'\n'}{adminText.headlineEnd}</Text>
+            <Text style={styles.adminLoginCopy}>{adminText.copy}</Text>
           </View>
 
           <Image
@@ -485,10 +543,30 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
         <View style={[styles.adminLoginFormPanel, isCompactAdmin && styles.adminLoginFormPanelCompact, !adminThemeLight && styles.adminLoginFormPanelDark]}>
           <View style={styles.adminLoginControls}>
-            <View style={[styles.adminLanguageControl, !adminThemeLight && styles.adminTopControlDark]}>
-              <Text style={[styles.adminLanguageText, !adminThemeLight && styles.adminLoginTitleDark]}>FR</Text>
+            <TouchableOpacity
+              style={[styles.adminLanguageControl, !adminThemeLight && styles.adminTopControlDark]}
+              activeOpacity={0.8}
+              onPress={() => setShowAdminLanguageMenu((value) => !value)}>
+              <Text style={[styles.adminLanguageText, !adminThemeLight && styles.adminLoginTitleDark]}>{language.toUpperCase()}</Text>
               <Ionicons name="chevron-down" size={15} color="#475467" />
-            </View>
+            </TouchableOpacity>
+            {showAdminLanguageMenu ? (
+              <View style={styles.adminLanguageMenu}>
+                {languageOptions.map((item) => (
+                  <TouchableOpacity
+                    key={item.code}
+                    style={[styles.adminLanguageMenuItem, language === item.code && styles.adminLanguageMenuItemActive]}
+                    onPress={() => {
+                      changeLanguage(item.code);
+                      setShowAdminLanguageMenu(false);
+                    }}>
+                    <Text style={styles.adminLanguageMenuFlag}>{item.flag}</Text>
+                    <Text style={styles.adminLanguageMenuLabel}>{item.label}</Text>
+                    {language === item.code ? <Ionicons name="checkmark" size={17} color="#2475E8" /> : null}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : null}
           </View>
 
           <View style={[styles.adminLoginCard, isCompactAdmin && styles.adminLoginCardCompact, !adminThemeLight && styles.adminLoginCardDark]}>
@@ -496,44 +574,39 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               <Ionicons name="shield-checkmark" size={40} color="#2475E8" />
               <Ionicons name="person" size={17} color="white" style={styles.adminShieldPerson} />
             </View>
-            <Text style={[styles.adminLoginTitle, !adminThemeLight && styles.adminLoginTitleDark]}>Connexion administrateur</Text>
-            <Text style={[styles.adminLoginSubtitle, isCompactAdmin && styles.adminLoginSubtitleCompact, !adminThemeLight && styles.adminLoginMutedTextDark]}>Connectez-vous à votre espace d’administration</Text>
+            <Text style={[styles.adminLoginTitle, !adminThemeLight && styles.adminLoginTitleDark]}>{adminText.title}</Text>
+            <Text style={[styles.adminLoginSubtitle, isCompactAdmin && styles.adminLoginSubtitleCompact, !adminThemeLight && styles.adminLoginMutedTextDark]}>{adminText.subtitle}</Text>
 
-            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>Email ou téléphone</Text>
+            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>{adminText.email}</Text>
             <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact, !adminThemeLight && styles.adminLoginFieldDark]}>
               <Ionicons name="mail-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="exemple@takotransport.online"
+                placeholder={adminText.emailPlaceholder}
                 placeholderTextColor="#8B95A5"
                 autoCapitalize="none"
+                autoComplete="off"
+                textContentType="none"
                 style={[styles.adminLoginInput, !adminThemeLight && styles.adminLoginInputDark]}
               />
             </View>
 
-            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>Mot de passe</Text>
+            <Text style={[styles.adminLoginLabel, !adminThemeLight && styles.adminLoginTitleDark]}>{adminText.password}</Text>
             <View style={[styles.adminLoginField, isCompactAdmin && styles.adminLoginFieldCompact, !adminThemeLight && styles.adminLoginFieldDark]}>
               <Ionicons name="lock-closed-outline" size={21} color="#8B95A5" />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Entrez votre mot de passe"
+                placeholder={adminText.passwordPlaceholder}
                 placeholderTextColor="#8B95A5"
                 secureTextEntry={!showPassword}
+                autoComplete="off"
+                textContentType="none"
                 style={[styles.adminLoginInput, !adminThemeLight && styles.adminLoginInputDark]}
               />
               <TouchableOpacity onPress={() => setShowPassword((value) => !value)}>
                 <Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={22} color="#7C8799" />
-              </TouchableOpacity>
-            </View>
-
-            <View style={[styles.adminLoginOptions, isCompactAdmin && styles.adminLoginOptionsCompact]}>
-              <TouchableOpacity style={styles.adminRemember} onPress={() => setRememberAccess((value) => !value)}>
-                <View style={[styles.adminCheckbox, rememberAccess && styles.adminCheckboxActive]}>
-                  {rememberAccess ? <Ionicons name="checkmark" size={15} color="white" /> : null}
-                </View>
-                <Text style={[styles.adminOptionText, !adminThemeLight && styles.adminLoginMutedTextDark]}>Se souvenir de moi</Text>
               </TouchableOpacity>
             </View>
 
@@ -543,25 +616,25 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               ) : (
                 <>
                   <Ionicons name="arrow-forward" size={22} color="white" />
-                  <Text style={styles.adminSubmitText}>Se connecter</Text>
+                  <Text style={styles.adminSubmitText}>{adminText.connect}</Text>
                 </>
               )}
             </TouchableOpacity>
 
             <View style={[styles.adminOrRow, isCompactAdmin && styles.adminOrRowCompact]}>
               <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
-              <Text style={[styles.adminOrText, !adminThemeLight && styles.adminLoginMutedTextDark]}>ou</Text>
+              <Text style={[styles.adminOrText, !adminThemeLight && styles.adminLoginMutedTextDark]}>{adminText.or}</Text>
               <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
             </View>
 
             <TouchableOpacity style={[styles.adminAccessCodeButton, !adminThemeLight && styles.adminAccessCodeButtonDark]} activeOpacity={1}>
               <Ionicons name="shield-checkmark-outline" size={20} color="#1769D2" />
-              <Text style={styles.adminAccessCodeText}>Connexion avec code d’accès</Text>
+              <Text style={styles.adminAccessCodeText}>{adminText.accessCode}</Text>
             </TouchableOpacity>
 
             <View style={[styles.adminReservedRow, isCompactAdmin && styles.adminReservedRowCompact]}>
               <Ionicons name="lock-closed-outline" size={16} color="#7C8799" />
-              <Text style={[styles.adminReservedText, !adminThemeLight && styles.adminLoginMutedTextDark]}>Accès réservé aux administrateurs autorisés</Text>
+              <Text style={[styles.adminReservedText, !adminThemeLight && styles.adminLoginMutedTextDark]}>{adminText.reserved}</Text>
             </View>
           </View>
         </View>
@@ -1113,6 +1186,41 @@ const styles = StyleSheet.create({
     color: '#344054',
     fontSize: 15,
     fontWeight: '600',
+  },
+  adminLanguageMenu: {
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    width: 190,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#E4E9F2',
+    backgroundColor: 'white',
+    paddingVertical: 7,
+    shadowColor: '#071B3B',
+    shadowOpacity: 0.14,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 7 },
+    elevation: 25,
+  },
+  adminLanguageMenuItem: {
+    minHeight: 43,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: 13,
+  },
+  adminLanguageMenuItemActive: {
+    backgroundColor: '#EEF4FF',
+  },
+  adminLanguageMenuFlag: {
+    fontSize: 18,
+  },
+  adminLanguageMenuLabel: {
+    flex: 1,
+    color: '#344054',
+    fontSize: 14,
+    fontWeight: '500',
   },
   adminLoginCard: {
     width: 520,

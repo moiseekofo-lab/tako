@@ -34,6 +34,7 @@ const TAKO_ACTION = '#139DFF';
 const TAKO_GREEN = '#09D457';
 const PAGE_BG = '#F5F8FF';
 const ADMIN_SESSION_KEY = 'tako:adminSession';
+const LANGUAGE_KEY = 'tako:language';
 const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
       overflowY: 'auto',
@@ -77,6 +78,24 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
   { key: 'audit', label: 'Journal d’activité', icon: 'list-outline' },
   { key: 'settings', label: 'Paramètres', icon: 'settings-outline' },
 ];
+
+const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, string>> = {
+  fr: Object.fromEntries(navItems.map((item) => [item.key, item.label])) as Record<AdminSection, string>,
+  en: {
+    dashboard: 'Dashboard', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
+    nfcCards: 'NFC cards', transactions: 'Transactions', recharges: 'Top-ups',
+    payouts: 'Payouts', treasury: 'Treasury', reconciliation: 'Reconciliation',
+    claims: 'Claims', notifications: 'Notifications', reports: 'Reports',
+    roles: 'Administrators and roles', audit: 'Activity log', settings: 'Settings',
+  },
+  pt: {
+    dashboard: 'Painel', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
+    nfcCards: 'Cartões NFC', transactions: 'Transações', recharges: 'Recargas',
+    payouts: 'Pagamentos', treasury: 'Tesouraria', reconciliation: 'Reconciliação',
+    claims: 'Reclamações', notifications: 'Notificações', reports: 'Relatórios',
+    roles: 'Administradores e funções', audit: 'Registo de atividades', settings: 'Definições',
+  },
+};
 
 type ModuleDefinition = {
   title: string;
@@ -172,14 +191,25 @@ export default function Admin() {
   const { width } = useWindowDimensions();
   const isNarrow = width < 760;
   const currentUser = useStore((state: any) => state.currentUser);
+  const language = useStore((state: any) => state.language) as 'fr' | 'en' | 'pt';
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const clearSession = useStore((state: any) => state.clearSession);
+  const setLanguage = useStore((state: any) => state.setLanguage);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const notifications = useStore((state: any) => state.notifications) as TransactionNotification[];
   const balance = useStore((state: any) => state.balance);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      const storedLanguage = window.sessionStorage.getItem(LANGUAGE_KEY);
+      if (storedLanguage === 'fr' || storedLanguage === 'en' || storedLanguage === 'pt') {
+        setLanguage(storedLanguage);
+      }
+    }
+  }, [setLanguage]);
   const [clientId, setClientId] = useState('');
   const [rechargeClientId, setRechargeClientId] = useState(String(params.clientId || ''));
   const [rechargeAmount, setRechargeAmount] = useState('');
@@ -613,6 +643,10 @@ export default function Admin() {
     setSelectedClient(null);
     setClientId('');
     await AsyncStorage.removeItem(ADMIN_SESSION_KEY);
+    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      window.sessionStorage.removeItem(LANGUAGE_KEY);
+    }
+    setLanguage('fr');
     clearSession();
     router.replace('/login' as any);
   };
@@ -1057,7 +1091,7 @@ export default function Admin() {
                 activeOpacity={0.82}
                 onPress={() => setActiveSection(item.key)}>
                 <Ionicons name={item.icon} size={22} color={activeSection === item.key ? TAKO_BLUE : 'white'} />
-                <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{item.label}</Text>
+                <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{adminNavTranslations[language][item.key]}</Text>
               </TouchableOpacity>
             ))}
           </ScrollView>
@@ -1079,7 +1113,7 @@ export default function Admin() {
           <View style={[styles.topBar, isNarrow && styles.mobileTopBar]}>
             <View>
               <Text style={styles.kicker}>Administration TaKo</Text>
-              <Text style={styles.title}>{navItems.find((item) => item.key === activeSection)?.label || 'Tableau de bord'}</Text>
+              <Text style={styles.title}>{adminNavTranslations[language][activeSection]}</Text>
               <Text style={styles.subtitle}>
                 {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : 'Gestion et suivi des opérations.'}
               </Text>

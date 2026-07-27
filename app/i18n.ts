@@ -1,9 +1,9 @@
-export type Language = 'fr' | 'en' | 'es';
+export type Language = 'fr' | 'en' | 'pt';
 
 export const languageOptions: { code: Language; flag: string; label: string }[] = [
   { code: 'fr', flag: '🇫🇷', label: 'Français' },
   { code: 'en', flag: '🇺🇸', label: 'English' },
-  { code: 'es', flag: '🇪🇸', label: 'Español' },
+  { code: 'pt', flag: '🇵🇹', label: 'Português' },
 ];
 
 export const translations = {
@@ -225,7 +225,7 @@ export const translations = {
     nfcAccepted: 'NFC payment accepted',
     nfcMessage: (amount: number) => `${amount} FC paid with the NFC card`,
   },
-  es: {
+  pt: {
     morning: 'Buenos días',
     evening: 'Buenas noches',
     defaultName: 'querido cliente',

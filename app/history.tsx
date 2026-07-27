@@ -20,7 +20,7 @@ export default function History() {
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const trips = useStore((state: any) => state.trips) as TripHistoryItem[];
   const text = translations[language];
-  const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
+  const dateLocale = language === 'fr' ? 'fr-FR' : language === 'pt' ? 'pt-PT' : 'en-US';
   const [refreshing, setRefreshing] = useState(false);
 
   const refreshPage = () => {

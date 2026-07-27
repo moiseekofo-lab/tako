@@ -66,7 +66,7 @@ export default function Home() {
 
     return cleanName.split(/\s+/)[0];
   }, [currentUser?.fullName, text.client]);
-  const dateLocale = language === 'fr' ? 'fr-FR' : language === 'es' ? 'es-ES' : 'en-US';
+  const dateLocale = language === 'fr' ? 'fr-FR' : language === 'pt' ? 'pt-PT' : 'en-US';
   const clientDate = now.toLocaleDateString(dateLocale, {
     day: '2-digit',
     month: '2-digit',
