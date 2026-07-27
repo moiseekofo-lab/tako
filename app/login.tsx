@@ -909,6 +909,7 @@ const styles = StyleSheet.create({
     shadowRadius: 30,
     shadowOffset: { width: 0, height: 12 },
     elevation: 8,
+    transform: [{ translateY: -32 }],
   },
   driverWebCardNarrow: {
     width: '100%',
@@ -916,6 +917,7 @@ const styles = StyleSheet.create({
     minHeight: 0,
     paddingHorizontal: 24,
     paddingVertical: 30,
+    transform: [{ translateY: 0 }],
   },
   driverWebUserIcon: {
     alignSelf: 'center',
