@@ -132,7 +132,7 @@ export default function Agent() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
@@ -236,21 +236,22 @@ export default function Agent() {
           )}
         </View>
 
-        <View style={styles.bottomNavigation}>
-          <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(false)}>
-            <Ionicons name="home-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Accueil</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(true)}>
-            <Ionicons name="receipt-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Transactions</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => router.push('/agent-recharge-menu' as any)}>
-            <View style={styles.activeNavIcon}><MaterialCommunityIcons name="credit-card-check-outline" size={22} color="white" /></View><Text style={styles.bottomNavTextActive}>Actions</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={openMenu}>
-            <Ionicons name="person-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Profil</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
+
+      <View style={styles.bottomNavigation}>
+        <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(false)}>
+          <Ionicons name="home-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Accueil</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => setShowAllTransactions(true)}>
+          <Ionicons name="receipt-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Transactions</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={() => router.push('/agent-recharge-menu' as any)}>
+          <View style={styles.activeNavIcon}><MaterialCommunityIcons name="credit-card-check-outline" size={22} color="white" /></View><Text style={styles.bottomNavTextActive}>Actions</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.8} onPress={openMenu}>
+          <Ionicons name="person-outline" size={23} color="#71809C" /><Text style={styles.bottomNavText}>Profil</Text>
+        </TouchableOpacity>
+      </View>
 
       {menuOpen ? (
         <View style={styles.menuLayer}>
@@ -886,7 +887,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#E5EBF5',
-    marginTop: 8,
+    marginTop: 6,
+    marginHorizontal: 18,
+    marginBottom: 2,
     paddingHorizontal: 12,
     shadowColor: '#061F68',
     shadowOpacity: 0.08,
