@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Animated, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TakoLogo } from '../components/tako-logo';
 import { getAgentAccount } from '../services/api';
 import { useStore } from './store';
@@ -131,10 +132,11 @@ export default function Agent() {
   };
 
   return (
-    <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <SafeAreaView style={styles.screen} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <TakoLogo />
+          <View style={styles.agentLogo}><TakoLogo /></View>
           <TouchableOpacity
             style={styles.menuButton}
             activeOpacity={0.85}
@@ -314,7 +316,8 @@ export default function Agent() {
           </Animated.View>
         </View>
       ) : null}
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -328,20 +331,27 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 920,
     alignSelf: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 24,
-    paddingBottom: 12,
+    paddingHorizontal: 18,
+    paddingTop: 6,
+    paddingBottom: 8,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 10,
+  },
+  agentLogo: {
+    width: 190,
+    height: 52,
+    justifyContent: 'center',
+    transform: [{ scale: 0.82 }],
+    transformOrigin: 'left center',
   },
   menuButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 11,
+    width: 38,
+    height: 38,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#BBDFFF',
     alignItems: 'center',
@@ -606,26 +616,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#E7F0FF',
     paddingHorizontal: 11,
     paddingVertical: 5,
-    marginBottom: 10,
+    marginBottom: 7,
   },
   title: {
     color: TAKO_BLUE,
-    fontSize: 27,
+    fontSize: 24,
     fontWeight: '900',
     marginBottom: 5,
   },
   subtitle: {
     color: '#5C667A',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    lineHeight: 18,
-    marginBottom: 14,
+    lineHeight: 16,
+    marginBottom: 10,
   },
   agentBalanceCard: {
     borderRadius: 20,
     backgroundColor: '#062379',
-    padding: 16,
-    marginBottom: 16,
+    padding: 13,
+    marginBottom: 12,
     shadowColor: '#061F68',
     shadowOpacity: 0.16,
     shadowRadius: 18,
@@ -689,7 +699,7 @@ const styles = StyleSheet.create({
   agentCardDivider: {
     height: 1,
     backgroundColor: 'rgba(255,255,255,0.2)',
-    marginVertical: 12,
+    marginVertical: 9,
   },
   agentInfoRow: {
     flexDirection: 'row',
@@ -727,12 +737,12 @@ const styles = StyleSheet.create({
   quickActions: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 16,
+    marginBottom: 12,
   },
   quickActionCard: {
     flex: 1,
     minWidth: 0,
-    minHeight: 82,
+    minHeight: 76,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -741,7 +751,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#E5EBF5',
     paddingHorizontal: 9,
-    paddingVertical: 8,
+    paddingVertical: 6,
     shadowColor: '#061F68',
     shadowOpacity: 0.07,
     shadowRadius: 16,
@@ -822,7 +832,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   transactionRow: {
-    minHeight: 58,
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
@@ -868,7 +878,7 @@ const styles = StyleSheet.create({
     color: '#FF3347',
   },
   bottomNavigation: {
-    minHeight: 72,
+    minHeight: 64,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
@@ -876,7 +886,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#E5EBF5',
-    marginTop: 12,
+    marginTop: 8,
     paddingHorizontal: 12,
     shadowColor: '#061F68',
     shadowOpacity: 0.08,
