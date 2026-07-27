@@ -214,7 +214,7 @@
         align-items: center;
         gap: 42px;
         min-height: 420px;
-        padding: 48px 0 72px;
+        padding: 48px 0 86px;
       }
 
       .hero::after {
@@ -300,13 +300,13 @@
 
       .store-badges {
         position: absolute;
-        left: -5%;
-        bottom: -28px;
-        width: 58%;
+        left: 0;
+        bottom: -42px;
+        width: auto;
         z-index: 3;
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: flex-start;
         gap: 10px;
         pointer-events: none;
         user-select: none;
@@ -562,7 +562,7 @@
         .hero { grid-template-columns: 1fr; padding-top: 34px; }
         .visual { min-height: 430px; }
         .hero-product-visual { width: min(720px, 100%); }
-        .store-badges { left: 3%; bottom: -24px; width: 48%; }
+        .store-badges { left: 0; bottom: -38px; width: auto; }
         .feature-grid { grid-template-columns: repeat(2, 1fr); }
         .feature-card { border-right: 0; border-bottom: 1px solid var(--line); padding: 18px; }
         .feature-card:last-child { border-bottom: 0; }
@@ -582,7 +582,7 @@
         .solution-card .solution-illustration { display: none; }
         .visual { min-height: 310px; }
         .hero-product-visual { width: 112%; }
-        .store-badges { left: 50%; bottom: -28px; width: auto; transform: translateX(-50%); }
+        .store-badges { left: 50%; bottom: -38px; width: auto; transform: translateX(-50%); }
         .store-badge { width: 116px; height: 38px; padding-inline: 8px; }
         .store-badge i { font-size: 21px; }
         .store-badge-name { font-size: 12px; }
