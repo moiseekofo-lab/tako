@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://takotransport.online/sitemap.xml
+Sitemap: https://www.takotransport.com/sitemap.xml
