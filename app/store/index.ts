@@ -77,16 +77,7 @@ export const useStore = create<StoreState>((set) => ({
     route: '',
     bus: '',
   },
-  trips: [
-    {
-      id: 'demo-trip-1',
-      bus: 'Bus T-204',
-      route: 'Centre-ville → Université',
-      amount: 500,
-      paymentType: 'qr',
-      createdAt: new Date().toISOString(),
-    },
-  ],
+  trips: [],
   setLanguage: (language) =>
     set({
       language,
