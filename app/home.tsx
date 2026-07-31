@@ -77,9 +77,9 @@ export default function Home() {
 
   useEffect(() => {
     if (isWeb && !isAuthenticated) {
-      router.replace('/login' as any);
+      router.replace((role === 'chauffeur' ? '/driver-login' : '/login') as any);
     }
-  }, [isAuthenticated, isWeb, router]);
+  }, [isAuthenticated, isWeb, role, router]);
 
   useEffect(() => {
     if (!isAuthenticated || role !== 'passager' || !currentUser?.id || currentUser.id === '1000000001') {
@@ -672,7 +672,7 @@ export default function Home() {
                   activeOpacity={0.78}
                   onPress={() => {
                     clearSession();
-                    router.replace('/login' as any);
+                    router.replace((role === 'chauffeur' ? '/driver-login' : '/login') as any);
                   }}>
                   <MaterialCommunityIcons name="logout" size={30} color="#139DFF" />
                   <View style={styles.menuTextBox}>
@@ -701,7 +701,7 @@ export default function Home() {
           style={styles.logoutIcon}
           onPress={() => {
             clearSession();
-            router.replace('/login');
+            router.replace((role === 'chauffeur' ? '/driver-login' : '/login') as any);
           }}>
           <Ionicons name="log-out-outline" size={25} color="#061F68" />
         </TouchableOpacity>
