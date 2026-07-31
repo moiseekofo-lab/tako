@@ -381,10 +381,14 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           return;
         }
 
-        router.replace({
-          pathname: '/home',
-          params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : 'passager' },
-        } as any);
+        if (result.user.role === 'chauffeur' && isWeb) {
+          router.replace('/driver-dashboard' as any);
+        } else {
+          router.replace({
+            pathname: '/home',
+            params: { role: result.user.role === 'chauffeur' ? 'chauffeur' : 'passager' },
+          } as any);
+        }
         return;
       }
     } catch (error: any) {
