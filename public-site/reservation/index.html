@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Informations de voyage | TaKo Transport</title>
+  <meta name="description" content="Complétez les informations de votre voyage et réservez votre billet TaKo." />
+  <link rel="icon" type="image/png" href="/tako-logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Alkatra:wght@500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <style>
+    :root{--blue:#071f68;--royal:#102fbd;--ink:#07143f;--muted:#68738d;--line:#dce3ef;--soft:#f5f8ff;--green:#00a77a}*{box-sizing:border-box}body{margin:0;background:#fff;color:var(--ink);font-family:Inter,Arial,sans-serif}.shell{width:min(calc(100% - 80px),1440px);margin:auto}
+    .topbar{height:82px;border-bottom:1px solid var(--line);background:#fff}.nav{height:100%;display:flex;align-items:center;gap:34px}.brand{display:flex;align-items:center;gap:10px;margin-right:auto;text-decoration:none;color:var(--blue)}.mark{position:relative;width:48px;height:43px}.mark:before{content:"";position:absolute;width:14px;height:14px;border-radius:50%;background:var(--blue);left:0;top:14px}.mark:after{content:"";position:absolute;width:19px;height:39px;border-radius:16px;background:#ffc25c;left:24px;top:2px;transform:rotate(31deg)}.word{font:700 38px/1 Alkatra,cursive}.menu{display:flex;height:100%;align-items:center;gap:29px;font-size:14px;font-weight:700}.menu a{height:100%;display:flex;align-items:center;text-decoration:none;color:var(--ink);position:relative}.menu a.active{color:var(--royal)}.menu a.active:after{content:"";position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--royal)}.actions{margin-left:auto;display:flex;gap:12px}.btn{min-height:44px;padding:0 22px;border-radius:9px;border:1px solid var(--blue);background:#fff;color:var(--blue);font:700 14px Inter;display:inline-flex;align-items:center;justify-content:center;gap:12px;text-decoration:none;cursor:pointer}.btn.primary{background:linear-gradient(135deg,#1436c7,#071f89);color:#fff;border:0}
+    .steps{height:110px;display:grid;grid-template-columns:1fr 75px 1fr 75px 1fr 75px 1fr;align-items:center}.step{display:grid;grid-template-columns:46px 1fr;gap:14px;align-items:center}.step-number{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:#f3f5fa;border:1px solid #d9dfeb;color:#66718b;font-size:18px;font-weight:700}.step.done .step-number{color:var(--blue)}.step.done .step-number i{margin-left:7px;color:#19ac82;font-size:14px}.step.active .step-number{background:#1534c2;color:#fff;border-color:#1534c2}.step strong{display:block;margin-bottom:7px;font-size:15px}.step small{color:var(--muted);font-size:12px}.connector{height:2px;background:#cbd3e2}.connector.active{background:#1634a4}
+    .layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(355px,.96fr);gap:24px}.card{border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 7px 18px rgba(7,31,104,.04)}.form-card{padding:25px}.form-card h1,.summary h2{margin:0 0 9px;font-size:21px}.intro{margin:0 0 27px;color:#27365e;font-size:14px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px 30px}.grid.three{grid-template-columns:1.18fr .92fr .78fr}.field label{display:block;margin-bottom:9px;font-size:13px;font-weight:700}.control{height:48px;border:1px solid #d5ddea;border-radius:8px;background:#fff;color:var(--ink);display:flex;align-items:center;gap:13px;padding:0 15px;font-size:14px;font-weight:600}.control i{width:20px;color:#1137c0;font-size:17px}.control input,.control select{width:100%;height:100%;border:0;outline:0;background:transparent;color:inherit;font:inherit}.control input::placeholder{color:#8590a5}.passenger-control{display:grid;grid-template-columns:44px 1fr 44px;gap:0;padding:0}.passenger-control button{height:100%;border:0;background:transparent;color:#0e35bc;font-size:18px;cursor:pointer}.passenger-control output{display:grid;place-items:center;border-left:1px solid #e4e8f0;border-right:1px solid #e4e8f0}.full{grid-column:1/-1}.notice{margin-top:20px;padding:14px;border-radius:8px;background:#f0f4ff;display:flex;gap:12px;font-size:12px;line-height:1.5}.notice i{color:#1238c2;font-size:17px}.notice strong{display:block}.form-actions{margin-top:20px;display:flex;justify-content:space-between}.form-actions .btn{min-width:128px}.form-actions .primary{min-width:166px}
+    .summary{padding:26px}.summary h2{font-size:17px;margin-bottom:24px}.route{display:flex;align-items:center;gap:14px;font-weight:800;font-size:17px}.route-icon{width:42px;height:42px;border-radius:9px;background:#eef2ff;color:#1237bd;display:grid;place-items:center}.summary-list{margin-top:25px;display:grid;gap:22px}.summary-row{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;color:#64708a;font-size:13px}.summary-row i{color:#1237bd;font-size:17px}.summary-row strong{color:var(--ink);font-size:14px}.total{margin:28px 0 26px;padding-top:25px;border-top:1px dashed #cbd3df;display:flex;justify-content:space-between;align-items:center;font-weight:800}.total strong{font-size:27px;color:#1237bd}.secure{padding:16px;border-radius:8px;background:#eafaf5;color:#008d68;font-size:13px;font-weight:700}.secure i{margin-right:10px}.summary-note{margin-top:24px;padding:16px;border-radius:8px;background:#f0f4ff;color:#334064;font-size:12px;line-height:1.5;display:flex;gap:12px}.summary-note i{color:#1237bd}
+    .help{margin:26px auto 0;min-height:95px;border-radius:13px;background:#f3f6ff;display:grid;place-items:center}.help h2{margin:0 0 13px;text-align:center;font-size:15px}.help-row{display:flex;gap:70px}.help-row a,.help-row span{color:var(--ink);text-decoration:none;font-size:13px}.help-row i{margin-right:10px;color:#1237bd;font-size:18px}.help-row .whatsapp i{color:#00a97d}
+    @media(max-width:900px){.menu{display:none}.steps{grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}.connector{display:none}.step{grid-template-columns:38px 1fr}.step-number{width:36px;height:36px}.step small{display:none}.layout{grid-template-columns:1fr}.grid.three,.grid{grid-template-columns:1fr}.full{grid-column:auto}.help-row{gap:20px;flex-wrap:wrap;justify-content:center}}
+    @media(max-width:600px){.shell{width:min(100% - 28px,560px)}.topbar{height:70px}.actions .btn:first-child{display:none}.actions .btn{padding:0 13px}.steps{height:90px}.step-copy{display:none}.layout{gap:15px}.form-card,.summary{padding:19px}.form-card h1{font-size:19px}.form-actions{gap:12px}.form-actions .btn{min-width:0;flex:1}.help{padding:20px 10px}.help-row{display:grid;text-align:center}}
+  </style>
+</head>
+<body>
+  <header class="topbar"><div class="shell nav">
+    <a class="brand" href="/"><span class="mark"></span><span class="word">TaKo</span></a>
+    <nav class="menu"><a href="/">Accueil</a><a href="/about/">À propos</a><a href="/fonctionnalites/">Fonctionnalités</a><a href="/solutions/">Solutions</a><a href="/#tarifs">Tarifs</a><a class="active" href="/billets/">Billets de voyage</a></nav>
+    <div class="actions"><a class="btn" href="/connexion/">Connexion chauffeur</a><a class="btn primary" href="/contact/">Contact us</a></div>
+  </div></header>
+
+  <main>
+    <section class="shell steps">
+      <div class="step done"><span class="step-number">1 <i class="fa-solid fa-check"></i></span><span class="step-copy"><strong>Trajet</strong><small id="step-route">Kinshasa → Matadi</small></span></div><span class="connector active"></span>
+      <div class="step active"><span class="step-number">2</span><span class="step-copy"><strong>Informations</strong><small>Vos détails de voyage</small></span></div><span class="connector active"></span>
+      <div class="step"><span class="step-number">3</span><span class="step-copy"><strong>Paiement</strong><small>Choisir le mode de paiement</small></span></div><span class="connector"></span>
+      <div class="step"><span class="step-number">4</span><span class="step-copy"><strong>Confirmation</strong><small>Recevoir votre billet</small></span></div>
+    </section>
+
+    <section class="shell layout">
+      <form class="card form-card" id="booking-form">
+        <h1>Informations de voyage</h1><p class="intro">Veuillez remplir les informations ci-dessous pour continuer.</p>
+        <div class="grid three">
+          <div class="field"><label>Trajet</label><div class="control"><i class="fa-solid fa-bus"></i><input id="route" readonly /></div></div>
+          <div class="field"><label>Date de voyage</label><div class="control"><i class="fa-regular fa-calendar"></i><input id="date" type="date" required /></div></div>
+          <div class="field"><label>Heure de départ</label><div class="control"><i class="fa-regular fa-clock"></i><input id="time" value="07:00" readonly /></div></div>
+        </div>
+        <div class="grid" style="margin-top:20px">
+          <div class="field"><label>Nombre de passagers</label><div class="control passenger-control"><button type="button" id="minus" aria-label="Retirer un passager">−</button><output id="passenger-count">1</output><button type="button" id="plus" aria-label="Ajouter un passager">+</button></div></div>
+          <div class="field"><label>Type de passager</label><div class="control"><i class="fa-regular fa-user"></i><select><option>Adulte (12 ans et +)</option><option>Enfant (2 à 11 ans)</option></select></div></div>
+          <div class="field full"><label>Nom et prénom</label><div class="control"><i class="fa-regular fa-user"></i><input name="name" placeholder="Votre nom complet" required autocomplete="name" /></div></div>
+          <div class="field"><label>Numéro de téléphone</label><div class="control"><i class="fa-solid fa-phone"></i><input name="phone" placeholder="+243" required autocomplete="tel" /></div></div>
+          <div class="field"><label>Email (optionnel)</label><div class="control"><i class="fa-regular fa-envelope"></i><input name="email" type="email" placeholder="votre@email.com" autocomplete="email" /></div></div>
+        </div>
+        <div class="notice"><i class="fa-solid fa-circle-info"></i><div><strong>Important</strong>Assurez-vous que les informations saisies sont correctes. Elles seront utilisées pour l’envoi de votre billet électronique.</div></div>
+        <div class="form-actions"><a class="btn" href="/billets/"><i class="fa-solid fa-arrow-left"></i> Retour</a><button class="btn primary" type="submit">Continuer <i class="fa-solid fa-arrow-right"></i></button></div>
+      </form>
+
+      <aside class="card summary">
+        <h2>Récapitulatif de votre réservation</h2>
+        <div class="route"><span class="route-icon"><i class="fa-solid fa-bus"></i></span><span id="summary-route">Kinshasa → Matadi</span></div>
+        <div class="summary-list">
+          <div class="summary-row"><i class="fa-regular fa-calendar"></i><span>Date de voyage</span><strong id="summary-date"></strong></div>
+          <div class="summary-row"><i class="fa-regular fa-clock"></i><span>Heure de départ</span><strong>07:00</strong></div>
+          <div class="summary-row"><i class="fa-regular fa-user"></i><span>Nombre de passagers</span><strong id="summary-passengers">1 passager</strong></div>
+          <div class="summary-row"><i class="fa-solid fa-tag"></i><span>Prix par passager</span><strong>25 000 FC</strong></div>
+        </div>
+        <div class="total"><span>Total à payer</span><strong id="total">25 000 FC</strong></div>
+        <div class="secure"><i class="fa-solid fa-shield-halved"></i>Paiement 100% sécurisé avec TaKo</div>
+        <div class="summary-note"><i class="fa-solid fa-circle-info"></i><span>Vous recevrez votre billet électronique avec QR Code après le paiement.</span></div>
+      </aside>
+    </section>
+
+    <section class="shell help"><div><h2>Besoin d’aide ?</h2><div class="help-row"><a class="whatsapp" href="https://wa.me/243980880888"><i class="fa-brands fa-whatsapp"></i>+243 980 880 888</a><span><i class="fa-solid fa-headset"></i>Support 7j/7</span></div></div></section>
+  </main>
+  <script>
+    const params=new URLSearchParams(location.search);
+    const route=params.get('route')||'Kinshasa → Matadi';
+    const dateParam=params.get('date')||new Date(Date.now()+86400000).toISOString().slice(0,10);
+    let passengers=Math.min(4,Math.max(1,Number(params.get('passengers'))||1));
+    const routeInput=document.getElementById('route'),dateInput=document.getElementById('date');
+    routeInput.value=route; dateInput.value=dateParam; dateInput.min=new Date().toISOString().slice(0,10);
+    document.getElementById('step-route').textContent=route; document.getElementById('summary-route').textContent=route;
+    function refresh(){
+      document.getElementById('passenger-count').textContent=passengers;
+      document.getElementById('summary-passengers').textContent=passengers+(passengers>1?' passagers':' passager');
+      document.getElementById('total').textContent=(25000*passengers).toLocaleString('fr-FR')+' FC';
+      document.getElementById('summary-date').textContent=new Date(dateInput.value+'T12:00:00').toLocaleDateString('fr-FR');
+    }
+    document.getElementById('minus').onclick=()=>{if(passengers>1){passengers--;refresh()}};
+    document.getElementById('plus').onclick=()=>{if(passengers<4){passengers++;refresh()}};
+    dateInput.addEventListener('change',refresh); refresh();
+    document.getElementById('booking-form').addEventListener('submit',event=>{event.preventDefault();alert('La prochaine étape de paiement sera bientôt disponible.');});
+  </script>
+</body>
+</html>

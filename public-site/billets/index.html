@@ -51,7 +51,7 @@
         <button class="btn primary search-btn" type="submit"><i class="fa-solid fa-magnifying-glass"></i> Rechercher</button>
         <div class="booking-note"><i class="fa-solid fa-circle-info"></i><span>Vous recevrez votre billet électronique avec QR Code après le paiement.</span></div>
       </form>
-      <div id="results" class="results" aria-live="polite"><span class="results-icon"><i class="fa-solid fa-bus"></i></span><div class="results-copy"><h3 id="result-route">Kinshasa → Matadi</h3><p id="result-details"></p></div><strong class="price" id="result-price">25 000 FC</strong><a class="btn primary" href="/contact/">Réserver</a></div>
+      <div id="results" class="results" aria-live="polite"><span class="results-icon"><i class="fa-solid fa-bus"></i></span><div class="results-copy"><h3 id="result-route">Kinshasa → Matadi</h3><p id="result-details"></p></div><strong class="price" id="result-price">25 000 FC</strong><a class="btn primary" id="reserve-link" href="/reservation/">Réserver</a></div>
     </div></section>
     <section class="shell benefits"><div class="benefits-title">Pourquoi choisir TaKo ?</div>
       <article class="benefit"><span class="benefit-icon"><i class="fa-solid fa-shield-halved"></i></span><div><h3>Sécurisé</h3><p>Paiement 100% sécurisé avec vos moyens préférés</p></div></article>
@@ -78,6 +78,7 @@
       document.getElementById('result-route').textContent=route;
       document.getElementById('result-details').textContent=date+' • Départ 07:00 • '+passengers+(passengers>1?' passagers':' passager');
       document.getElementById('result-price').textContent=(25000*passengers).toLocaleString('fr-FR')+' FC';
+      document.getElementById('reserve-link').href='/reservation/?route='+encodeURIComponent(route)+'&date='+encodeURIComponent(dateInput.value)+'&passengers='+passengers;
       document.getElementById('results').classList.add('show');
     });
   </script>
