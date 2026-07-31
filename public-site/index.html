@@ -188,6 +188,8 @@
         flex: 0 0 auto;
       }
 
+      .mobile-ticket { display: none; }
+
       .btn {
         min-height: 42px;
         padding: 0 22px;
@@ -570,6 +572,8 @@
       }
 
       @media (max-width: 980px) {
+        body.tariffs-mobile .actions .desktop-contact { display: none; }
+        body.tariffs-mobile .actions .mobile-ticket { display: inline-flex; }
         .nav { height: auto; padding: 16px 0; flex-wrap: wrap; }
         .menu { order: 3; width: 100%; overflow-x: auto; justify-content: flex-start; padding-bottom: 2px; }
         .menu a { padding: 9px 0; white-space: nowrap; }
@@ -624,7 +628,8 @@
           </nav>
           <div class="actions">
             <a class="btn ghost" href="https://www.takotransport.com/connexion" target="_self">Connexion chauffeur</a>
-            <a class="btn primary" href="/contact/">Contact us</a>
+            <a class="btn primary desktop-contact" href="/contact/">Contact us</a>
+            <a class="btn primary mobile-ticket" href="/billets/">Billets de voyage</a>
           </div>
         </div>
       </header>
@@ -749,6 +754,13 @@
         </div>
       </footer>
     </div>
+    <script>
+      function updateTariffsMobileButton() {
+        document.body.classList.toggle('tariffs-mobile', window.location.hash === '#tarifs');
+      }
+      window.addEventListener('hashchange', updateTariffsMobileButton);
+      updateTariffsMobileButton();
+    </script>
 </body>
 </html>
 
