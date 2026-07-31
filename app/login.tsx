@@ -26,6 +26,7 @@ import { useStore } from './store';
 
 const CLIENT_NAME_KEY = 'tako:lastClientName';
 const ADMIN_SESSION_KEY = 'tako:adminSession';
+const DRIVER_SESSION_KEY = 'tako:driverSession';
 const LANGUAGE_KEY = 'tako:language';
 const SHEET_DISMISS_Y = 560;
 const SHEET_DISMISS_THRESHOLD = 120;
@@ -382,6 +383,14 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
         }
 
         if (result.user.role === 'chauffeur' && isWeb) {
+          await AsyncStorage.setItem(DRIVER_SESSION_KEY, JSON.stringify({
+            id: result.user.id,
+            fullName: result.user.fullName,
+            email: result.user.email,
+            phone: result.user.phone,
+            birthDate: result.user.birthDate,
+            balance: result.user.balance,
+          }));
           router.replace('/driver-dashboard' as any);
         } else {
           router.replace({
