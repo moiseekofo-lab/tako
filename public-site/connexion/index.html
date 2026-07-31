@@ -59,10 +59,27 @@
     ></iframe>
     <script>
       const driverFrame = document.getElementById('driver-login-frame');
+      const DRIVER_CONNECTED_KEY = 'tako:driverConnected';
+      const ADMIN_ORIGIN = 'https://admin.takotransport.online';
+
+      window.addEventListener('message', (event) => {
+        if (event.origin !== ADMIN_ORIGIN) return;
+        if (event.data?.type === 'tako-driver-authenticated') {
+          localStorage.setItem(DRIVER_CONNECTED_KEY, '1');
+        }
+        if (event.data?.type === 'tako-driver-disconnected') {
+          localStorage.removeItem(DRIVER_CONNECTED_KEY);
+          driverFrame.src = `${ADMIN_ORIGIN}/driver-login?refresh=${Date.now()}`;
+        }
+      });
+
       driverFrame.addEventListener('load', () => {
         document.body.classList.add('driver-ready');
       }, { once: true });
-      driverFrame.src = `https://admin.takotransport.online/driver-login?refresh=${Date.now()}`;
+      const initialRoute = localStorage.getItem(DRIVER_CONNECTED_KEY) === '1'
+        ? '/driver-dashboard'
+        : '/driver-login';
+      driverFrame.src = `${ADMIN_ORIGIN}${initialRoute}?refresh=${Date.now()}`;
     </script>
   </body>
 </html>

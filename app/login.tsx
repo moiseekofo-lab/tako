@@ -391,6 +391,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             birthDate: result.user.birthDate,
             balance: result.user.balance,
           }));
+          if (typeof window !== 'undefined' && window.parent !== window) {
+            window.parent.postMessage({ type: 'tako-driver-authenticated' }, '*');
+          }
           router.replace('/driver-dashboard' as any);
         } else {
           router.replace({

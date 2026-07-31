@@ -63,14 +63,23 @@ export default function DriverDashboard() {
       try {
         const storedSession = await AsyncStorage.getItem(DRIVER_SESSION_KEY);
         if (!storedSession) {
+          if (typeof window !== 'undefined' && window.parent !== window) {
+            window.parent.postMessage({ type: 'tako-driver-disconnected' }, '*');
+          }
           router.replace('/driver-login' as any);
           return;
         }
         const driver = JSON.parse(storedSession);
         if (!driver?.id || !driver?.fullName) throw new Error('Session chauffeur invalide');
         setCurrentUser(driver);
+        if (typeof window !== 'undefined' && window.parent !== window) {
+          window.parent.postMessage({ type: 'tako-driver-authenticated' }, '*');
+        }
       } catch {
         await AsyncStorage.removeItem(DRIVER_SESSION_KEY);
+        if (typeof window !== 'undefined' && window.parent !== window) {
+          window.parent.postMessage({ type: 'tako-driver-disconnected' }, '*');
+        }
         router.replace('/driver-login' as any);
       } finally {
         if (active) setSessionReady(true);
@@ -83,6 +92,9 @@ export default function DriverDashboard() {
 
   const logout = async () => {
     await AsyncStorage.removeItem(DRIVER_SESSION_KEY);
+    if (Platform.OS === 'web' && typeof window !== 'undefined' && window.parent !== window) {
+      window.parent.postMessage({ type: 'tako-driver-disconnected' }, '*');
+    }
     clearSession();
     router.replace('/driver-login' as any);
   };
