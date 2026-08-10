@@ -84,8 +84,14 @@ function AdminDesktopGate({ children }: { children: ReactNode }) {
     (window.location.pathname === '/driver-login' ||
       (window.location.pathname === '/login' &&
         new URLSearchParams(window.location.search).get('access') === 'chauffeur'));
+  const isPublicActivation =
+    Platform.OS === 'web' &&
+    browserReady &&
+    typeof window !== 'undefined' &&
+    window.location.pathname === '/agent-prepaid' &&
+    Boolean(new URLSearchParams(window.location.search).get('uid'));
 
-  if (isAdminDomain && !isDriverLogin && (isMobileDevice || width < ADMIN_DESKTOP_MIN_WIDTH)) {
+  if (isAdminDomain && !isDriverLogin && !isPublicActivation && (isMobileDevice || width < ADMIN_DESKTOP_MIN_WIDTH)) {
     return (
       <View style={gateStyles.page}>
         <View style={gateStyles.card}>

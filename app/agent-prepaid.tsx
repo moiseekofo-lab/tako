@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { activatePrepaidCard, requestPrepaidCardCode } from '../services/api';
@@ -12,14 +12,31 @@ type NfcTag = { id?: string; type?: string } | null;
 
 export default function AgentPrepaid() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ uid?: string | string[] }>();
+  const uidFromUrl = (Array.isArray(params.uid) ? params.uid[0] : params.uid || '').trim();
+  const validUidFromUrl = /^[A-Za-z0-9:_-]{4,128}$/.test(uidFromUrl) ? uidFromUrl : '';
+  const isPublicActivation = Platform.OS === 'web' && Boolean(uidFromUrl);
   const currentUser = useStore((state: any) => state.currentUser);
-  const [cardId, setCardId] = useState('');
+  const [cardId, setCardId] = useState(validUidFromUrl);
   const [phone, setPhone] = useState('');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
   const [reading, setReading] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activated, setActivated] = useState(false);
   const getCardId = (tag: NfcTag) => tag?.id || tag?.type || '';
+
+  useEffect(() => {
+    if (validUidFromUrl) setCardId(validUidFromUrl);
+  }, [validUidFromUrl]);
+
+  const goBack = () => {
+    if (isPublicActivation && typeof window !== 'undefined' && window.parent !== window) {
+      window.parent.location.href = 'https://takotransport.com';
+      return;
+    }
+    router.replace('/agent' as any);
+  };
 
   const readCard = async () => {
     let manager: { cancelTechnologyRequest?: () => Promise<void> } | null = null;
@@ -76,8 +93,13 @@ export default function AgentPrepaid() {
         phone: phone.trim(),
         code: code.trim(),
         cardId,
-        operatorId: currentUser?.id || 'AGENT',
+        operatorId: isPublicActivation ? 'PUBLIC_NFC_ACTIVATION' : currentUser?.id || 'AGENT',
       });
+      if (isPublicActivation) {
+        setActivated(true);
+        Alert.alert('Carte activée', `Carte associée au compte ${result?.client?.id}.`);
+        return;
+      }
       Alert.alert('Carte activée', `Carte associée au compte ${result?.client?.id}.`, [
         { text: 'OK', onPress: () => router.replace('/agent' as any) },
       ]);
@@ -91,21 +113,22 @@ export default function AgentPrepaid() {
   return (
     <KeyboardAvoidingView style={styles.screen} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={() => router.replace('/agent' as any)}>
+        <TouchableOpacity style={styles.backButton} activeOpacity={0.85} onPress={goBack}>
           <Ionicons name="chevron-back" size={25} color={TAKO_BLUE} />
         </TouchableOpacity>
         <TakoLogo />
       </View>
 
-      <Text style={styles.kicker}>Mode agent</Text>
-      <Text style={styles.title}>Carte prépayée</Text>
-      <Text style={styles.subtitle}>Activez une carte NFC vierge pour un client sans smartphone.</Text>
+      <Text style={styles.kicker}>{isPublicActivation ? 'Activation NFC' : 'Mode agent'}</Text>
+      <Text style={styles.title}>{activated ? 'Carte activée' : 'Carte prépayée'}</Text>
+      <Text style={styles.subtitle}>{activated ? 'Votre carte TaKo est maintenant prête à être utilisée.' : 'Activez une carte NFC vierge pour un client sans smartphone.'}</Text>
 
-      <View style={styles.form}>
-        <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={reading} onPress={readCard}>
+      {!activated && <View style={styles.form}>
+        {!isPublicActivation && <TouchableOpacity style={styles.nfcButton} activeOpacity={0.9} disabled={reading} onPress={readCard}>
           {reading ? <ActivityIndicator color={TAKO_BLUE} /> : <MaterialCommunityIcons name="nfc" size={24} color={TAKO_BLUE} />}
           <Text style={styles.nfcButtonText}>{reading ? 'Lecture NFC...' : 'Lire carte vierge NFC'}</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
+        {!!uidFromUrl && !validUidFromUrl && <Text style={styles.errorText}>L’UID fourni dans le lien est invalide.</Text>}
         {!!cardId && (
           <View style={styles.readBox}>
             <MaterialCommunityIcons name="credit-card-check" size={20} color={TAKO_GREEN} />
@@ -128,7 +151,7 @@ export default function AgentPrepaid() {
           {loading ? <ActivityIndicator color="white" /> : <Ionicons name="checkmark-circle" size={23} color="white" />}
           <Text style={styles.buttonText}>Activer la carte</Text>
         </TouchableOpacity>
-      </View>
+      </View>}
     </KeyboardAvoidingView>
   );
 }
@@ -150,6 +173,7 @@ const styles = StyleSheet.create({
   secondaryButton: { minHeight: 52, borderRadius: 14, backgroundColor: '#EAF3FF', alignItems: 'center', justifyContent: 'center' },
   secondaryButtonText: { color: TAKO_BLUE, fontSize: 15, fontWeight: '900' },
   message: { color: '#5C667A', fontSize: 13, fontWeight: '800', lineHeight: 19 },
+  errorText: { color: '#C62828', fontSize: 13, fontWeight: '800', lineHeight: 19 },
   button: { minHeight: 62, borderRadius: 16, backgroundColor: TAKO_BLUE, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 },
   buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
 });
