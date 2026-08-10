@@ -243,7 +243,7 @@ export default function Register() {
           </Text>
 
           <TouchableOpacity
-            style={[styles.bottomButton, isSendingCode && styles.disabledBtn]}
+            style={[styles.bottomButton, isSendingCode && styles.bottomButtonDisabled]}
             activeOpacity={0.9}
             disabled={isSendingCode}
             onPress={handleSendCode}>
@@ -582,21 +582,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: 24,
   },
-  verifiedSimpleText: {
-    color: '#061F68',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  profileField: {
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#D8D8D8',
-    borderRadius: 9,
-    backgroundColor: 'white',
-    paddingHorizontal: 16,
-    marginBottom: 14,
+  verifiedsimpleText: {
+    color: '#2B2F36',
+    fontSize: 17,
+    lineHeight: 27,
+    fontWeight: '500',
+    marginBottom: 22,
   },
   profileFieldError: {
     borderColor: '#D21F2B',
