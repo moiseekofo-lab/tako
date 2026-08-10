@@ -9,11 +9,9 @@ const adminEmail = (process.env.ADMIN_EMAIL || 'contact@takotransport.online').t
 const sendGridApiKey = process.env.SENDGRID_API_KEY;
 const sendGridFromEmail = process.env.SENDGRID_FROM_EMAIL;
 const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
-const twilioAccountSid = process.env.TWILIO_ACCOUNT_SID;
-const twilioAuthToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioVerifyServiceSid = process.env.TWILIO_VERIFY_SERVICE_SID;
-const TWILIO_PENDING_CODE = '__twilio_pending__';
-const TWILIO_VERIFIED_PREFIX = '__twilio_verified__:';
+const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/\/+$/, '');
+const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
+const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || 'TaKo').trim();
 const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
 const pool = databaseUrl
@@ -87,19 +85,15 @@ function normalizeContact(value = '') {
 }
 
 function generateCode() {
-  return String(Math.floor(100000 + Math.random() * 900000));
-}
-
-function hashOtpCode(code) {
-  return crypto.createHash('sha256').update(String(code).trim()).digest('hex');
+  return String(crypto.randomInt(100000, 1000000));
 }
 
 function isPhoneContact(contact) {
   return Boolean(contact) && !String(contact).includes('@');
 }
 
-function isTwilioVerifyEnabled() {
-  return Boolean(twilioAccountSid && twilioAuthToken && twilioVerifyServiceSid);
+function isInfobipSmsEnabled() {
+  return Boolean(infobipBaseUrl && infobipApiKey && infobipSmsSender);
 }
 
 function formatSmsPhone(contact) {
@@ -124,52 +118,46 @@ function formatSmsPhone(contact) {
   return `+${value}`;
 }
 
-async function callTwilioVerify(action, params) {
-  const serviceSid = encodeURIComponent(twilioVerifyServiceSid);
-  const response = await fetch(`https://verify.twilio.com/v2/Services/${serviceSid}/${action}`, {
+async function sendInfobipOtpSms(contact, code) {
+  const baseUrl = /^https?:\/\//i.test(infobipBaseUrl)
+    ? infobipBaseUrl
+    : `https://${infobipBaseUrl}`;
+  const response = await fetch(`${baseUrl}/sms/3/messages`, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${Buffer.from(`${twilioAccountSid}:${twilioAuthToken}`).toString('base64')}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
+      Authorization: `App ${infobipApiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
     },
-    body: new URLSearchParams(params).toString(),
+    body: JSON.stringify({
+      messages: [
+        {
+          sender: infobipSmsSender,
+          destinations: [{ to: formatSmsPhone(contact) }],
+          content: {
+            text: `Votre code de confirmation TaKo est ${code}. Il expire dans 10 minutes.`,
+          },
+        },
+      ],
+    }),
   });
 
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
-    console.error('Twilio Verify failed:', response.status, result);
-    const error = new Error(
-      action === 'Verifications'
-        ? 'Impossible d’envoyer le code SMS. Vérifiez le numéro puis réessayez.'
-        : 'Code incorrect ou expiré',
-    );
-    error.statusCode = action === 'Verifications' ? 502 : 400;
+    console.error('Infobip SMS failed:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: result,
+      destination: formatSmsPhone(contact),
+      sender: infobipSmsSender,
+      baseUrl,
+    });
+    const error = new Error('Impossible d’envoyer le code SMS. Vérifiez le numéro puis réessayez.');
+    error.statusCode = 502;
     throw error;
   }
 
   return result;
-}
-
-async function sendVerificationSms(contact) {
-  const result = await callTwilioVerify('Verifications', {
-    To: formatSmsPhone(contact),
-    Channel: 'sms',
-  });
-
-  return result.status === 'pending';
-}
-
-async function checkVerificationSms(contact, code) {
-  const result = await callTwilioVerify('VerificationCheck', {
-    To: formatSmsPhone(contact),
-    Code: String(code).trim(),
-  });
-
-  if (result.status !== 'approved') {
-    const error = new Error('Code incorrect ou expiré');
-    error.statusCode = 400;
-    throw error;
-  }
 }
 
 function generateClientId() {
@@ -573,53 +561,7 @@ async function verifyStoredCode(contact, code, purpose, consume = true) {
 
 async function verifyCode(contact, code, purpose, consume = true) {
   const cleanContact = normalizeContact(contact);
-
-  if (!isPhoneContact(cleanContact) || !isTwilioVerifyEnabled()) {
-    await verifyStoredCode(cleanContact, code, purpose, consume);
-    return;
-  }
-
-  const result = await query(
-    `
-      SELECT *
-      FROM verification_codes
-      WHERE contact = $1 AND purpose = $2 AND expires_at > NOW()
-      LIMIT 1;
-    `,
-    [cleanContact, purpose],
-  );
-  const storedCode = result.rows[0];
-
-  const verifiedCode = `${TWILIO_VERIFIED_PREFIX}${hashOtpCode(code)}`;
-  const hasVerifiedCode = storedCode?.code?.startsWith(TWILIO_VERIFIED_PREFIX);
-
-  if (!storedCode || (storedCode.code !== TWILIO_PENDING_CODE && !hasVerifiedCode)) {
-    const error = new Error('Code incorrect ou expiré');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (storedCode.code === TWILIO_PENDING_CODE) {
-    await checkVerificationSms(cleanContact, code);
-  } else if (storedCode.code !== verifiedCode) {
-    const error = new Error('Code incorrect ou expiré');
-    error.statusCode = 400;
-    throw error;
-  }
-
-  if (consume) {
-    await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [cleanContact, purpose]);
-    return;
-  }
-
-  await query(
-    `
-      UPDATE verification_codes
-      SET code = $3, expires_at = NOW() + INTERVAL '10 minutes'
-      WHERE contact = $1 AND purpose = $2;
-    `,
-    [cleanContact, purpose, verifiedCode],
-  );
+  await verifyStoredCode(cleanContact, code, purpose, consume);
 }
 
 async function handleRequest(request, response) {
@@ -684,8 +626,12 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const useSms = isPhoneContact(contact) && isTwilioVerifyEnabled();
-    const code = useSms ? TWILIO_PENDING_CODE : generateCode();
+    const useSms = isPhoneContact(contact);
+    if (useSms && !isInfobipSmsEnabled()) {
+      sendJson(response, 503, { ok: false, error: 'Le service OTP Infobip n’est pas configuré.' });
+      return;
+    }
+    const code = generateCode();
     await query(
       `
         INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at)
@@ -698,7 +644,7 @@ async function handleRequest(request, response) {
 
     if (useSms) {
       try {
-        await sendVerificationSms(contact);
+        await sendInfobipOtpSms(contact, code);
       } catch (error) {
         await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, purpose]);
         throw error;
@@ -708,6 +654,7 @@ async function handleRequest(request, response) {
         ok: true,
         message: 'Code envoyé par SMS',
         delivery: 'sms',
+        provider: 'infobip',
       });
       return;
     }
@@ -750,8 +697,11 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const useSms = isTwilioVerifyEnabled();
-    const code = useSms ? TWILIO_PENDING_CODE : generateCode();
+    if (!isInfobipSmsEnabled()) {
+      sendJson(response, 503, { ok: false, error: 'Le service OTP Infobip n’est pas configuré.' });
+      return;
+    }
+    const code = generateCode();
     await query(
       `
         INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at)
@@ -762,27 +712,18 @@ async function handleRequest(request, response) {
       [phone, code],
     );
 
-    if (useSms) {
-      try {
-        await sendVerificationSms(phone);
-      } catch (error) {
-        await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [phone, 'prepaid-card']);
-        throw error;
-      }
-
-      sendJson(response, 200, {
-        ok: true,
-        message: 'Code envoyé par SMS au client',
-        delivery: 'sms',
-      });
-      return;
+    try {
+      await sendInfobipOtpSms(phone, code);
+    } catch (error) {
+      await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [phone, 'prepaid-card']);
+      throw error;
     }
 
     sendJson(response, 200, {
       ok: true,
-      message: 'Code généré en mode démo',
-      delivery: 'demo',
-      code,
+      message: 'Code envoyé par SMS au client',
+      delivery: 'sms',
+      provider: 'infobip',
     });
     return;
   }

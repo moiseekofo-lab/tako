@@ -45,9 +45,9 @@ services:
         sync: false
       - key: SENDGRID_FROM_NAME
         sync: false
-      - key: TWILIO_ACCOUNT_SID
+      - key: INFOBIP_BASE_URL
         sync: false
-      - key: TWILIO_AUTH_TOKEN
+      - key: INFOBIP_API_KEY
         sync: false
-      - key: TWILIO_VERIFY_SERVICE_SID
+      - key: INFOBIP_SMS_SENDER
         sync: false

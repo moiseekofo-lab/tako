@@ -21,15 +21,15 @@ Serveur Node simple prêt pour Render.
 
 Les cartes NFC et paiements sont enregistrés dans PostgreSQL.
 
-## OTP SMS avec Twilio Verify
+## OTP SMS avec Infobip
 
-Pour envoyer réellement les codes OTP vers les numéros de téléphone, créez un
-service Twilio Verify puis ajoutez ces variables d'environnement au service API
-Render :
+Infobip est prioritaire lorsqu'il est configuré. Ajoutez ces variables
+d'environnement au service API Render :
 
-- `TWILIO_ACCOUNT_SID`
-- `TWILIO_AUTH_TOKEN`
-- `TWILIO_VERIFY_SERVICE_SID`
+- `INFOBIP_BASE_URL` : URL personnelle Infobip, par exemple `xxxxx.api.infobip.com`
+- `INFOBIP_API_KEY` : clé API possédant la permission `sms:message:send`
+- `INFOBIP_SMS_SENDER` : expéditeur SMS autorisé, par exemple `TaKo`
 
-Les adresses email continuent à recevoir leur code par SendGrid. Les numéros
-mobiles reçoivent le code par SMS lorsque Twilio Verify est configuré.
+Le serveur génère un code à six chiffres, l'envoie avec l'API SMS v3 d'Infobip
+et le conserve pendant dix minutes pour le valider. Les numéros mobiles passent
+exclusivement par Infobip. Les adresses email continuent à utiliser SendGrid.
