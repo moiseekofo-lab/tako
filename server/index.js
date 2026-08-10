@@ -12,6 +12,9 @@ const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
 const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/\/+$/, '');
 const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
 const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || 'TaKo').trim();
+const infobipWhatsAppSender = String(process.env.INFOBIP_WHATSAPP_SENDER || '').trim();
+const infobipWhatsAppTemplate = String(process.env.INFOBIP_WHATSAPP_TEMPLATE || '').trim();
+const infobipWhatsAppLanguage = String(process.env.INFOBIP_WHATSAPP_LANGUAGE || 'fr').trim();
 const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 
 const pool = databaseUrl
@@ -96,6 +99,16 @@ function isInfobipSmsEnabled() {
   return Boolean(infobipBaseUrl && infobipApiKey && infobipSmsSender);
 }
 
+function isInfobipWhatsAppEnabled() {
+  return Boolean(
+    infobipBaseUrl &&
+      infobipApiKey &&
+      infobipWhatsAppSender &&
+      infobipWhatsAppTemplate &&
+      infobipWhatsAppLanguage
+  );
+}
+
 function formatSmsPhone(contact) {
   const value = String(contact || '').trim().replace(/[\s()-]/g, '');
 
@@ -158,6 +171,75 @@ async function sendInfobipOtpSms(contact, code) {
   }
 
   return result;
+}
+
+async function sendInfobipOtpWhatsAppFirst(contact, code) {
+  if (!isInfobipWhatsAppEnabled()) {
+    await sendInfobipOtpSms(contact, code);
+    return { delivery: 'sms', provider: 'infobip' };
+  }
+
+  const baseUrl = /^https?:\/\//i.test(infobipBaseUrl)
+    ? infobipBaseUrl
+    : `https://${infobipBaseUrl}`;
+  const destination = formatSmsPhone(contact).replace(/^\+/, '');
+  const smsText = `Votre code de confirmation TaKo est ${code}. Il expire dans 10 minutes.`;
+
+  const response = await fetch(`${baseUrl}/whatsapp/1/message/template`, {
+    method: 'POST',
+    headers: {
+      Authorization: `App ${infobipApiKey}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      messages: [
+        {
+          from: infobipWhatsAppSender,
+          to: destination,
+          messageId: crypto.randomUUID(),
+          content: {
+            templateName: infobipWhatsAppTemplate,
+            templateData: {
+              body: { placeholders: [code] },
+              buttons: [{ type: 'URL', parameter: code }],
+            },
+            language: infobipWhatsAppLanguage,
+          },
+          validityPeriod: 60,
+          validityPeriodTimeUnit: 'SECONDS',
+          smsFailover: {
+            from: infobipSmsSender,
+            text: smsText,
+            validityPeriod: 10,
+            validityPeriodTimeUnit: 'MINUTES',
+          },
+        },
+      ],
+    }),
+  });
+
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    console.error('Infobip WhatsApp failed; sending OTP by SMS:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: result,
+      destination,
+      sender: infobipWhatsAppSender,
+      template: infobipWhatsAppTemplate,
+      baseUrl,
+    });
+    await sendInfobipOtpSms(contact, code);
+    return { delivery: 'sms', provider: 'infobip', fallback: true };
+  }
+
+  return {
+    delivery: 'whatsapp',
+    provider: 'infobip',
+    fallback: 'sms',
+    result,
+  };
 }
 
 function generateClientId() {
@@ -643,8 +725,9 @@ async function handleRequest(request, response) {
     );
 
     if (useSms) {
+      let delivery;
       try {
-        await sendInfobipOtpSms(contact, code);
+        delivery = await sendInfobipOtpWhatsAppFirst(contact, code);
       } catch (error) {
         await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, purpose]);
         throw error;
@@ -652,9 +735,11 @@ async function handleRequest(request, response) {
 
       sendJson(response, 200, {
         ok: true,
-        message: 'Code envoyé par SMS',
-        delivery: 'sms',
-        provider: 'infobip',
+        message:
+          delivery.delivery === 'whatsapp'
+            ? 'Code envoyé par WhatsApp avec secours SMS'
+            : 'Code envoyé par SMS',
+        ...delivery,
       });
       return;
     }
@@ -712,8 +797,9 @@ async function handleRequest(request, response) {
       [phone, code],
     );
 
+    let delivery;
     try {
-      await sendInfobipOtpSms(phone, code);
+      delivery = await sendInfobipOtpWhatsAppFirst(phone, code);
     } catch (error) {
       await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [phone, 'prepaid-card']);
       throw error;
@@ -721,9 +807,11 @@ async function handleRequest(request, response) {
 
     sendJson(response, 200, {
       ok: true,
-      message: 'Code envoyé par SMS au client',
-      delivery: 'sms',
-      provider: 'infobip',
+      message:
+        delivery.delivery === 'whatsapp'
+          ? 'Code envoyé par WhatsApp au client avec secours SMS'
+          : 'Code envoyé par SMS au client',
+      ...delivery,
     });
     return;
   }
