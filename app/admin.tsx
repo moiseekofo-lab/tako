@@ -497,7 +497,13 @@ function TextInput(props: ComponentProps<typeof RNTextInput>) {
   const placeholder = typeof props.placeholder === 'string'
     ? translateAdminString(props.placeholder, language)
     : props.placeholder;
-  return <RNTextInput {...props} placeholder={placeholder} />;
+  return (
+    <RNTextInput
+      {...props}
+      placeholder={placeholder}
+      style={[props.style, Platform.OS === 'web' ? ({ userSelect: 'text' } as any) : null]}
+    />
+  );
 }
 const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
   ? ({
@@ -3349,6 +3355,7 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: PAGE_BG,
+    ...(Platform.OS === 'web' ? ({ userSelect: 'none' } as any) : {}),
   },
   shell: {
     flex: 1,
