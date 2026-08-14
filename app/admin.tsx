@@ -2117,12 +2117,7 @@ function NfcCardsScreen({
         </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator
-        persistentScrollbar
-        style={styles.nfcTableScroller}
-        contentContainerStyle={styles.nfcTableScrollerContent}>
+      <View style={styles.directoryTableScroller}>
         <View style={[styles.clientTable, { minWidth: 1390 }]}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
             {['N° carte', 'UID (identifiant NFC)', 'Client', 'Solde disponible', 'Statut', 'Date d’activation', 'Dernière utilisation', 'Actions'].map((header) => <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
@@ -2140,7 +2135,7 @@ function NfcCardsScreen({
             </View>
           )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucune carte NFC trouvée.</Text></View>}
         </View>
-      </ScrollView>
+      </View>
       <View style={styles.clientPagination}><Text style={styles.cardText}>Affichage de {cards.length} sur {pagination.total || 0} carte(s)</Text><View style={styles.paginationButtons}><TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity><Text style={styles.pageCurrent}>{page} / {totalPages}</Text><TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity></View></View>
     </View>
   );
@@ -2242,7 +2237,7 @@ function ClientDirectoryScreen({
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator>
+      <View style={styles.directoryTableScroller}>
         <View style={styles.clientTable}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
             {['Client', 'Téléphone', 'E-mail', 'Solde (CDF)', 'Carte NFC', 'Statut', 'Inscription', 'Dernière connexion', 'Actions'].map((header) => (
@@ -2278,7 +2273,7 @@ function ClientDirectoryScreen({
             <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun client trouvé.</Text></View>
           )}
         </View>
-      </ScrollView>
+      </View>
 
       <View style={styles.clientPagination}>
         <Text style={styles.cardText}>{pagination.total || 0} client(s)</Text>
@@ -2367,7 +2362,7 @@ function DriverDirectoryScreen({
         <View style={styles.clientSearchBox}><Ionicons name="location-outline" size={18} color="#64748B" /><TextInput value={zone} onChangeText={setZone} placeholder="Filtrer par ligne ou zone…" placeholderTextColor="#94A3B8" style={styles.clientSearchInput} /></View>
         <TouchableOpacity style={styles.filterChip} onPress={() => { setSearch(''); setStatus(''); setZone(''); }}><Text style={styles.filterChipText}>Réinitialiser</Text></TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator>
+      <View style={styles.directoryTableScroller}>
         <View style={styles.driverTable}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
             {['Chauffeur', 'Téléphone', 'Véhicule', 'Plaque', 'Ligne / Zone', 'Solde disponible', 'Total gagné', 'Statut', 'Validation', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
@@ -2392,7 +2387,7 @@ function DriverDirectoryScreen({
             </View>
           )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun chauffeur trouvé.</Text></View>}
         </View>
-      </ScrollView>
+      </View>
       <View style={styles.clientPagination}><Text style={styles.cardText}>{pagination.total || 0} chauffeur(s)</Text><View style={styles.paginationButtons}>
         <TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity>
         <Text style={styles.pageCurrent}>{page} / {totalPages}</Text>
@@ -2493,7 +2488,7 @@ function AgentDirectoryScreen({
         </View>
         <TouchableOpacity style={styles.filterChip} onPress={reset}><Text style={styles.filterChipText}>Réinitialiser</Text></TouchableOpacity>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator><View style={styles.agentTable}>
+      <View style={styles.directoryTableScroller}><View style={styles.agentTable}>
         <View style={[styles.clientTableRow, styles.clientTableHeader]}>{['Agent', 'Téléphone', 'E-mail', 'Zone d’affectation', 'Responsable', 'Rôle', 'Statut', 'Date de création', 'Dernière connexion', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}</View>
         {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : agents.length ? agents.map((agent: any) => <View key={agent.id} style={styles.clientTableRow}>
           <View style={styles.driverTableCell}><Text style={styles.clientName}>{agent.fullName}</Text><Text style={styles.clientSubtext}>{agent.id}</Text></View>
@@ -2510,7 +2505,7 @@ function AgentDirectoryScreen({
             <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeAgent(agent)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
           </View>
         </View>) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun agent trouvé.</Text></View>}
-      </View></ScrollView>
+      </View></View>
       <View style={styles.clientPagination}><Text style={styles.cardText}>{pagination.total || 0} agent(s)</Text><View style={styles.paginationButtons}>
         <TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity><Text style={styles.pageCurrent}>{page} / {totalPages}</Text><TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity>
       </View></View>
@@ -3875,11 +3870,9 @@ const styles = StyleSheet.create({
   clientDirectory: {
     gap: 18,
   },
-  nfcTableScroller: {
-    minHeight: 250,
-  },
-  nfcTableScrollerContent: {
-    alignItems: 'flex-start',
+  directoryTableScroller: {
+    height: 250,
+    overflow: 'auto' as any,
   },
   clientStats: {
     flexDirection: 'row',
