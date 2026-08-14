@@ -2117,7 +2117,12 @@ function NfcCardsScreen({
         </View>
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator
+        persistentScrollbar
+        style={styles.nfcTableScroller}
+        contentContainerStyle={styles.nfcTableScrollerContent}>
         <View style={[styles.clientTable, { minWidth: 1390 }]}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
             {['N° carte', 'UID (identifiant NFC)', 'Client', 'Solde disponible', 'Statut', 'Date d’activation', 'Dernière utilisation', 'Actions'].map((header) => <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
@@ -3869,6 +3874,12 @@ const styles = StyleSheet.create({
   },
   clientDirectory: {
     gap: 18,
+  },
+  nfcTableScroller: {
+    minHeight: 250,
+  },
+  nfcTableScrollerContent: {
+    alignItems: 'flex-start',
   },
   clientStats: {
     flexDirection: 'row',
