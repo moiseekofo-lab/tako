@@ -3355,14 +3355,20 @@ const styles = StyleSheet.create({
   page: {
     flex: 1,
     backgroundColor: PAGE_BG,
-    ...(Platform.OS === 'web' ? ({ userSelect: 'none' } as any) : {}),
+    ...(
+      Platform.OS === 'web'
+        ? ({ userSelect: 'none', overflowX: 'hidden', maxWidth: '100vw' } as any)
+        : {}
+    ),
   },
   shell: {
     flex: 1,
     flexDirection: 'row',
+    ...(Platform.OS === 'web' ? ({ overflowX: 'hidden', maxWidth: '100%' } as any) : {}),
   },
   contentScroller: {
     flex: 1,
+    ...(Platform.OS === 'web' ? ({ overflowX: 'hidden', maxWidth: '100%' } as any) : {}),
   },
   mobileShell: {
     flexDirection: 'column',
