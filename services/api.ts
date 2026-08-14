@@ -197,8 +197,8 @@ export function findClientById(clientId: string) {
   return requestJson(`/admin/clients/${encodeURIComponent(clientId)}`);
 }
 
-export function getClientProfile(clientId: string) {
-  return requestJson(`/clients/${encodeURIComponent(clientId)}`);
+export function getClientProfile(clientId: string, email?: string, phone?: string) {
+  return postJson('/clients/profile', { clientId, email, phone });
 }
 
 export function updateClientByAdmin(

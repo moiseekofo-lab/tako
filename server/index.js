@@ -568,11 +568,12 @@ async function getUserByLogin(login) {
   const value = normalizeContact(login);
   const result = await query(
     `
-      SELECT *
-      FROM users
-      WHERE LOWER(id) = LOWER($1)
-         OR LOWER(email) = LOWER($1)
-         OR phone = $1
+      SELECT u.*, c.card_id, c.blocked AS nfc_blocked
+      FROM users u
+      LEFT JOIN nfc_cards c ON c.client_id = u.id
+      WHERE LOWER(u.id) = LOWER($1)
+         OR LOWER(u.email) = LOWER($1)
+         OR u.phone = $1
       LIMIT 1;
     `,
     [value],
@@ -595,6 +596,8 @@ function publicUser(user) {
     role: user.role,
     status: user.status,
     balance: Number(user.balance || 0),
+    nfcCardId: user.card_id || null,
+    nfcCardBlocked: Boolean(user.nfc_blocked),
     createdAt: user.created_at,
   };
 }
@@ -1711,14 +1714,49 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/clients/profile') {
+    const body = await readJson(request);
+    const clientId = String(body.clientId || '').trim();
+    const email = normalizeContact(body.email || '');
+    const phone = normalizeContact(body.phone || '');
+    const result = await query(
+      `SELECT u.*, c.card_id, c.blocked AS nfc_blocked
+       FROM users u
+       LEFT JOIN nfc_cards c ON c.client_id = u.id
+       WHERE u.role = 'passager' AND (
+         ($1 <> '' AND u.id = $1) OR
+         ($2 <> '' AND LOWER(COALESCE(u.email, '')) = $2) OR
+         ($3 <> '' AND REPLACE(COALESCE(u.phone, ''), ' ', '') = $3)
+       )
+       ORDER BY CASE WHEN u.id = $1 THEN 0 ELSE 1 END
+       LIMIT 1`,
+      [clientId, email, phone],
+    );
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+    const client = result.rows[0];
+    sendJson(response, 200, {
+      ok: true,
+      client: {
+        ...publicUser(client),
+        nfcCardId: client.card_id || null,
+        nfcCardBlocked: Boolean(client.nfc_blocked),
+      },
+    });
+    return;
+  }
+
   if (request.method === 'GET' && url.pathname.startsWith('/clients/') && !url.pathname.includes('/nfc-card')) {
     const clientId = decodeURIComponent(url.pathname.replace('/clients/', '')).trim();
     const result = await query(
       `
-        SELECT *
-        FROM users
-        WHERE id = $1
-          AND role = 'passager'
+        SELECT u.*, c.card_id, c.blocked AS nfc_blocked
+        FROM users u
+        LEFT JOIN nfc_cards c ON c.client_id = u.id
+        WHERE u.id = $1
+          AND u.role = 'passager'
         LIMIT 1;
       `,
       [clientId],
@@ -1729,7 +1767,15 @@ async function handleRequest(request, response) {
       return;
     }
 
-    sendJson(response, 200, { ok: true, client: publicUser(result.rows[0]) });
+    const client = result.rows[0];
+    sendJson(response, 200, {
+      ok: true,
+      client: {
+        ...publicUser(client),
+        nfcCardId: client.card_id || null,
+        nfcCardBlocked: Boolean(client.nfc_blocked),
+      },
+    });
     return;
   }
 

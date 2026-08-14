@@ -55,7 +55,7 @@ export default function Home() {
   );
   const text = translations[language];
 
-  const role = params.role === 'passager' ? 'passager' : 'chauffeur';
+  const role = params.role === 'chauffeur' || currentUser?.role === 'chauffeur' ? 'chauffeur' : 'passager';
   const now = useMemo(() => new Date(), []);
   const greeting = now.getHours() < 18 ? text.morning : text.evening;
   const clientDisplayName = useMemo(() => {
@@ -89,9 +89,24 @@ export default function Home() {
     let mounted = true;
     const syncProfile = async () => {
       try {
-        const result = await getClientProfile(currentUser.id);
+        const result = await getClientProfile(
+          currentUser.id,
+          currentUser.email,
+          currentUser.phone,
+        );
         if (mounted && result?.client) {
           setCurrentUser(result.client);
+          const remoteCardId = String(result.client.nfcCardId || '').trim() || null;
+          const remoteBlocked = Boolean(result.client.nfcCardBlocked);
+          setNfcCardId(remoteCardId);
+          setNfcCardBlocked(remoteBlocked);
+
+          if (remoteCardId) {
+            await AsyncStorage.setItem(NFC_CARD_ID_KEY, remoteCardId);
+          } else {
+            await AsyncStorage.removeItem(NFC_CARD_ID_KEY);
+          }
+          await AsyncStorage.setItem(NFC_CARD_BLOCKED_KEY, String(remoteBlocked));
         }
       } catch {
         // L’accueil garde les données locales si le réseau est momentanément indisponible.
@@ -104,7 +119,19 @@ export default function Home() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [currentUser?.id, isAuthenticated, role, setCurrentUser]);
+  }, [currentUser?.id, isAuthenticated, role, setCurrentUser, setNfcCardBlocked, setNfcCardId]);
+
+  useEffect(() => {
+    const remoteCardId = String(currentUser?.nfcCardId || '').trim() || null;
+    if (!remoteCardId) {
+      return;
+    }
+
+    setNfcCardId(remoteCardId);
+    setNfcCardBlocked(Boolean(currentUser?.nfcCardBlocked));
+    AsyncStorage.setItem(NFC_CARD_ID_KEY, remoteCardId).catch(() => {});
+    AsyncStorage.setItem(NFC_CARD_BLOCKED_KEY, String(Boolean(currentUser?.nfcCardBlocked))).catch(() => {});
+  }, [currentUser?.nfcCardBlocked, currentUser?.nfcCardId, setNfcCardBlocked, setNfcCardId]);
 
   useEffect(() => {
     AsyncStorage.getItem(NFC_CARD_ID_KEY).then((storedCardId) => {
@@ -370,7 +397,8 @@ export default function Home() {
   const menuItems = [
     { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
     { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
-    { icon: 'help-box-outline', title: text.help, subtitle: text.helpSubtitle },
+    { icon: 'ticket-confirmation-outline', title: text.travelTickets, subtitle: text.travelTicketsSubtitle, route: '/travel-tickets' },
+    { icon: 'calendar-check-outline', title: text.myReservations, subtitle: text.myReservationsSubtitle, route: '/my-reservations' },
     { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
     { icon: 'chat-outline', title: text.chat, subtitle: text.chatSubtitle },
   ];
@@ -547,14 +575,9 @@ export default function Home() {
             </View>
 
             <View style={styles.cardControlsRow}>
-              <TouchableOpacity
-                style={[styles.miniCard, nfcCardId && styles.miniCardDisabled]}
-                activeOpacity={0.85}
-                disabled={!!nfcCardId}
-                accessibilityLabel={nfcCardId ? text.active : text.activateCard}
-                onPress={() => router.push('/client-nfc' as any)}>
+              <View style={[styles.miniCard, nfcCardId && styles.miniCardDisabled]}>
                 <Image source={clientPhysicalCardImage} style={styles.miniCardImage} resizeMode="cover" />
-              </TouchableOpacity>
+              </View>
 
               <TouchableOpacity
                 style={[styles.roundAction, nfcCardBlocked && styles.roundActionBlocked]}
@@ -567,8 +590,8 @@ export default function Home() {
               <TouchableOpacity
                 style={styles.roundAction}
                 activeOpacity={0.85}
-                accessibilityLabel={text.cancelCard}
-                onPress={() => Alert.alert(text.physicalCard, text.cardCancelRequested)}>
+                accessibilityLabel={text.activateCard}
+                onPress={() => router.push('/client-nfc' as any)}>
                 <Ionicons name="card-outline" size={30} color="white" />
               </TouchableOpacity>
             </View>
@@ -672,7 +695,7 @@ export default function Home() {
                   activeOpacity={0.78}
                   onPress={() => {
                     clearSession();
-                    router.replace((role === 'chauffeur' ? '/driver-login' : '/login') as any);
+                    router.replace('/login' as any);
                   }}>
                   <MaterialCommunityIcons name="logout" size={30} color="#139DFF" />
                   <View style={styles.menuTextBox}>
