@@ -3878,8 +3878,11 @@ const styles = StyleSheet.create({
     gap: 18,
   },
   directoryTableScroller: {
-    height: 250,
-    overflow: 'auto' as any,
+    ...(
+      Platform.OS === 'web'
+        ? ({ overflowX: 'auto', overflowY: 'hidden' } as any)
+        : { overflow: 'hidden' as const }
+    ),
   },
   clientStats: {
     flexDirection: 'row',
