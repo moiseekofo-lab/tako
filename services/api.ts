@@ -110,6 +110,24 @@ export function getAdminClients(params: {
   return postJson('/admin/clients/list', params);
 }
 
+export function getAdminNfcCards(params: {
+  sessionToken: string;
+  search?: string;
+  status?: string;
+  activationDate?: string;
+  page?: number;
+}) {
+  return postJson('/admin/nfc-cards/list', params);
+}
+
+export function enrollAdminNfcCard(sessionToken: string, clientId: string, cardId: string) {
+  return postJson('/admin/nfc-cards/enroll', { sessionToken, clientId, cardId });
+}
+
+export function updateAdminNfcCardStatus(sessionToken: string, cardId: string, blocked: boolean) {
+  return postJson('/admin/nfc-cards/status', { sessionToken, cardId, blocked });
+}
+
 export function updateClientStatus(clientId: string, sessionToken: string, status: 'active' | 'blocked' | 'closed') {
   return postJson(`/admin/clients/${encodeURIComponent(clientId)}/status`, {
     sessionToken,

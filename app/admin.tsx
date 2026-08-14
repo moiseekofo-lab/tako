@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
-import { ActivityIndicator, Alert, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import {
   activatePrepaidCard,
@@ -11,11 +11,13 @@ import {
   findClientById,
   getAdminAgents,
   getAdminClients,
+  getAdminNfcCards,
   getAdminDashboard,
   getAdminDrivers,
   getAgentAccount,
   getPendingUsers,
   rechargeAgent,
+  enrollAdminNfcCard,
   requestPrepaidCardCode,
   saveNfcCard,
   setNfcCardBlocked,
@@ -25,6 +27,7 @@ import {
   updateAgentStatus,
   updateDriverByAdmin,
   updateDriverStatus,
+  updateAdminNfcCardStatus,
   validateAdminSession,
 } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -740,6 +743,17 @@ export default function Admin() {
   const [clientActionLoading, setClientActionLoading] = useState(false);
   const [clientPanelMode, setClientPanelMode] = useState<'view' | 'edit' | null>(null);
   const [deleteCandidate, setDeleteCandidate] = useState<any>(null);
+  const [nfcSearch, setNfcSearch] = useState('');
+  const [nfcStatus, setNfcStatus] = useState('');
+  const [nfcPage, setNfcPage] = useState(1);
+  const [nfcDirectory, setNfcDirectory] = useState<any>({ cards: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } });
+  const [nfcLoading, setNfcLoading] = useState(false);
+  const [nfcVersion, setNfcVersion] = useState(0);
+  const [nfcEnrollVisible, setNfcEnrollVisible] = useState(false);
+  const [nfcEnrollClientId, setNfcEnrollClientId] = useState('');
+  const [nfcEnrollCardId, setNfcEnrollCardId] = useState('');
+  const [nfcSelectedCard, setNfcSelectedCard] = useState<any>(null);
+  const [nfcActionLoading, setNfcActionLoading] = useState(false);
 
   useEffect(() => {
     if (params.clientId) {
@@ -920,6 +934,23 @@ export default function Admin() {
       clearTimeout(timer);
     };
   }, [activeSection, clientCardFilter, clientDirectoryVersion, clientPage, clientSearch, clientStatusFilter, isAuthenticated]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'nfcCards') return;
+    let active = true;
+    const timer = setTimeout(() => {
+      setNfcLoading(true);
+      AsyncStorage.getItem(ADMIN_SESSION_KEY)
+        .then((sessionToken) => {
+          if (!sessionToken) throw new Error('Session absente');
+          return getAdminNfcCards({ sessionToken, search: nfcSearch, status: nfcStatus, page: nfcPage });
+        })
+        .then((result) => { if (active) setNfcDirectory(result || { cards: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } }); })
+        .catch(() => { if (active) setNfcDirectory({ cards: [], stats: {}, pagination: { page: 1, total: 0, limit: 20 } }); })
+        .finally(() => { if (active) setNfcLoading(false); });
+    }, 250);
+    return () => { active = false; clearTimeout(timer); };
+  }, [activeSection, isAuthenticated, nfcPage, nfcSearch, nfcStatus, nfcVersion]);
 
   useEffect(() => {
     if (Platform.OS !== 'web' || !isAuthenticated || activeSection !== 'drivers') return;
@@ -1183,6 +1214,44 @@ export default function Admin() {
       Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
     } finally {
       setClientActionLoading(false);
+    }
+  };
+
+  const enrollNfcCard = async () => {
+    if (!nfcEnrollClientId.trim() || !nfcEnrollCardId.trim()) {
+      Alert.alert('Informations obligatoires', 'Entrez l’identifiant du client et l’UID de la carte.');
+      return;
+    }
+    try {
+      setNfcActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      await enrollAdminNfcCard(sessionToken, nfcEnrollClientId.trim(), nfcEnrollCardId.trim().toUpperCase());
+      setNfcEnrollVisible(false);
+      setNfcEnrollClientId('');
+      setNfcEnrollCardId('');
+      setNfcVersion((value) => value + 1);
+      Alert.alert('Carte enrôlée', 'La carte NFC est maintenant associée au client.');
+    } catch (error) {
+      Alert.alert('Enrôlement impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setNfcActionLoading(false);
+    }
+  };
+
+  const toggleNfcDirectoryCard = async (card: any) => {
+    try {
+      setNfcActionLoading(true);
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) throw new Error('Session administrateur expirée');
+      await updateAdminNfcCardStatus(sessionToken, card.cardId, !card.blocked);
+      setNfcSelectedCard(null);
+      setNfcVersion((value) => value + 1);
+      Alert.alert('Carte mise à jour', card.blocked ? 'La carte est active.' : 'La carte est bloquée.');
+    } catch (error) {
+      Alert.alert('Action impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally {
+      setNfcActionLoading(false);
     }
   };
 
@@ -1944,9 +2013,130 @@ export default function Admin() {
             </View>
           ) : null}
 
-          {moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection === 'nfcCards' ? (
+            <>
+              <NfcCardsScreen
+                directory={nfcDirectory}
+                loading={nfcLoading}
+                search={nfcSearch}
+                setSearch={(value) => { setNfcSearch(value); setNfcPage(1); }}
+                status={nfcStatus}
+                setStatus={(value) => { setNfcStatus(value); setNfcPage(1); }}
+                page={nfcPage}
+                setPage={setNfcPage}
+                enroll={() => setNfcEnrollVisible(true)}
+                viewCard={setNfcSelectedCard}
+                toggleCard={toggleNfcDirectoryCard}
+                actionLoading={nfcActionLoading}
+              />
+              <Modal visible={nfcEnrollVisible} transparent animationType="fade" onRequestClose={() => setNfcEnrollVisible(false)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.confirmModal}>
+                    <Ionicons name="card-outline" size={38} color={TAKO_BLUE} />
+                    <Text style={styles.confirmTitle}>Enrôler une carte NFC</Text>
+                    <Text style={styles.confirmText}>Associez une carte à un client avec son identifiant et son UID NFC.</Text>
+                    <TextInput value={nfcEnrollClientId} onChangeText={setNfcEnrollClientId} placeholder="Identifiant du client" style={styles.modalInput} autoCapitalize="none" />
+                    <TextInput value={nfcEnrollCardId} onChangeText={setNfcEnrollCardId} placeholder="UID de la carte (ex. EB7E61BD)" style={styles.modalInput} autoCapitalize="characters" />
+                    <View style={styles.confirmActions}>
+                      <TouchableOpacity style={styles.confirmNo} onPress={() => setNfcEnrollVisible(false)}><Text style={styles.confirmNoText}>Annuler</Text></TouchableOpacity>
+                      <TouchableOpacity style={[styles.confirmYes, { backgroundColor: TAKO_BLUE }]} disabled={nfcActionLoading} onPress={enrollNfcCard}><Text style={styles.confirmYesText}>{nfcActionLoading ? 'Enregistrement…' : 'Enrôler la carte'}</Text></TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+              <Modal visible={Boolean(nfcSelectedCard)} transparent animationType="fade" onRequestClose={() => setNfcSelectedCard(null)}>
+                <View style={styles.modalBackdrop}>
+                  <View style={styles.confirmModal}>
+                    <Image source={require('../assets/images/client-physical-card.png')} style={{ width: 230, height: 145, borderRadius: 14 }} resizeMode="cover" />
+                    <Text style={styles.confirmTitle}>{nfcSelectedCard?.cardId}</Text>
+                    <Text style={styles.confirmText}>{nfcSelectedCard?.clientName || 'Client non renseigné'} · {nfcSelectedCard?.clientPhone || 'Téléphone indisponible'}</Text>
+                    <Text style={styles.confirmText}>Solde : {Number(nfcSelectedCard?.balance || 0).toLocaleString('fr-FR')} FC</Text>
+                    <View style={styles.confirmActions}>
+                      <TouchableOpacity style={styles.confirmNo} onPress={() => setNfcSelectedCard(null)}><Text style={styles.confirmNoText}>Fermer</Text></TouchableOpacity>
+                      <TouchableOpacity style={[styles.confirmYes, nfcSelectedCard?.blocked && { backgroundColor: '#087B35' }]} disabled={nfcActionLoading} onPress={() => toggleNfcDirectoryCard(nfcSelectedCard)}><Text style={styles.confirmYesText}>{nfcSelectedCard?.blocked ? 'Débloquer la carte' : 'Bloquer la carte'}</Text></TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
+            </>
+          ) : null}
+
+          {activeSection !== 'nfcCards' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
+    </View>
+  );
+}
+
+function NfcCardsScreen({
+  directory, loading, search, setSearch, status, setStatus, page, setPage,
+  enroll, viewCard, toggleCard, actionLoading,
+}: {
+  directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
+  status: string; setStatus: (value: string) => void; page: number; setPage: (value: number) => void;
+  enroll: () => void; viewCard: (card: any) => void; toggleCard: (card: any) => void; actionLoading: boolean;
+}) {
+  const stats = directory?.stats || {};
+  const cards = directory?.cards || [];
+  const pagination = directory?.pagination || { total: 0, limit: 20 };
+  const totalPages = Math.max(1, Math.ceil(Number(pagination.total || 0) / Number(pagination.limit || 20)));
+  const money = (value: any) => `${Number(value || 0).toLocaleString('fr-FR')} FC`;
+  const cardStats = [
+    { icon: 'card-outline', label: 'Total cartes', value: Number(stats.total || 0).toLocaleString('fr-FR'), note: 'Toutes les cartes', color: TAKO_BLUE },
+    { icon: 'checkmark-circle-outline', label: 'Cartes actives', value: Number(stats.active || 0).toLocaleString('fr-FR'), note: stats.total ? `${Math.round((stats.active / stats.total) * 1000) / 10}% du total` : '0% du total', color: '#0A9D50' },
+    { icon: 'lock-closed-outline', label: 'Cartes bloquées', value: Number(stats.blocked || 0).toLocaleString('fr-FR'), note: stats.total ? `${Math.round((stats.blocked / stats.total) * 1000) / 10}% du total` : '0% du total', color: '#E97912' },
+    { icon: 'close-circle-outline', label: 'Cartes expirées', value: Number(stats.expired || 0).toLocaleString('fr-FR'), note: 'Aucune expiration configurée', color: '#8B35DB' },
+    { icon: 'server-outline', label: 'Solde total', value: money(stats.balance), note: 'Sur toutes les cartes', color: '#155DEB' },
+  ];
+  return (
+    <View style={styles.clientDirectory}>
+      <View style={styles.referenceHeader}>
+        <View><Text style={styles.referenceTitle}>Cartes NFC</Text><Text style={styles.cardText}>Gérez toutes les cartes NFC de TaKo</Text></View>
+        <View style={styles.driverDetailActions}>
+          <View style={styles.secondaryAction}><Ionicons name="filter-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Filtres</Text></View>
+          <TouchableOpacity style={styles.referencePrimary} onPress={enroll}><Ionicons name="add-outline" size={19} color="white" /><Text style={styles.referencePrimaryText}>Enrôler une carte</Text></TouchableOpacity>
+        </View>
+      </View>
+
+      <View style={styles.clientStats}>
+        {cardStats.map((item) => (
+          <View key={item.label} style={styles.clientStat}>
+            <View style={styles.clientStatIcon}><Ionicons name={item.icon as keyof typeof Ionicons.glyphMap} size={25} color={item.color} /></View>
+            <View><Text style={styles.clientStatLabel}>{item.label}</Text><Text style={styles.clientStatValue}>{item.value}</Text><Text style={styles.clientSubtext}>{item.note}</Text></View>
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.clientFilters}>
+        <View style={styles.clientSearchBox}><Ionicons name="search-outline" size={18} color="#64748B" /><TextInput value={search} onChangeText={setSearch} placeholder="Rechercher une carte, UID, client…" placeholderTextColor="#94A3B8" style={styles.clientSearchInput} /></View>
+        <View style={styles.filterChoices}>
+          {[["", 'Tous'], ['active', 'Actives'], ['blocked', 'Bloquées']].map(([value, label]) => (
+            <TouchableOpacity key={label} style={[styles.filterChip, status === value && styles.filterChipActive]} onPress={() => setStatus(value)}><Text style={[styles.filterChipText, status === value && styles.filterChipTextActive]}>{label}</Text></TouchableOpacity>
+          ))}
+          <TouchableOpacity style={styles.secondaryAction} onPress={() => { setSearch(''); setStatus(''); setPage(1); }}><Ionicons name="refresh-outline" size={17} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Réinitialiser</Text></TouchableOpacity>
+        </View>
+      </View>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator>
+        <View style={[styles.clientTable, { minWidth: 1390 }]}>
+          <View style={[styles.clientTableRow, styles.clientTableHeader]}>
+            {['N° carte', 'UID (identifiant NFC)', 'Client', 'Solde disponible', 'Statut', 'Date d’activation', 'Dernière utilisation', 'Actions'].map((header) => <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
+          </View>
+          {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : cards.length ? cards.map((card: any) => (
+            <View key={card.cardId} style={styles.clientTableRow}>
+              <View style={[styles.clientTableCell, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}><Image source={require('../assets/images/client-physical-card.png')} style={{ width: 50, height: 31, borderRadius: 5 }} resizeMode="cover" /><View><Text style={styles.clientName}>{card.cardId}</Text><Text style={styles.clientSubtext}>Carte TaKo</Text></View></View>
+              <Text style={styles.clientTableCellText}>{card.cardId}</Text>
+              <View style={styles.clientTableCell}><Text style={styles.clientName}>{card.clientName || 'Client inconnu'}</Text><Text style={styles.clientSubtext}>{card.clientPhone || card.clientId}</Text></View>
+              <Text style={styles.clientBalance}>{money(card.balance)}</Text>
+              <View style={styles.clientTableCell}><Text style={card.blocked ? styles.statusBlocked : styles.statusActive}>● {card.blocked ? 'Bloquée' : 'Active'}</Text></View>
+              <Text style={styles.clientTableCellText}>{formatDate(card.activatedAt)}</Text>
+              <Text style={styles.clientTableCellText}>{card.lastUsedAt ? formatDate(card.lastUsedAt) : 'Jamais utilisée'}</Text>
+              <View style={[styles.clientTableCell, styles.clientActions]}><TouchableOpacity style={styles.clientActionButton} onPress={() => viewCard(card)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity><TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => toggleCard(card)}><Ionicons name={card.blocked ? 'lock-open-outline' : 'lock-closed-outline'} size={19} color={card.blocked ? '#0A9D50' : '#DC2626'} /></TouchableOpacity></View>
+            </View>
+          )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucune carte NFC trouvée.</Text></View>}
+        </View>
+      </ScrollView>
+      <View style={styles.clientPagination}><Text style={styles.cardText}>Affichage de {cards.length} sur {pagination.total || 0} carte(s)</Text><View style={styles.paginationButtons}><TouchableOpacity disabled={page <= 1} style={styles.pageButton} onPress={() => setPage(Math.max(1, page - 1))}><Ionicons name="chevron-back" size={17} color={TAKO_BLUE} /></TouchableOpacity><Text style={styles.pageCurrent}>{page} / {totalPages}</Text><TouchableOpacity disabled={page >= totalPages} style={styles.pageButton} onPress={() => setPage(Math.min(totalPages, page + 1))}><Ionicons name="chevron-forward" size={17} color={TAKO_BLUE} /></TouchableOpacity></View></View>
     </View>
   );
 }
@@ -3988,6 +4178,18 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     textAlign: 'center',
     marginTop: 10,
+  },
+  modalInput: {
+    width: '100%',
+    minHeight: 48,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DCE5F2',
+    color: '#111827',
+    fontSize: 14,
+    fontWeight: '700',
+    paddingHorizontal: 14,
+    marginTop: 14,
   },
   confirmActions: {
     width: '100%',

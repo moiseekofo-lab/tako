@@ -1158,6 +1158,110 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/nfc-cards/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+
+    const search = String(body.search || '').trim();
+    const status = body.status === 'active' || body.status === 'blocked' ? body.status : '';
+    const activationDate = String(body.activationDate || '').trim();
+    const page = Math.max(1, Number.parseInt(body.page, 10) || 1);
+    const limit = 20;
+    const offset = (page - 1) * limit;
+    const conditions = ['u.status <> \'closed\''];
+    const params = [];
+    if (search) {
+      params.push(`%${search}%`);
+      conditions.push(`(c.card_id ILIKE $${params.length} OR u.full_name ILIKE $${params.length} OR u.phone ILIKE $${params.length} OR u.id ILIKE $${params.length})`);
+    }
+    if (status === 'active') conditions.push('c.blocked = FALSE');
+    if (status === 'blocked') conditions.push('c.blocked = TRUE');
+    if (activationDate) {
+      params.push(activationDate);
+      conditions.push(`DATE(c.updated_at) = DATE($${params.length})`);
+    }
+    const where = conditions.join(' AND ');
+    const [statsResult, countResult, cardsResult] = await Promise.all([
+      query(`
+        SELECT COUNT(*)::int AS total,
+          COUNT(*) FILTER (WHERE c.blocked = FALSE)::int AS active,
+          COUNT(*) FILTER (WHERE c.blocked = TRUE)::int AS blocked,
+          COALESCE(SUM(u.balance), 0) AS balance
+        FROM nfc_cards c JOIN users u ON u.id = c.client_id
+        WHERE u.status <> 'closed';
+      `),
+      query(`SELECT COUNT(*)::int AS total FROM nfc_cards c JOIN users u ON u.id = c.client_id WHERE ${where};`, params),
+      query(`
+        SELECT c.card_id, c.client_id, c.blocked, c.updated_at,
+          u.full_name, u.phone, u.balance,
+          (SELECT MAX(p.created_at) FROM payments p WHERE p.client_id = c.client_id) AS last_used_at
+        FROM nfc_cards c JOIN users u ON u.id = c.client_id
+        WHERE ${where}
+        ORDER BY c.updated_at DESC
+        LIMIT $${params.length + 1} OFFSET $${params.length + 2};
+      `, [...params, limit, offset]),
+    ]);
+    const stats = statsResult.rows[0] || {};
+    sendJson(response, 200, {
+      ok: true,
+      stats: { total: Number(stats.total || 0), active: Number(stats.active || 0), blocked: Number(stats.blocked || 0), expired: 0, balance: Number(stats.balance || 0) },
+      pagination: { page, limit, total: Number(countResult.rows[0]?.total || 0) },
+      cards: cardsResult.rows.map((card) => ({
+        cardId: card.card_id, clientId: card.client_id, blocked: card.blocked,
+        activatedAt: card.updated_at, lastUsedAt: card.last_used_at,
+        clientName: card.full_name, clientPhone: card.phone || '', balance: Number(card.balance || 0),
+      })),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/nfc-cards/enroll') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const clientId = String(body.clientId || '').trim();
+    const cardId = String(body.cardId || '').trim().toUpperCase();
+    if (!clientId || !cardId) {
+      sendJson(response, 400, { ok: false, error: 'Le client et l’UID sont obligatoires' });
+      return;
+    }
+    const owner = await query('SELECT client_id FROM nfc_cards WHERE UPPER(card_id) = UPPER($1) AND client_id <> $2 LIMIT 1;', [cardId, clientId]);
+    if (owner.rowCount) {
+      sendJson(response, 409, { ok: false, error: 'Cette carte est déjà associée à un autre client' });
+      return;
+    }
+    const client = await query("SELECT id FROM users WHERE id = $1 AND role = 'passager' AND status <> 'closed' LIMIT 1;", [clientId]);
+    if (!client.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Client introuvable' });
+      return;
+    }
+    const result = await query(`INSERT INTO nfc_cards (client_id, card_id, blocked, updated_at) VALUES ($1, $2, FALSE, NOW()) ON CONFLICT (client_id) DO UPDATE SET card_id = EXCLUDED.card_id, blocked = FALSE, updated_at = NOW() RETURNING *;`, [clientId, cardId]);
+    sendJson(response, 200, { ok: true, card: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/nfc-cards/status') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const cardId = String(body.cardId || '').trim();
+    const blocked = Boolean(body.blocked);
+    const result = await query('UPDATE nfc_cards SET blocked = $2, updated_at = NOW() WHERE UPPER(card_id) = UPPER($1) RETURNING *;', [cardId, blocked]);
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Carte introuvable' });
+      return;
+    }
+    sendJson(response, 200, { ok: true, card: result.rows[0] });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/admin/clients/list') {
     const body = await readJson(request);
     if (!verifyAdminSessionToken(body.sessionToken)) {
