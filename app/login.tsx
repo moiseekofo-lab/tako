@@ -370,6 +370,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           phone: result.user.phone,
           birthDate: result.user.birthDate,
           balance: result.user.balance,
+          nfcCardId: result.user.nfcCardId,
+          nfcCardBlocked: result.user.nfcCardBlocked,
+          role: result.user.role,
         });
 
         if (rememberAccess) {
@@ -418,6 +421,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
               phone: adminResult.user.phone,
               birthDate: adminResult.user.birthDate,
               balance: adminResult.user.balance,
+              role: 'admin',
             });
             router.replace('/admin' as any);
             return;
@@ -457,6 +461,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
         phone: '',
         birthDate: '',
         balance: 0,
+        role: 'passager',
       });
     }
 
@@ -1875,6 +1880,10 @@ const styles = StyleSheet.create({
     color: '#202836',
     fontSize: 18,
     fontWeight: '500',
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   webField: {
     height: 52,
@@ -1907,6 +1916,10 @@ const styles = StyleSheet.create({
     color: '#202836',
     fontSize: 18,
     fontWeight: '500',
+    paddingTop: 0,
+    paddingBottom: 0,
+    textAlignVertical: 'center',
+    includeFontPadding: false,
   },
   webPasswordField: {
     color: '#061F68',

@@ -33,6 +33,9 @@ export type CurrentUser = {
   phone: string;
   birthDate: string;
   balance?: number;
+  nfcCardId?: string | null;
+  nfcCardBlocked?: boolean;
+  role?: 'passager' | 'chauffeur' | 'agent' | 'admin';
 };
 
 type StoreState = {
@@ -51,7 +54,7 @@ type StoreState = {
   setBalance: (amount: number) => void;
   setDriverTripInfo: (info: DriverTripInfo) => void;
   increaseBalance: (amount: number) => void;
-  setNfcCardId: (cardId: string) => void;
+  setNfcCardId: (cardId: string | null) => void;
   setNfcCardBlocked: (blocked: boolean) => void;
   addNotification: (notification: Omit<TransactionNotification, 'id' | 'createdAt' | 'read'>) => void;
   addTrip: (trip: Omit<TripHistoryItem, 'id' | 'createdAt'>) => void;
@@ -99,6 +102,8 @@ export const useStore = create<StoreState>((set) => ({
         birthDate: '',
       },
       balance: 0,
+      nfcCardId: null,
+      nfcCardBlocked: false,
     }),
   setBalance: (amount) =>
     set({

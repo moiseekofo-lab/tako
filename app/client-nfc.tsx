@@ -2,13 +2,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import NfcManager, { NfcTech, type TagEvent } from 'react-native-nfc-manager';
 import { TakoLogo } from '../components/tako-logo';
 import { saveNfcCard } from '../services/api';
 import { useStore } from './store';
 
 const NFC_CARD_ID_KEY = 'tako:nfcCardId';
+const physicalCardImage = require('../assets/images/client-physical-card.png');
 
 export default function ClientNfcActivation() {
   const router = useRouter();
@@ -60,6 +61,10 @@ export default function ClientNfcActivation() {
   };
 
   const activateCard = async () => {
+    if (nfcCardId) {
+      return;
+    }
+
     if (isSupported === false) {
       Alert.alert('NFC indisponible', "Ce téléphone ne supporte pas NFC ou l'app n'a pas le module natif.");
       return;
@@ -78,17 +83,29 @@ export default function ClientNfcActivation() {
         return;
       }
 
-      setNfcCardId(cardId);
-      await AsyncStorage.setItem(NFC_CARD_ID_KEY, cardId);
-      await saveNfcCard(currentUser.id, cardId);
+      if (!currentUser?.id) {
+        Alert.alert('Session invalide', 'Reconnectez-vous avant d’activer la carte.');
+        return;
+      }
+
+      // Le serveur est la source de vérité. On n'affiche la carte comme activée
+      // qu'après confirmation de son enregistrement distant.
+      const result = await saveNfcCard(currentUser.id, cardId);
+      const savedCardId = String(result?.card?.card_id || cardId).trim();
+      setNfcCardId(savedCardId);
+      await AsyncStorage.setItem(NFC_CARD_ID_KEY, savedCardId);
       Alert.alert('Carte activée', `Carte NFC enregistrée : ${cardId}`, [
         {
           text: 'OK',
           onPress: () => router.back(),
         },
       ]);
-    } catch {
-      Alert.alert('Lecture annulée', 'Aucune carte NFC lue.');
+    } catch (error: any) {
+      const message = String(error?.message || '').trim();
+      Alert.alert(
+        'Activation impossible',
+        message || "La carte a été lue, mais son enregistrement sur le serveur n'a pas été confirmé. Réessayez.",
+      );
     } finally {
       setIsReading(false);
       NfcManager.cancelTechnologyRequest().catch(() => {});
@@ -104,21 +121,42 @@ export default function ClientNfcActivation() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Activer carte NFC</Text>
+      <Text style={styles.title}>{nfcCardId ? 'Carte activée' : 'Activer carte NFC'}</Text>
 
-      <View style={styles.nfcBox}>
-        <MaterialCommunityIcons name="card-account-details-outline" size={78} color="#09D457" />
-        <Text style={styles.nfcTitle}>
-          {isReading ? 'Approchez votre carte' : 'Enregistrer votre carte'}
+      <View style={[styles.nfcBox, nfcCardId && styles.activatedCardBox]}>
+        {nfcCardId ? (
+          <View style={styles.registeredCardFrame}>
+            <Image source={physicalCardImage} style={styles.registeredCardImage} resizeMode="cover" />
+          </View>
+        ) : (
+          <MaterialCommunityIcons name="card-account-details-outline" size={78} color="#09D457" />
+        )}
+        <Text style={[styles.nfcTitle, nfcCardId && styles.activatedCardTitle]}>
+          {nfcCardId ? 'Carte enregistrée' : isReading ? 'Approchez votre carte' : 'Enregistrer votre carte'}
         </Text>
-        <Text style={styles.nfcSubtitle}>
-          Cliquez sur le bouton, approchez la carte NFC, puis TaKo enregistrera son identifiant pour le paiement transport.
+        <Text style={[styles.nfcSubtitle, nfcCardId && styles.activatedCardSubtitle]}>
+          {nfcCardId
+            ? `Votre carte TaKo est active sur ce compte. Identifiant : ${nfcCardId}`
+            : 'Cliquez sur le bouton, approchez la carte NFC, puis TaKo enregistrera son identifiant pour le paiement transport.'}
         </Text>
       </View>
 
-      <TouchableOpacity style={styles.button} activeOpacity={0.9} onPress={activateCard} disabled={isReading}>
+      <TouchableOpacity
+        style={[styles.button, nfcCardId && styles.disabledButton]}
+        activeOpacity={0.9}
+        onPress={activateCard}
+        disabled={isReading || !!nfcCardId}>
         <MaterialCommunityIcons name="nfc" size={26} color="white" />
         <Text style={styles.text}>{isReading ? 'Lecture...' : 'Lire ma carte NFC'}</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[styles.qrButton, nfcCardId && styles.disabledButton]}
+        activeOpacity={0.9}
+        onPress={() => router.push('/client-nfc-qr' as any)}
+        disabled={isReading || !!nfcCardId}>
+        <Ionicons name="qr-code-outline" size={26} color="white" />
+        <Text style={styles.text}>Scanner le QR de la carte</Text>
       </TouchableOpacity>
 
       <View style={styles.statusBox}>
@@ -219,6 +257,43 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  registeredCardFrame: {
+    width: '100%',
+    aspectRatio: 1600 / 1030,
+    borderRadius: 18,
+    overflow: 'hidden',
+  },
+  registeredCardImage: {
+    width: '100%',
+    height: '100%',
+  },
+  activatedCardBox: {
+    minHeight: 0,
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+    paddingHorizontal: 0,
+    paddingVertical: 0,
+  },
+  activatedCardTitle: {
+    color: '#061F68',
+  },
+  activatedCardSubtitle: {
+    color: '#52627A',
+  },
+  qrButton: {
+    width: '100%',
+    height: 70,
+    marginTop: 12,
+    flexDirection: 'row',
+    gap: 10,
+    backgroundColor: '#082A82',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   text: {
     color: 'white',

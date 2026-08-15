@@ -1,9 +1,26 @@
 import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { useEffect, useState, type ReactNode } from 'react';
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Stack, usePathname, useRouter } from 'expo-router';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { AppState, Dimensions, Platform, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { useStore } from './store';
 
-const FONT_SCALE = 0.88;
+const LAST_ACTIVITY_KEY = 'tako:lastActivityAt';
+const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
+const ACTIVITY_WRITE_THROTTLE_MS = 10 * 1000;
+
+const getFontScale = () => {
+  if (Platform.OS === 'web') return 0.88;
+
+  const width = Dimensions.get('window').width;
+  if (width <= 340) return 0.78;
+  if (width <= 360) return 0.82;
+  if (width <= 390) return 0.88;
+  if (width <= 430) return 0.94;
+  return 1;
+};
+
+const FONT_SCALE = getFontScale();
 const APP_FONT_FAMILY = Platform.select({
   android: 'Roboto',
   ios: 'System',
@@ -29,7 +46,7 @@ const patchFontSizes = (value: unknown): unknown => {
 
   Object.entries(style).forEach(([key, item]) => {
     if (key === 'fontSize' && typeof item === 'number') {
-      nextStyle[key] = Math.max(12, Math.round(item * FONT_SCALE));
+      nextStyle[key] = Math.max(8, Math.round(item * FONT_SCALE));
       return;
     }
 
@@ -54,6 +71,18 @@ if (!globalState.__takoFontPatchApplied) {
   const originalCreate = StyleSheet.create as unknown as (styles: any) => any;
 
   StyleSheet.create = ((styles: any) => originalCreate(patchFontSizes(styles))) as typeof StyleSheet.create;
+
+  const PatchedText = Text as typeof Text & { defaultProps?: Record<string, unknown> };
+  const PatchedTextInput = TextInput as typeof TextInput & { defaultProps?: Record<string, unknown> };
+
+  PatchedText.defaultProps = {
+    ...PatchedText.defaultProps,
+    maxFontSizeMultiplier: 1.2,
+  };
+  PatchedTextInput.defaultProps = {
+    ...PatchedTextInput.defaultProps,
+    maxFontSizeMultiplier: 1.2,
+  };
 
   globalState.__takoFontPatchApplied = true;
 }
@@ -112,6 +141,150 @@ function AdminDesktopGate({ children }: { children: ReactNode }) {
   return children;
 }
 
+function SessionIdleGuard({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const isAuthenticated = useStore((state) => state.isAuthenticated);
+  const currentRole = useStore((state) => state.currentUser.role);
+  const clearSession = useStore((state) => state.clearSession);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivityRef = useRef(Date.now());
+  const lastPersistedRef = useRef(0);
+  const loggingOutRef = useRef(false);
+
+  const clearIdleTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
+
+  const logoutForInactivity = useCallback(async () => {
+    if (loggingOutRef.current) return;
+    loggingOutRef.current = true;
+    clearIdleTimer();
+
+    await AsyncStorage.removeItem(LAST_ACTIVITY_KEY);
+    clearSession();
+    router.replace('/login' as any);
+
+    loggingOutRef.current = false;
+  }, [clearIdleTimer, clearSession, router]);
+
+  const scheduleLogout = useCallback((lastActivity: number) => {
+    clearIdleTimer();
+    const remaining = IDLE_TIMEOUT_MS - (Date.now() - lastActivity);
+
+    if (remaining <= 0) {
+      void logoutForInactivity();
+      return;
+    }
+
+    timerRef.current = setTimeout(() => {
+      void logoutForInactivity();
+    }, remaining);
+  }, [clearIdleTimer, logoutForInactivity]);
+
+  const registerActivity = useCallback(() => {
+    const idleLogoutEnabled = currentRole === 'passager' || currentRole === 'agent';
+    if (!isAuthenticated || !idleLogoutEnabled) return;
+
+    const now = Date.now();
+    lastActivityRef.current = now;
+    scheduleLogout(now);
+
+    if (now - lastPersistedRef.current >= ACTIVITY_WRITE_THROTTLE_MS) {
+      lastPersistedRef.current = now;
+      void AsyncStorage.setItem(LAST_ACTIVITY_KEY, String(now));
+    }
+  }, [currentRole, isAuthenticated, scheduleLogout]);
+
+  useEffect(() => {
+    let active = true;
+
+    const restoreSessionTimer = async () => {
+      const storedActivity = await AsyncStorage.getItem(LAST_ACTIVITY_KEY);
+      if (!active) return;
+
+      const idleLogoutEnabled = currentRole === 'passager' || currentRole === 'agent';
+      const sessionExists = isAuthenticated && idleLogoutEnabled;
+
+      if (!sessionExists) {
+        clearIdleTimer();
+        lastActivityRef.current = Date.now();
+        lastPersistedRef.current = 0;
+        await AsyncStorage.removeItem(LAST_ACTIVITY_KEY);
+        return;
+      }
+
+      const parsedActivity = Number(storedActivity);
+      const lastActivity = Number.isFinite(parsedActivity) && parsedActivity > 0
+        ? parsedActivity
+        : Date.now();
+      lastActivityRef.current = lastActivity;
+
+      if (!storedActivity) {
+        await AsyncStorage.setItem(LAST_ACTIVITY_KEY, String(lastActivity));
+      }
+      scheduleLogout(lastActivity);
+    };
+
+    void restoreSessionTimer();
+    return () => {
+      active = false;
+    };
+  }, [clearIdleTimer, currentRole, isAuthenticated, pathname, scheduleLogout]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      const idleLogoutEnabled = currentRole === 'passager' || currentRole === 'agent';
+      if (state === 'active' && isAuthenticated && idleLogoutEnabled) {
+        const inactiveFor = Date.now() - lastActivityRef.current;
+        if (inactiveFor >= IDLE_TIMEOUT_MS) {
+          void logoutForInactivity();
+        } else {
+          scheduleLogout(lastActivityRef.current);
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [currentRole, isAuthenticated, logoutForInactivity, scheduleLogout]);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+
+    const events: Array<keyof DocumentEventMap> = [
+      'pointerdown',
+      'keydown',
+      'mousemove',
+      'wheel',
+      'touchstart',
+      'scroll',
+    ];
+    events.forEach((event) => document.addEventListener(event, registerActivity, { passive: true }));
+
+    return () => {
+      events.forEach((event) => document.removeEventListener(event, registerActivity));
+    };
+  }, [registerActivity]);
+
+  useEffect(() => clearIdleTimer, [clearIdleTimer]);
+
+  return (
+    <View
+      style={idleStyles.container}
+      onTouchStart={registerActivity}
+      onStartShouldSetResponderCapture={() => {
+        registerActivity();
+        return false;
+      }}
+    >
+      {children}
+    </View>
+  );
+}
+
 export default function Layout() {
   const [fontsLoaded] = useFonts({
     Alkatra: require('../assets/fonts/Alkatra.ttf'),
@@ -123,29 +296,43 @@ export default function Layout() {
 
   return (
     <AdminDesktopGate>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="login" />
-        <Stack.Screen name="driver-login" />
-        <Stack.Screen name="register" />
-        <Stack.Screen name="home" />
-        <Stack.Screen name="admin" />
-        <Stack.Screen name="agent" />
-        <Stack.Screen name="qr" />
-        <Stack.Screen name="scan" />
-        <Stack.Screen name="nfc" />
-        <Stack.Screen name="recharge" />
-        <Stack.Screen name="internal-recharge-scan" />
-        <Stack.Screen name="client-nfc" />
-        <Stack.Screen name="my-data" />
-        <Stack.Screen name="history" />
-        <Stack.Screen name="notifications" />
-        <Stack.Screen name="privacy" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      <SessionIdleGuard>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="login" />
+          <Stack.Screen name="driver-login" />
+          <Stack.Screen name="register" />
+          <Stack.Screen name="home" />
+          <Stack.Screen name="admin" />
+          <Stack.Screen name="agent" />
+          <Stack.Screen name="qr" />
+          <Stack.Screen name="scan" />
+          <Stack.Screen name="nfc" />
+          <Stack.Screen name="recharge" />
+          <Stack.Screen name="internal-recharge-scan" />
+          <Stack.Screen name="client-nfc-qr" />
+          <Stack.Screen name="client-nfc" />
+          <Stack.Screen name="my-data" />
+          <Stack.Screen name="history" />
+          <Stack.Screen name="notifications" />
+          <Stack.Screen name="privacy" />
+          <Stack.Screen name="travel-tickets" />
+          <Stack.Screen name="travel-results" />
+          <Stack.Screen name="travel-booking" />
+          <Stack.Screen name="travel-payment" />
+          <Stack.Screen name="my-reservations" />
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </SessionIdleGuard>
     </AdminDesktopGate>
   );
 }
+
+const idleStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+});
 
 const gateStyles = StyleSheet.create({
   page: {

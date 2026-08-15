@@ -14,7 +14,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { TakoLogo } from '../components/tako-logo';
 import { registerAccount, requestVerificationCode, verifyVerificationCode } from '../services/api';
 import { useStore } from './store';
 
@@ -26,8 +25,6 @@ const LIGHT_BLUE = '#F1F5FF';
 
 type Step = 1 | 2 | 3 | 4;
 type Role = 'passager' | 'chauffeur' | 'agent';
-
-const STEP_LABELS = ['Numéro', 'OTP', 'Informations', 'Mot de passe'];
 
 function normalizePhone(value: string) {
   const digits = value.replace(/\D/g, '');
@@ -194,11 +191,7 @@ export default function Register() {
           <TouchableOpacity onPress={goBack} style={styles.backButton} activeOpacity={0.75}>
             <Ionicons name="arrow-back" size={30} color={BLUE} />
           </TouchableOpacity>
-          <View style={styles.logoWrap}><TakoLogo /></View>
-          <View style={styles.backButton} />
         </View>
-
-        <Progress step={step} />
 
         {step === 1 && (
           <View style={styles.content}>
@@ -315,31 +308,6 @@ export default function Register() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
-  );
-}
-
-function Progress({ step }: { step: Step }) {
-  return (
-    <View style={styles.progress}>
-      <View style={styles.progressTop}>
-        {STEP_LABELS.map((_, index) => {
-          const number = index + 1;
-          const complete = number < step;
-          const active = number === step;
-          return (
-            <View key={number} style={styles.progressPiece}>
-              {index > 0 && <View style={[styles.progressLine, complete && styles.progressLineDone]} />}
-              <View style={[styles.stepCircle, (complete || active) && styles.stepCircleActive]}>
-                {complete ? <Ionicons name="checkmark" size={23} color="white" /> : <Text style={[styles.stepNumber, active && styles.stepNumberActive]}>{number}</Text>}
-              </View>
-            </View>
-          );
-        })}
-      </View>
-      <View style={styles.progressLabels}>
-        {STEP_LABELS.map((label, index) => <Text key={label} style={[styles.stepLabel, index + 1 === step && styles.stepLabelActive]}>{label}</Text>)}
-      </View>
-    </View>
   );
 }
 
