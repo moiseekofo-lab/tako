@@ -14,7 +14,7 @@ const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
 const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || 'TaKo').trim();
 const infobipWhatsAppSender = String(process.env.INFOBIP_WHATSAPP_SENDER || '').trim();
 const infobipWhatsAppTemplate = String(
-  process.env.INFOBIP_WHATSAPP_TEMPLATE || 'tako_verification'
+  process.env.INFOBIP_WHATSAPP_TEMPLATE || 'tako'
 ).trim();
 const infobipWhatsAppLanguage = String(process.env.INFOBIP_WHATSAPP_LANGUAGE || 'fr').trim();
 const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
