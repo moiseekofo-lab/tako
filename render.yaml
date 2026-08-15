@@ -54,6 +54,6 @@ services:
       - key: INFOBIP_WHATSAPP_SENDER
         sync: false
       - key: INFOBIP_WHATSAPP_TEMPLATE
-        sync: false
+        value: tako_verification
       - key: INFOBIP_WHATSAPP_LANGUAGE
-        sync: false
+        value: fr
