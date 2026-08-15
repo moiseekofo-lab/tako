@@ -2097,8 +2097,7 @@ function NfcCardsScreen({
   return (
     <View style={styles.clientDirectory}>
       <View style={styles.referenceHeader}>
-        <View><Text style={styles.referenceTitle}>Cartes NFC</Text><Text style={styles.cardText}>Gérez toutes les cartes NFC de TaKo</Text></View>
-        <View style={styles.driverDetailActions}>
+        <View style={[styles.driverDetailActions, { marginLeft: 'auto' }]}>
           <View style={styles.secondaryAction}><Ionicons name="filter-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Filtres</Text></View>
           <TouchableOpacity style={styles.referencePrimary} onPress={enroll}><Ionicons name="add-outline" size={19} color="white" /><Text style={styles.referencePrimaryText}>Enrôler une carte</Text></TouchableOpacity>
         </View>
@@ -2190,11 +2189,7 @@ function ClientDirectoryScreen({
   return (
     <View style={styles.clientDirectory}>
       <View style={styles.referenceHeader}>
-        <View>
-          <Text style={styles.referenceTitle}>Clients</Text>
-          <Text style={styles.cardText}>Accueil / Clients</Text>
-        </View>
-        <TouchableOpacity style={styles.referencePrimary} onPress={addClient}>
+        <TouchableOpacity style={[styles.referencePrimary, { marginLeft: 'auto' }]} onPress={addClient}>
           <Ionicons name="add-outline" size={18} color="white" />
           <Text style={styles.referencePrimaryText}>Ajouter un client</Text>
         </TouchableOpacity>
@@ -2345,8 +2340,7 @@ function DriverDirectoryScreen({
   return (
     <View style={styles.clientDirectory}>
       <View style={styles.referenceHeader}>
-        <View><Text style={styles.referenceTitle}>Gestion des chauffeurs</Text><Text style={styles.cardText}>Accueil / Chauffeurs</Text></View>
-        <View style={styles.driverDetailActions}>
+        <View style={[styles.driverDetailActions, { marginLeft: 'auto' }]}>
           <TouchableOpacity style={styles.secondaryAction} onPress={exportDrivers}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
           <TouchableOpacity style={styles.referencePrimary} onPress={addDriver}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un chauffeur</Text></TouchableOpacity>
         </View>
@@ -2471,8 +2465,7 @@ function AgentDirectoryScreen({
   return (
     <View style={styles.clientDirectory}>
       <View style={styles.referenceHeader}>
-        <View><Text style={styles.referenceTitle}>Gestion des agents</Text><Text style={styles.cardText}>Accueil / Agents</Text></View>
-        <View style={styles.driverDetailActions}>
+        <View style={[styles.driverDetailActions, { marginLeft: 'auto' }]}>
           <TouchableOpacity style={styles.secondaryAction} onPress={exportAgents}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
           <TouchableOpacity style={styles.referencePrimary} onPress={addAgent}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un agent</Text></TouchableOpacity>
         </View>
