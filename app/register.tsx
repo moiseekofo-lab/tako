@@ -402,7 +402,9 @@ export default function Register() {
 
         {step === 1 && (
           <View style={styles.content}>
-            <Text style={styles.title}>Bienvenue sur TaKo !</Text>
+            <Text style={styles.title}>
+              Bienvenue sur <Text style={styles.logoWord}>TaKo</Text> !
+            </Text>
             <Text style={styles.subtitle}>Commencez par entrer votre numéro{`\n`}de téléphone.</Text>
             <Text style={styles.label}>Numéro de téléphone</Text>
             <View style={styles.phoneField}>
@@ -621,20 +623,21 @@ const styles = StyleSheet.create({
   stepLabel: { width: '25%', textAlign: 'center', color: MUTED, fontSize: 15, lineHeight: 20, fontWeight: '500' },
   stepLabelActive: { color: BLUE, fontWeight: '800' },
   content: { flex: 1 },
-  title: { color: NAVY, fontSize: 34, lineHeight: 42, fontWeight: '900', marginBottom: 15 },
-  subtitle: { color: MUTED, fontSize: 19, lineHeight: 29, fontWeight: '500', marginBottom: 45 },
-  label: { color: NAVY, fontSize: 17, fontWeight: '800', marginBottom: 12 },
+  title: { color: NAVY, fontSize: 34, lineHeight: 42, fontWeight: '900', marginBottom: 18 },
+  logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 29, lineHeight: 36, fontWeight: '700', letterSpacing: 0.4 },
+  subtitle: { color: MUTED, fontSize: 19, lineHeight: 29, fontWeight: '500', marginBottom: 52 },
+  label: { color: NAVY, fontSize: 17, fontWeight: '800', marginBottom: 14 },
   phoneField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
   countryPickerButton: { minWidth: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   flag: { fontSize: 29 },
   divider: { width: 1, height: 43, backgroundColor: '#E0E2E9', marginHorizontal: 10 },
   countryCode: { color: NAVY, fontSize: 18, fontWeight: '800' },
   phoneInput: { flex: 1, minWidth: 0, color: NAVY, fontSize: 17, fontWeight: '600', paddingVertical: 18 },
-  infoBox: { marginTop: 30, borderRadius: 13, backgroundColor: LIGHT_BLUE, paddingHorizontal: 20, paddingVertical: 19, flexDirection: 'row', alignItems: 'center', gap: 17 },
+  infoBox: { marginTop: 36, borderRadius: 13, backgroundColor: LIGHT_BLUE, paddingHorizontal: 20, paddingVertical: 21, flexDirection: 'row', alignItems: 'center', gap: 17 },
   infoIcon: { width: 43, height: 43, borderRadius: 22, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
   infoLetter: { color: 'white', fontSize: 26, fontWeight: '800' },
   infoText: { flex: 1, color: NAVY, fontSize: 16, lineHeight: 23, fontWeight: '600' },
-  primaryButton: { minHeight: 70, borderRadius: 13, backgroundColor: BLUE, marginTop: 48, paddingHorizontal: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  primaryButton: { minHeight: 70, borderRadius: 13, backgroundColor: BLUE, marginTop: 54, paddingHorizontal: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   primaryDisabled: { opacity: 0.45 },
   primaryText: { flex: 1, color: 'white', fontSize: 21, fontWeight: '800', textAlign: 'center', paddingLeft: 28 },
   countryModalBackdrop: { flex: 1, backgroundColor: 'rgba(7, 20, 60, 0.35)', justifyContent: 'flex-end' },
