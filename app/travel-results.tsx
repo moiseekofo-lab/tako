@@ -94,7 +94,7 @@ export default function TravelResults() {
                   <Text style={styles.price}>{trip.price.toLocaleString('fr-FR')} FC</Text>
                   <Text style={styles.priceLabel}>Par passager</Text>
                   <TouchableOpacity style={styles.chooseButton} onPress={() => selectTrip(trip)} activeOpacity={0.85}>
-                    <Text style={styles.chooseText}>Choisir</Text>
+                    <Text style={styles.chooseText} numberOfLines={1}>Choisir</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -147,8 +147,8 @@ const styles = StyleSheet.create({
   priceColumn: { width: 112, borderLeftWidth: 1, borderLeftColor: '#E6E8EE', paddingLeft: 12, alignItems: 'center' },
   price: { color: '#0759C7', fontSize: 16, fontWeight: '900' },
   priceLabel: { color: '#777A81', fontSize: 11, marginTop: 3 },
-  chooseButton: { backgroundColor: '#072B84', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 22, marginTop: 9 },
-  chooseText: { color: '#fff', fontSize: 14, fontWeight: '800' },
+  chooseButton: { width: '100%', minHeight: 48, backgroundColor: '#072B84', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 8, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
+  chooseText: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
   companyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
   company: { color: '#666A73', fontSize: 12 },
   separator: { color: '#777A81', fontSize: 13 },
