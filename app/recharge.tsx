@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   RefreshControl,
@@ -19,9 +20,9 @@ import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
 const providers = [
-  { name: 'M-Pesa', mark: 'M', color: '#E30613' },
-  { name: 'Airtel Money', mark: 'a', color: '#E60012' },
-  { name: 'Orange Money', mark: '↗', color: '#F58220' },
+  { name: 'M-Pesa', logo: require('../assets/images/mpesa-logo.png') },
+  { name: 'Airtel Money', logo: require('../assets/images/airtel-money-logo.png') },
+  { name: 'Orange Money', logo: require('../assets/images/orange-money-logo.png') },
 ];
 
 export default function Recharge() {
@@ -203,8 +204,8 @@ export default function Recharge() {
                 <View style={[styles.radio, selectedProvider === provider.name && styles.radioSelected]}>
                   {selectedProvider === provider.name ? <View style={styles.radioDot} /> : null}
                 </View>
-                <View style={[styles.providerLogo, { backgroundColor: provider.color }]}>
-                  <Text style={styles.providerMark}>{provider.mark}</Text>
+                <View style={styles.providerLogo}>
+                  <Image source={provider.logo} style={styles.providerLogoImage} resizeMode="contain" />
                 </View>
                 <Text style={styles.providerText}>{provider.name}</Text>
               </TouchableOpacity>
@@ -251,37 +252,37 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 18,
-    paddingTop: 46,
-    paddingBottom: 34,
+    paddingHorizontal: 14,
+    paddingTop: 30,
+    paddingBottom: 12,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 18,
+    marginBottom: 8,
   },
   backButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     borderWidth: 1,
     borderColor: '#139DFF',
     alignItems: 'center',
     justifyContent: 'center',
   },
   backButtonPlaceholder: {
-    width: 48,
+    width: 40,
   },
   headerTitle: {
     color: '#061F68',
-    fontSize: 27,
+    fontSize: 23,
     fontWeight: '900',
   },
   card: {
     borderRadius: 18,
     backgroundColor: 'white',
-    padding: 18,
+    padding: 12,
     shadowColor: '#B7C7E8',
     shadowOffset: { width: 0, height: 5 },
     shadowOpacity: 0.18,
@@ -290,13 +291,13 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: '#061F68',
-    fontSize: 17,
+    fontSize: 14,
     fontWeight: '800',
-    marginBottom: 12,
-    marginTop: 8,
+    marginBottom: 7,
+    marginTop: 3,
   },
   inputBox: {
-    height: 66,
+    height: 50,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -304,8 +305,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#D8DDEA',
-    paddingHorizontal: 16,
-    marginBottom: 22,
+    paddingHorizontal: 13,
+    marginBottom: 12,
   },
   currencyBox: {
     flexDirection: 'row',
@@ -314,40 +315,40 @@ const styles = StyleSheet.create({
   },
   inputDivider: {
     width: 1,
-    height: 38,
+    height: 28,
     backgroundColor: '#D8DDEA',
   },
   currency: {
     color: '#061F68',
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '900',
     marginRight: 12,
   },
   input: {
     flex: 1,
     color: '#202836',
-    fontSize: 22,
+    fontSize: 17,
     fontWeight: '700',
   },
   providerList: {
     borderWidth: 1,
     borderColor: '#D8DDEA',
     borderRadius: 12,
-    paddingHorizontal: 16,
-    marginBottom: 22,
+    paddingHorizontal: 12,
+    marginBottom: 12,
   },
   providerRow: {
-    height: 76,
+    height: 54,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#E6E9F0',
   },
   radio: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     borderWidth: 1.5,
     borderColor: '#061F68',
     alignItems: 'center',
@@ -364,19 +365,19 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
   },
   providerLogo: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 52,
+    height: 42,
+    borderRadius: 8,
+    backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  providerMark: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: '900',
+  providerLogoImage: {
+    width: 48,
+    height: 38,
   },
   continueButton: {
-    height: 62,
+    height: 48,
     borderRadius: 12,
     backgroundColor: '#0877EA',
     alignItems: 'center',
@@ -384,31 +385,31 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '900',
   },
   orText: {
     color: '#666C80',
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
-    marginVertical: 18,
+    marginVertical: 9,
   },
   agentCard: {
     borderRadius: 14,
     backgroundColor: '#F4F8FF',
-    padding: 14,
+    padding: 9,
   },
   agentTopRow: {
-    minHeight: 78,
+    minHeight: 58,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   internalIcon: {
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
@@ -418,18 +419,18 @@ const styles = StyleSheet.create({
   },
   internalTitle: {
     color: '#061F68',
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '900',
   },
   internalHint: {
     color: '#667085',
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '500',
     marginTop: 4,
   },
   qrButton: {
-    height: 56,
+    height: 42,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -438,11 +439,11 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#0877EA',
     backgroundColor: 'white',
-    marginTop: 10,
+    marginTop: 6,
   },
   qrButtonText: {
     color: '#0877EA',
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '900',
   },
   providerButtonDisabled: {
@@ -450,7 +451,7 @@ const styles = StyleSheet.create({
   },
   providerText: {
     color: '#061F68',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
 });
