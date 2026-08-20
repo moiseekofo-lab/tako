@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -20,6 +21,7 @@ import { useStore } from './store';
 
 export default function MyData() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
@@ -117,7 +119,7 @@ export default function MyData() {
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
-      <View style={styles.header}>
+      <View style={[styles.header, { height: 58 + insets.top, paddingTop: insets.top }]}>
         <TouchableOpacity activeOpacity={0.85} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={33} color="#061F68" />
         </TouchableOpacity>
@@ -128,7 +130,11 @@ export default function MyData() {
       <ScrollView
         ref={scrollRef}
         style={styles.scrollArea}
-        contentContainerStyle={[styles.card, keyboardHeight > 0 && styles.cardWithKeyboard]}
+        contentContainerStyle={[
+          styles.card,
+          { paddingBottom: 14 + insets.bottom },
+          keyboardHeight > 0 && styles.cardWithKeyboard,
+        ]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="interactive"
@@ -202,18 +208,16 @@ const styles = StyleSheet.create({
   screen: {
     flex: 1,
     backgroundColor: '#F5F8FF',
-    paddingTop: 58,
   },
   header: {
-    height: 84,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 28,
+    paddingHorizontal: 20,
   },
   headerTitle: {
     color: '#061F68',
-    fontSize: 31,
+    fontSize: 24,
     fontWeight: '900',
   },
   headerSpacer: {
@@ -227,36 +231,36 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    paddingHorizontal: 28,
-    paddingTop: 28,
-    paddingBottom: 120,
+    paddingHorizontal: 22,
+    paddingTop: 14,
+    paddingBottom: 14,
     alignItems: 'stretch',
   },
   cardWithKeyboard: {
     paddingBottom: 28,
   },
   avatarCircle: {
-    width: 145,
-    height: 145,
-    borderRadius: 73,
-    borderWidth: 6,
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    borderWidth: 4,
     borderColor: '#09D457',
     backgroundColor: '#061F68',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: 28,
+    marginBottom: 12,
   },
   notice: {
     color: '#202836',
-    fontSize: 21,
+    fontSize: 14,
     fontWeight: '500',
-    lineHeight: 31,
+    lineHeight: 20,
     textAlign: 'center',
-    marginBottom: 32,
+    marginBottom: 14,
   },
   fieldBlock: {
-    marginBottom: 22,
+    marginBottom: 10,
   },
   label: {
     color: '#139DFF',
@@ -265,31 +269,31 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   input: {
-    minHeight: 42,
+    minHeight: 34,
     borderBottomWidth: 1.3,
     borderBottomColor: '#555',
     color: '#202836',
-    fontSize: 22,
+    fontSize: 16,
     fontWeight: '600',
-    paddingVertical: 6,
+    paddingVertical: 3,
   },
   lockedInput: {
     color: '#9B9B9B',
     borderBottomColor: '#DADADA',
   },
   updateButton: {
-    height: 66,
+    height: 48,
     flexDirection: 'row',
     gap: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 33,
+    borderRadius: 24,
     backgroundColor: '#09D457',
-    marginTop: 28,
+    marginTop: 8,
   },
   updateText: {
     color: 'white',
-    fontSize: 20,
+    fontSize: 17,
     fontWeight: '900',
     letterSpacing: 1.2,
   },
