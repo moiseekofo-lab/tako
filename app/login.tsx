@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import * as SecureStore from 'expo-secure-store';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
@@ -28,6 +30,7 @@ const CLIENT_NAME_KEY = 'tako:lastClientName';
 const ADMIN_SESSION_KEY = 'tako:adminSession';
 const DRIVER_SESSION_KEY = 'tako:driverSession';
 const LANGUAGE_KEY = 'tako:language';
+const BIOMETRIC_USER_KEY = 'tako:biometricUser';
 const SHEET_DISMISS_Y = 560;
 const SHEET_DISMISS_THRESHOLD = 120;
 const API_URL = process.env.EXPO_PUBLIC_API_URL;
@@ -57,6 +60,7 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
   const [clientName, setClientName] = useState('');
   const [keyboardOffset, setKeyboardOffset] = useState(0);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
   const language = useStore((state: any) => state.language) as Language;
   const setGlobalLanguage = useStore((state: any) => state.setLanguage);
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
@@ -79,6 +83,22 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       }
     });
   }, [isWeb, setGlobalLanguage]);
+
+  useEffect(() => {
+    if (isWeb || chauffeurOnly) {
+      return;
+    }
+
+    Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+      SecureStore.getItemAsync(BIOMETRIC_USER_KEY),
+    ])
+      .then(([hasHardware, isEnrolled, storedUser]) => {
+        setBiometricAvailable(hasHardware && isEnrolled && Boolean(storedUser));
+      })
+      .catch(() => setBiometricAvailable(false));
+  }, [chauffeurOnly, isWeb]);
 
   useEffect(() => {
     if (!showLoginForm) {
@@ -375,6 +395,35 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
           role: result.user.role,
         });
 
+        if (!isWeb && rememberAccess) {
+          try {
+            const [hasHardware, isEnrolled] = await Promise.all([
+              LocalAuthentication.hasHardwareAsync(),
+              LocalAuthentication.isEnrolledAsync(),
+            ]);
+
+            if (hasHardware && isEnrolled) {
+              await SecureStore.setItemAsync(
+                BIOMETRIC_USER_KEY,
+                JSON.stringify({
+                  id: result.user.id,
+                  fullName: result.user.fullName,
+                  email: result.user.email,
+                  phone: result.user.phone,
+                  birthDate: result.user.birthDate,
+                  balance: result.user.balance,
+                  nfcCardId: result.user.nfcCardId,
+                  nfcCardBlocked: result.user.nfcCardBlocked,
+                  role: result.user.role,
+                })
+              );
+              setBiometricAvailable(true);
+            }
+          } catch {
+            setBiometricAvailable(false);
+          }
+        }
+
         if (rememberAccess) {
           await AsyncStorage.setItem(CLIENT_NAME_KEY, result.user.fullName.split(' ')[0] || result.user.fullName);
           setClientName(result.user.fullName.split(' ')[0] || result.user.fullName);
@@ -469,6 +518,42 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       pathname: '/home',
       params: { role: 'passager' },
     } as any);
+  };
+
+  const handleBiometricLogin = async () => {
+    try {
+      const authentication = await LocalAuthentication.authenticateAsync({
+        promptMessage: 'Connexion à TaKo',
+        cancelLabel: 'Annuler',
+        disableDeviceFallback: false,
+      });
+
+      if (!authentication.success) {
+        return;
+      }
+
+      const storedUser = await SecureStore.getItemAsync(BIOMETRIC_USER_KEY);
+      if (!storedUser) {
+        setBiometricAvailable(false);
+        Alert.alert('Connexion biométrique', 'Reconnectez-vous une fois avec votre mot de passe pour activer cette option.');
+        return;
+      }
+
+      const user = JSON.parse(storedUser);
+      setCurrentUser(user);
+
+      if (user.role === 'agent') {
+        router.replace('/agent' as any);
+        return;
+      }
+
+      router.replace({
+        pathname: '/home',
+        params: { role: user.role === 'chauffeur' ? 'chauffeur' : 'passager' },
+      } as any);
+    } catch {
+      Alert.alert('Connexion biométrique', 'L’empreinte digitale n’a pas pu être vérifiée.');
+    }
   };
 
   if (chauffeurOnly && isWeb && authMode === 'login') {
@@ -770,6 +855,16 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                   <Ionicons name="key" size={22} color="white" />
                   <Text style={styles.enterText}>{text.enter}</Text>
                 </TouchableOpacity>
+
+                {!isWeb && biometricAvailable ? (
+                  <TouchableOpacity
+                    style={styles.biometricButton}
+                    activeOpacity={0.85}
+                    onPress={handleBiometricLogin}>
+                    <Ionicons name="finger-print" size={27} color="#061F68" />
+                    <Text style={styles.biometricButtonText}>Se connecter avec l’empreinte</Text>
+                  </TouchableOpacity>
+                ) : null}
 
                 {!isWeb ? (
                   <TouchableOpacity activeOpacity={0.75} onPress={() => router.push('/register' as any)}>
@@ -2002,6 +2097,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '900',
     letterSpacing: 1.2,
+  },
+  biometricButton: {
+    minHeight: 48,
+    marginTop: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: '#061F68',
+    backgroundColor: 'white',
+  },
+  biometricButtonText: {
+    color: '#061F68',
+    fontSize: 14,
+    fontWeight: '800',
   },
   registerHint: {
     color: '#8D8D8D',

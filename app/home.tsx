@@ -3,6 +3,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TakoLogo } from '../components/tako-logo';
 import { getClientProfile, saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
 import { translations, type Language } from './i18n';
@@ -22,6 +23,7 @@ const clientPhysicalCardImage = require('../assets/images/client-physical-card.p
 
 export default function Home() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const isWeb = Platform.OS === 'web';
   const params = useLocalSearchParams<{ role?: string }>();
   const [paymentAmount, setPaymentAmount] = useState('');
@@ -396,11 +398,11 @@ export default function Home() {
 
   const menuItems = [
     { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
-    { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
+    { icon: 'car-key', title: text.carRental, subtitle: text.carRentalSubtitle },
     { icon: 'ticket-confirmation-outline', title: text.travelTickets, subtitle: text.travelTicketsSubtitle, route: '/travel-tickets' },
     { icon: 'calendar-check-outline', title: text.myReservations, subtitle: text.myReservationsSubtitle, route: '/my-reservations' },
     { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
-    { icon: 'chat-outline', title: text.chat, subtitle: text.chatSubtitle },
+    { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
   ];
 
   const openClientMenu = () => {
@@ -551,7 +553,7 @@ export default function Home() {
         </View>
 
         <ScrollView
-          contentContainerStyle={styles.clientContent}
+          contentContainerStyle={[styles.clientContent, { paddingBottom: 136 + insets.bottom }]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
@@ -622,7 +624,11 @@ export default function Home() {
 
         </ScrollView>
 
-        <View style={styles.clientBottomNav}>
+        <View
+          style={[
+            styles.clientBottomNav,
+            { height: 118 + insets.bottom, paddingBottom: 18 + insets.bottom },
+          ]}>
           <View pointerEvents="none" style={styles.bottomNavWave}>
             <View style={styles.bottomNavCurveLeft} />
             <View style={styles.bottomNavCurveRight} />

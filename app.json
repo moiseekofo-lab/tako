@@ -51,11 +51,18 @@
       ],
       "expo-camera",
       [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Autoriser TaKo à utiliser Face ID pour vous connecter à votre compte."
+        }
+      ],
+      [
         "react-native-nfc-manager",
         {
           "nfcPermission": "Autoriser TaKo à lire les cartes NFC pour les paiements."
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,
