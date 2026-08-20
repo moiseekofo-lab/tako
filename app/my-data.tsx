@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 24,
-    backgroundColor: '#09D457',
+    backgroundColor: '#061F68',
     marginTop: 8,
   },
   updateText: {

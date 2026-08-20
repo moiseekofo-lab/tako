@@ -2074,7 +2074,7 @@ const styles = StyleSheet.create({
     borderRadius: 31,
     borderWidth: 2,
     borderColor: 'white',
-    backgroundColor: '#09D457',
+    backgroundColor: '#061F68',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.18,
@@ -2143,7 +2143,7 @@ const styles = StyleSheet.create({
     borderRadius: 34,
     borderWidth: 2,
     borderColor: 'white',
-    backgroundColor: '#09D457',
+    backgroundColor: '#061F68',
   },
   primaryText: {
     color: 'white',
