@@ -94,13 +94,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: '#061F68',
-    fontSize: 31,
+    fontSize: 24,
     fontWeight: '800',
     marginBottom: 8,
   },
   subtitle: {
     color: '#52627A',
-    fontSize: 18,
+    fontSize: 14,
     fontWeight: '700',
     marginBottom: 34,
   },
@@ -122,13 +122,13 @@ const styles = StyleSheet.create({
   },
   identityLabel: {
     color: '#A9D9FF',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     marginBottom: 5,
   },
   identity: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: '900',
   },
 });
