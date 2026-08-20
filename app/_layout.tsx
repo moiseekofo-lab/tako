@@ -32,6 +32,17 @@ type FontPatchGlobal = typeof globalThis & {
   __takoFontPatchApplied?: boolean;
 };
 
+const normalizeFontWeight = (value: unknown) => {
+  if (value === 'normal') return '500';
+  if (value === 'bold') return '900';
+
+  const numericWeight = Number(value);
+  if (!Number.isFinite(numericWeight)) return value;
+  if (numericWeight <= 500) return '500';
+  if (numericWeight <= 700) return '700';
+  return '900';
+};
+
 const patchFontSizes = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.map(patchFontSizes);
@@ -50,12 +61,17 @@ const patchFontSizes = (value: unknown): unknown => {
       return;
     }
 
+    if (key === 'fontWeight') {
+      nextStyle[key] = normalizeFontWeight(item);
+      return;
+    }
+
     nextStyle[key] = patchFontSizes(item);
   });
 
   if (
     APP_FONT_FAMILY &&
-    typeof nextStyle.fontSize === 'number' &&
+    (typeof nextStyle.fontSize === 'number' || typeof nextStyle.fontWeight === 'string') &&
     typeof nextStyle.fontFamily !== 'string'
   ) {
     nextStyle.fontFamily = APP_FONT_FAMILY;
