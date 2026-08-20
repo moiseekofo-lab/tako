@@ -111,9 +111,9 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   identityBox: {
-    width: '100%',
-    height: 92,
-    borderRadius: 10,
+    width: '88%',
+    height: 64,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#126CDE',
     backgroundColor: '#082A82',
@@ -124,7 +124,7 @@ const styles = StyleSheet.create({
     color: '#A9D9FF',
     fontSize: 14,
     fontWeight: '700',
-    marginBottom: 5,
+    marginBottom: 2,
   },
   identity: {
     color: 'white',
