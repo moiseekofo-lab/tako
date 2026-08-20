@@ -26,7 +26,7 @@ const normalizeFontSize = (fontSize: number, styleName: string, hasCustomFont: b
   const name = styleName.toLowerCase();
   if (/menu|navigation|navtext/.test(name)) return 14;
   if (/secondary|subtitle|hint|meta|caption|description|muted|date|email/.test(name)) return 14;
-  if (/buttontext|buttonlabel|ctatext|actiontext|entertext|continuetext/.test(name)) return 17;
+  if (/buttontext|buttonlabel|ctatext|actiontext|entertext|continuetext|searchtext|choosetext|paytext|updatetext/.test(name)) return 17;
   if (/sectiontitle/.test(name)) return 22;
   if (/cardtitle|optiontitle|itemtitle|providertitle|providertext|internaltitle/.test(name)) return 18;
   if (/headertitle|pagetitle|logintitle|recoverytitle|greeting|profiletitle/.test(name) || name === 'title') return 24;
