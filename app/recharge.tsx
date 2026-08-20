@@ -1,6 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -18,20 +18,33 @@ import { initiateMobileMoneyRecharge } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
-const providers = ['M-Pesa', 'Airtel Money', 'Orange Money'];
+const providers = [
+  { name: 'M-Pesa', mark: 'M', color: '#E30613' },
+  { name: 'Airtel Money', mark: 'a', color: '#E60012' },
+  { name: 'Orange Money', mark: '↗', color: '#F58220' },
+];
 
 export default function Recharge() {
   const router = useRouter();
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState('M-Pesa');
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const hasPrefilledWallet = useRef(false);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
   const addNotification = useStore((state: any) => state.addNotification);
   const language = useStore((state: any) => state.language) as Language;
   const currentUser = useStore((state: any) => state.currentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const text = translations[language];
+
+  useEffect(() => {
+    if (!hasPrefilledWallet.current && currentUser?.phone) {
+      hasPrefilledWallet.current = true;
+      setWalletId(String(currentUser.phone));
+    }
+  }, [currentUser?.phone]);
 
   useEffect(() => {
     if (Platform.OS === 'web' && !isAuthenticated) {
@@ -145,17 +158,15 @@ export default function Recharge() {
         </View>
 
         <View style={styles.card}>
-          <View style={styles.iconCircle}>
-            <MaterialCommunityIcons name="cash-plus" size={42} color="white" />
-          </View>
-
-          <Text style={styles.title}>{text.rechargeAccount}</Text>
-          <Text style={styles.subtitle}>{text.chooseRecharge}</Text>
-
+          <Text style={styles.fieldLabel}>Montant à recharger</Text>
           <View style={styles.inputBox}>
-            <Text style={styles.currency}>FC</Text>
+            <View style={styles.currencyBox}>
+              <Text style={styles.currency}>FC</Text>
+              <Ionicons name="chevron-down" size={20} color="#59658A" />
+            </View>
+            <View style={styles.inputDivider} />
             <TextInput
-              placeholder={text.amount}
+              placeholder="10 000"
               placeholderTextColor="#87909F"
               keyboardType="numeric"
               value={amount}
@@ -165,6 +176,7 @@ export default function Recharge() {
             />
           </View>
 
+          <Text style={styles.fieldLabel}>Numéro Mobile Money</Text>
           <View style={styles.inputBox}>
             <MaterialCommunityIcons name="cellphone" size={24} color="#061F68" />
             <TextInput
@@ -176,39 +188,55 @@ export default function Recharge() {
               style={styles.input}
               returnKeyType="done"
             />
+            <Ionicons name="person-outline" size={25} color="#061F68" />
+          </View>
+
+          <Text style={styles.fieldLabel}>Choisissez le service de paiement</Text>
+          <View style={styles.providerList}>
+            {providers.map((provider) => (
+              <TouchableOpacity
+                key={provider.name}
+                style={styles.providerRow}
+                activeOpacity={0.88}
+                disabled={Boolean(loadingProvider)}
+                onPress={() => setSelectedProvider(provider.name)}>
+                <View style={[styles.radio, selectedProvider === provider.name && styles.radioSelected]}>
+                  {selectedProvider === provider.name ? <View style={styles.radioDot} /> : null}
+                </View>
+                <View style={[styles.providerLogo, { backgroundColor: provider.color }]}>
+                  <Text style={styles.providerMark}>{provider.mark}</Text>
+                </View>
+                <Text style={styles.providerText}>{provider.name}</Text>
+              </TouchableOpacity>
+            ))}
           </View>
 
           <TouchableOpacity
-            style={styles.internalButton}
+            style={[styles.continueButton, loadingProvider && styles.providerButtonDisabled]}
             activeOpacity={0.88}
             disabled={Boolean(loadingProvider)}
-            onPress={handleInternalRecharge}>
-            <View style={styles.internalIcon}>
-              <MaterialCommunityIcons name="wallet-plus" size={25} color="#061F68" />
-            </View>
-            <View style={styles.internalTextBox}>
-              <Text style={styles.internalTitle}>{text.internalRecharge}</Text>
-              <Text style={styles.internalHint}>{text.internalRechargeHint}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={24} color="#061F68" />
+            onPress={() => handleRecharge(selectedProvider)}>
+            {loadingProvider ? <ActivityIndicator color="white" /> : <Text style={styles.continueText}>Continuer</Text>}
           </TouchableOpacity>
 
-          <View style={styles.providerGrid}>
-            {providers.map((provider) => (
-              <TouchableOpacity
-                key={provider}
-                style={[styles.providerButton, loadingProvider ? styles.providerButtonDisabled : null]}
-                activeOpacity={0.88}
-                disabled={Boolean(loadingProvider)}
-                onPress={() => handleRecharge(provider)}>
-                {loadingProvider === provider ? (
-                  <ActivityIndicator color="white" />
-                ) : (
-                  <MaterialCommunityIcons name="cellphone" size={27} color="white" />
-                )}
-                <Text style={styles.providerText}>{provider}</Text>
-              </TouchableOpacity>
-            ))}
+          <Text style={styles.orText}>OU</Text>
+
+          <View style={styles.agentCard}>
+            <TouchableOpacity style={styles.agentTopRow} activeOpacity={0.88} onPress={handleInternalRecharge}>
+              <View style={styles.internalIcon}>
+                <MaterialCommunityIcons name="account-plus" size={29} color="#0877EA" />
+                <MaterialCommunityIcons name="qrcode" size={18} color="#061F68" />
+              </View>
+              <View style={styles.internalTextBox}>
+                <Text style={styles.internalTitle}>Recharger auprès d’un agent</Text>
+                <Text style={styles.internalHint}>Générez votre QR code et présentez-le à un agent TaKo.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={28} color="#061F68" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.qrButton} activeOpacity={0.88} onPress={handleInternalRecharge}>
+              <MaterialCommunityIcons name="qrcode" size={25} color="#0877EA" />
+              <Text style={styles.qrButtonText}>Afficher mon QR code</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
@@ -223,15 +251,15 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 28,
-    paddingTop: 58,
+    paddingHorizontal: 18,
+    paddingTop: 46,
     paddingBottom: 34,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 36,
+    marginBottom: 18,
   },
   backButton: {
     width: 48,
@@ -251,40 +279,43 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   card: {
-    borderRadius: 24,
+    borderRadius: 18,
     backgroundColor: 'white',
-    padding: 24,
+    padding: 18,
+    shadowColor: '#B7C7E8',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 3,
   },
-  iconCircle: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: '#09D457',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 24,
-  },
-  title: {
+  fieldLabel: {
     color: '#061F68',
-    fontSize: 28,
-    fontWeight: '900',
-    marginBottom: 8,
-  },
-  subtitle: {
-    color: '#667085',
     fontSize: 17,
-    fontWeight: '600',
-    marginBottom: 28,
+    fontWeight: '800',
+    marginBottom: 12,
+    marginTop: 8,
   },
   inputBox: {
-    height: 68,
+    height: 66,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
     borderRadius: 12,
-    backgroundColor: '#F4F5F9',
-    paddingHorizontal: 18,
-    marginBottom: 14,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#D8DDEA',
+    paddingHorizontal: 16,
+    marginBottom: 22,
+  },
+  currencyBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  inputDivider: {
+    width: 1,
+    height: 38,
+    backgroundColor: '#D8DDEA',
   },
   currency: {
     color: '#061F68',
@@ -298,26 +329,86 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
-  providerGrid: {
-    marginTop: 10,
-    gap: 12,
+  providerList: {
+    borderWidth: 1,
+    borderColor: '#D8DDEA',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    marginBottom: 22,
   },
-  internalButton: {
-    minHeight: 72,
+  providerRow: {
+    height: 76,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E6E9F0',
+  },
+  radio: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    borderWidth: 1.5,
+    borderColor: '#061F68',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  radioSelected: {
+    borderColor: '#0877EA',
+    borderWidth: 6,
+  },
+  radioDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'white',
+  },
+  providerLogo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  providerMark: {
+    color: 'white',
+    fontSize: 24,
+    fontWeight: '900',
+  },
+  continueButton: {
+    height: 62,
+    borderRadius: 12,
+    backgroundColor: '#0877EA',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  continueText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  orText: {
+    color: '#666C80',
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginVertical: 18,
+  },
+  agentCard: {
     borderRadius: 14,
-    backgroundColor: '#EAF4FF',
-    borderWidth: 1,
-    borderColor: '#BBDFFF',
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    backgroundColor: '#F4F8FF',
+    padding: 14,
+  },
+  agentTopRow: {
+    minHeight: 78,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   internalIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     backgroundColor: 'white',
     alignItems: 'center',
     justifyContent: 'center',
@@ -327,30 +418,39 @@ const styles = StyleSheet.create({
   },
   internalTitle: {
     color: '#061F68',
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '900',
   },
   internalHint: {
     color: '#667085',
     fontSize: 13,
-    fontWeight: '700',
-    marginTop: 2,
+    lineHeight: 18,
+    fontWeight: '500',
+    marginTop: 4,
   },
-  providerButton: {
-    height: 68,
+  qrButton: {
+    height: 56,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    borderRadius: 12,
-    backgroundColor: '#139DFF',
+    gap: 10,
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#0877EA',
+    backgroundColor: 'white',
+    marginTop: 10,
+  },
+  qrButtonText: {
+    color: '#0877EA',
+    fontSize: 16,
+    fontWeight: '900',
   },
   providerButtonDisabled: {
     opacity: 0.72,
   },
   providerText: {
-    color: 'white',
-    fontSize: 19,
+    color: '#061F68',
+    fontSize: 18,
     fontWeight: '900',
   },
 });
