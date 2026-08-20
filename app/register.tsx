@@ -402,9 +402,11 @@ export default function Register() {
 
         {step === 1 && (
           <View style={styles.content}>
-            <Text style={styles.title}>
-              Bienvenue sur <Text style={styles.logoWord}>TaKo</Text> !
-            </Text>
+            <View style={styles.welcomeTitleRow}>
+              <Text style={styles.welcomeTitleText}>Bienvenue sur</Text>
+              <Text style={styles.logoWord}>TaKo</Text>
+              <Text style={styles.welcomeTitleText}>!</Text>
+            </View>
             <Text style={styles.subtitle}>Commencez par entrer votre numéro{`\n`}de téléphone.</Text>
             <Text style={styles.label}>Numéro de téléphone</Text>
             <View style={styles.phoneField}>
@@ -624,7 +626,9 @@ const styles = StyleSheet.create({
   stepLabelActive: { color: BLUE, fontWeight: '800' },
   content: { flex: 1 },
   title: { color: NAVY, fontSize: 34, lineHeight: 42, fontWeight: '900', marginBottom: 18 },
-  logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 29, lineHeight: 36, fontWeight: '700', letterSpacing: 0.4 },
+  welcomeTitleRow: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 18 },
+  welcomeTitleText: { color: NAVY, fontSize: 24, lineHeight: 34, fontWeight: '900' },
+  logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 31, lineHeight: 38, fontWeight: 'normal', letterSpacing: 0.4 },
   subtitle: { color: MUTED, fontSize: 19, lineHeight: 29, fontWeight: '500', marginBottom: 52 },
   label: { color: NAVY, fontSize: 17, fontWeight: '800', marginBottom: 14 },
   phoneField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
