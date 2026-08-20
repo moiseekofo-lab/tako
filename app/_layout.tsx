@@ -2,25 +2,13 @@ import { useFonts } from 'expo-font';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { AppState, Dimensions, Platform, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
+import { AppState, Platform, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useStore } from './store';
 
 const LAST_ACTIVITY_KEY = 'tako:lastActivityAt';
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_WRITE_THROTTLE_MS = 10 * 1000;
 
-const getFontScale = () => {
-  if (Platform.OS === 'web') return 0.88;
-
-  const width = Dimensions.get('window').width;
-  if (width <= 340) return 0.78;
-  if (width <= 360) return 0.82;
-  if (width <= 390) return 0.88;
-  if (width <= 430) return 0.94;
-  return 1;
-};
-
-const FONT_SCALE = getFontScale();
 const APP_FONT_FAMILY = Platform.select({
   android: 'Roboto',
   ios: 'System',
@@ -32,20 +20,27 @@ type FontPatchGlobal = typeof globalThis & {
   __takoFontPatchApplied?: boolean;
 };
 
-const normalizeFontWeight = (value: unknown) => {
-  if (value === 'normal') return '500';
-  if (value === 'bold') return '900';
+const normalizeFontSize = (fontSize: number, styleName: string, hasCustomFont: boolean) => {
+  if (hasCustomFont) return fontSize;
 
-  const numericWeight = Number(value);
-  if (!Number.isFinite(numericWeight)) return value;
-  if (numericWeight <= 500) return '500';
-  if (numericWeight <= 700) return '700';
-  return '900';
+  const name = styleName.toLowerCase();
+  if (/menu|navigation|navtext/.test(name)) return 14;
+  if (/secondary|subtitle|hint|meta|caption|description|muted|date|email/.test(name)) return 14;
+  if (/buttontext|buttonlabel|ctatext|actiontext|entertext|continuetext/.test(name)) return 17;
+  if (/sectiontitle/.test(name)) return 22;
+  if (/cardtitle|optiontitle|itemtitle|providertitle|providertext|internaltitle/.test(name)) return 18;
+  if (/headertitle|pagetitle|logintitle|recoverytitle|greeting|profiletitle/.test(name) || name === 'title') return 24;
+
+  if (fontSize >= 24) return 24;
+  if (fontSize >= 21) return 22;
+  if (fontSize >= 18) return 18;
+  if (fontSize >= 16) return 16;
+  return 14;
 };
 
-const patchFontSizes = (value: unknown): unknown => {
+const patchFontSizes = (value: unknown, styleName = ''): unknown => {
   if (Array.isArray(value)) {
-    return value.map(patchFontSizes);
+    return value.map((item) => patchFontSizes(item, styleName));
   }
 
   if (!value || typeof value !== 'object') {
@@ -54,24 +49,20 @@ const patchFontSizes = (value: unknown): unknown => {
 
   const style = value as Record<string, unknown>;
   const nextStyle: Record<string, unknown> = {};
+  const hasCustomFont = typeof style.fontFamily === 'string';
 
   Object.entries(style).forEach(([key, item]) => {
     if (key === 'fontSize' && typeof item === 'number') {
-      nextStyle[key] = Math.max(8, Math.round(item * FONT_SCALE));
+      nextStyle[key] = normalizeFontSize(item, styleName, hasCustomFont);
       return;
     }
 
-    if (key === 'fontWeight') {
-      nextStyle[key] = normalizeFontWeight(item);
-      return;
-    }
-
-    nextStyle[key] = patchFontSizes(item);
+    nextStyle[key] = patchFontSizes(item, key);
   });
 
   if (
     APP_FONT_FAMILY &&
-    (typeof nextStyle.fontSize === 'number' || typeof nextStyle.fontWeight === 'string') &&
+    typeof nextStyle.fontSize === 'number' &&
     typeof nextStyle.fontFamily !== 'string'
   ) {
     nextStyle.fontFamily = APP_FONT_FAMILY;
