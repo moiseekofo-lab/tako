@@ -1030,11 +1030,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                 <View style={styles.simpleBus}>
                   <View style={styles.simpleBusTop} />
                   <View style={styles.simpleBusBody}>
-                    <View style={styles.busBackLights}>
-                      <View style={styles.busLight} />
-                      <View style={styles.busLight} />
-                      <View style={styles.busLight} />
-                    </View>
                     <View style={styles.simpleWindowRow}>
                       <View style={styles.simpleWindow} />
                       <View style={styles.simpleWindow} />
@@ -2222,18 +2217,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#139DFF',
     overflow: 'hidden',
   },
-  busBackLights: {
-    position: 'absolute',
-    left: 3,
-    bottom: 10,
-    gap: 2,
-  },
-  busLight: {
-    width: 4,
-    height: 5,
-    borderRadius: 2,
-    backgroundColor: '#F0494F',
-  },
   simpleWindowRow: {
     position: 'absolute',
     left: 18,
@@ -2268,7 +2251,7 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 18,
     fontFamily: 'Alkatra',
-    fontWeight: '900',
+    lineHeight: 25,
   },
   busDoor: {
     position: 'absolute',
