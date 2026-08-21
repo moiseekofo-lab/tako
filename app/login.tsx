@@ -2246,12 +2246,14 @@ const styles = StyleSheet.create({
   },
   simpleBusLogo: {
     position: 'absolute',
-    left: 72,
-    bottom: 9,
+    left: 0,
+    right: 26,
+    bottom: 0,
     color: 'white',
     fontSize: 18,
     fontFamily: 'Alkatra',
     lineHeight: 25,
+    textAlign: 'center',
   },
   busDoor: {
     position: 'absolute',
