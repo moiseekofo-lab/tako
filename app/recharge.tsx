@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 14,
     paddingTop: 30,
-    paddingBottom: 12,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -280,7 +280,9 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   card: {
-    borderRadius: 18,
+    flexGrow: 1,
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
     backgroundColor: 'white',
     padding: 12,
     shadowColor: '#B7C7E8',
