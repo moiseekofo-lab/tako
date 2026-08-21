@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 
@@ -19,6 +19,9 @@ const extras = [
   { key: 'wifi', title: 'Wi-Fi à bord', subtitle: 'Restez connecté pendant le trajet', icon: 'wifi', price: 5000 },
 ] as const;
 type Step = 1 | 2 | 3;
+type DateTarget = 'pickup' | 'return';
+const formatDate = (date: Date) => date.toLocaleDateString('fr-FR');
+const daysBetween = (start: Date, end: Date) => Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
 
 export default function CarRental() {
   const router = useRouter();
@@ -27,14 +30,25 @@ export default function CarRental() {
   const [step, setStep] = useState<Step>(1);
   const [pickup, setPickup] = useState('Kinshasa, Gombe');
   const [destination, setDestination] = useState('Kinshasa, Gombe');
+  const [pickupDate, setPickupDate] = useState(new Date());
+  const [returnDate, setReturnDate] = useState(() => { const date = new Date(); date.setDate(date.getDate() + 2); return date; });
+  const [calendarTarget, setCalendarTarget] = useState<DateTarget | null>(null);
   const [vehicleKey, setVehicleKey] = useState<(typeof vehicles)[number]['key']>('economy');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const vehicle = vehicles.find((item) => item.key === vehicleKey) ?? vehicles[0];
   const chosenExtras = extras.filter((item) => selectedExtras.includes(item.key));
-  const total = useMemo(() => vehicle.price * 2 + chosenExtras.reduce((sum, item) => sum + item.price, 0), [vehicle.price, chosenExtras]);
+  const rentalDays = daysBetween(pickupDate, returnDate);
+  const total = useMemo(() => vehicle.price * rentalDays + chosenExtras.reduce((sum, item) => sum + item.price, 0), [vehicle.price, rentalDays, chosenExtras]);
   const toggle = (key: string) => setSelectedExtras((list) => list.includes(key) ? list.filter((item) => item !== key) : [...list, key]);
   const cycle = (value: string, setter: (next: string) => void) => setter(value === 'Kinshasa, Gombe' ? 'Aéroport de N’Djili' : 'Kinshasa, Gombe');
   const back = () => step === 1 ? router.back() : setStep((step - 1) as Step);
+  const chooseDate = (date: Date) => {
+    if (calendarTarget === 'pickup') {
+      setPickupDate(date);
+      if (date >= returnDate) { const next = new Date(date); next.setDate(next.getDate() + 1); setReturnDate(next); }
+    } else if (calendarTarget === 'return') setReturnDate(date);
+    setCalendarTarget(null);
+  };
 
   return <View style={styles.screen}>
     <View style={[styles.page, { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 }]}>
@@ -49,7 +63,7 @@ export default function CarRental() {
           <Field icon="location-outline" label="Lieu de prise en charge" value={pickup} onPress={() => cycle(pickup, setPickup)} />
           <Field icon="location-outline" label="Lieu de retour" value={destination} onPress={() => cycle(destination, setDestination)} />
           <Text style={styles.section}>Dates et heures</Text>
-          <View style={styles.columns}><View style={styles.half}><Field compact icon="calendar-outline" label="Date de prise en charge" value="21/08/2026" /></View><View style={styles.half}><Field compact icon="calendar-outline" label="Date de retour" value="23/08/2026" /></View></View>
+          <View style={styles.columns}><View style={styles.half}><Field compact icon="calendar-outline" label="Date de prise en charge" value={formatDate(pickupDate)} onPress={() => setCalendarTarget('pickup')} /></View><View style={styles.half}><Field compact icon="calendar-outline" label="Date de retour" value={formatDate(returnDate)} onPress={() => setCalendarTarget('return')} /></View></View>
           <View style={styles.columns}><View style={styles.half}><Field compact icon="time-outline" label="Heure de prise en charge" value="10:00" /></View><View style={styles.half}><Field compact icon="time-outline" label="Heure de retour" value="10:00" /></View></View>
         </>}
         {step === 2 && <>
@@ -70,8 +84,8 @@ export default function CarRental() {
           <Text style={styles.section}>Récapitulatif de votre réservation</Text>
           <View style={styles.summary}>
             <Summary icon="location-outline" label="Prise en charge" value={pickup} /><Summary icon="location-outline" label="Retour" value={destination} />
-            <Summary icon="calendar-outline" label="Du" value="21/08/2026 à 10:00" /><Summary icon="calendar-outline" label="Au" value="23/08/2026 à 10:00" />
-            <Summary icon="time-outline" label="Durée" value="2 jours" /><Summary icon="car-outline" label="Véhicule" value={vehicle.label} />
+            <Summary icon="calendar-outline" label="Du" value={`${formatDate(pickupDate)} à 10:00`} /><Summary icon="calendar-outline" label="Au" value={`${formatDate(returnDate)} à 10:00`} />
+            <Summary icon="time-outline" label="Durée" value={`${rentalDays} jour${rentalDays > 1 ? 's' : ''}`} /><Summary icon="car-outline" label="Véhicule" value={vehicle.label} />
             <Summary icon="settings-outline" label="Options" value={chosenExtras.length ? chosenExtras.map((item) => item.title).join(', ') : 'Aucune'} />
           </View>
           <View style={styles.estimate}><View><Text style={styles.optionTitle}>Prix total estimé</Text><Text style={styles.detail}>Détail du prix</Text></View><Text style={styles.total}>{total.toLocaleString('fr-FR')} FC</Text></View>
@@ -82,8 +96,27 @@ export default function CarRental() {
       <TouchableOpacity style={styles.button} onPress={() => step < 3 ? setStep((step + 1) as Step) : Alert.alert('Réservation confirmée', `${vehicle.label} • ${total.toLocaleString('fr-FR')} FC`)}>
         <Text style={styles.buttonText}>{step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
       </TouchableOpacity>
+      <CalendarModal visible={calendarTarget !== null} value={calendarTarget === 'return' ? returnDate : pickupDate} minimumDate={calendarTarget === 'return' ? new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate() + 1) : new Date()} onSelect={chooseDate} onClose={() => setCalendarTarget(null)} />
     </View>
   </View>;
+}
+
+function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { visible: boolean; value: Date; minimumDate: Date; onSelect: (date: Date) => void; onClose: () => void }) {
+  const [month, setMonth] = useState(new Date(value.getFullYear(), value.getMonth(), 1));
+  useEffect(() => { if (visible) setMonth(new Date(value.getFullYear(), value.getMonth(), 1)); }, [visible, value]);
+  const firstDay = (month.getDay() + 6) % 7;
+  const count = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells = [...Array(firstDay).fill(null), ...Array.from({ length: count }, (_, i) => i + 1)];
+  const normalizedMinimum = new Date(minimumDate.getFullYear(), minimumDate.getMonth(), minimumDate.getDate());
+  const moveMonth = (offset: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + offset, 1));
+  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <View style={styles.modalShade}><View style={styles.calendar}>
+      <View style={styles.calendarHeader}><TouchableOpacity onPress={() => moveMonth(-1)}><Ionicons name="chevron-back" size={25} color={NAVY} /></TouchableOpacity><Text style={styles.calendarTitle}>{month.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</Text><TouchableOpacity onPress={() => moveMonth(1)}><Ionicons name="chevron-forward" size={25} color={NAVY} /></TouchableOpacity></View>
+      <View style={styles.week}>{['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => <Text key={`${day}-${index}`} style={styles.weekDay}>{day}</Text>)}</View>
+      <View style={styles.days}>{cells.map((day, index) => { if (!day) return <View key={`empty-${index}`} style={styles.dayCell} />; const date = new Date(month.getFullYear(), month.getMonth(), day); const disabled = date < normalizedMinimum; const selected = date.toDateString() === value.toDateString(); return <TouchableOpacity key={day} disabled={disabled} style={styles.dayCell} onPress={() => onSelect(date)}><View style={[styles.dayCircle, selected && styles.daySelected]}><Text style={[styles.dayText, disabled && styles.dayDisabled, selected && styles.dayTextSelected]}>{day}</Text></View></TouchableOpacity>; })}</View>
+      <TouchableOpacity style={styles.calendarClose} onPress={onClose}><Text style={styles.calendarCloseText}>Fermer</Text></TouchableOpacity>
+    </View></View>
+  </Modal>;
 }
 
 function Stepper({ step }: { step: Step }) {
@@ -109,4 +142,5 @@ const styles = StyleSheet.create({
   optionCard: { borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, overflow: 'hidden' }, option: { minHeight: 72, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#E7EAF0' }, iconBox: { width: 40, height: 40, borderRadius: 9, backgroundColor: '#F0F6FF', alignItems: 'center', justifyContent: 'center' }, optionTitle: { color: NAVY, fontSize: 16, fontWeight: '800' }, checkbox: { width: 24, height: 24, borderRadius: 5, borderWidth: 1.5, borderColor: '#A8ADB7', alignItems: 'center', justifyContent: 'center' }, checkboxActive: { borderColor: BLUE, backgroundColor: BLUE },
   summary: { borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, padding: 15, gap: 13 }, summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 }, summaryLabel: { width: 112, color: NAVY, fontSize: 14, fontWeight: '800' }, summaryValue: { flex: 1, color: '#4C5567', fontSize: 14, lineHeight: 19 }, estimate: { minHeight: 86, marginTop: 16, borderRadius: 12, backgroundColor: '#F0F5FF', paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, detail: { color: '#596274', fontSize: 14, marginTop: 8 }, total: { color: BLUE, fontSize: 22, fontWeight: '900' }, client: { minHeight: 72, borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }, clientLabel: { color: '#687184', fontSize: 14 }, clientName: { color: NAVY, fontSize: 16, fontWeight: '800', marginTop: 3 },
   button: { height: 58, borderRadius: 11, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
+  modalShade: { flex: 1, backgroundColor: 'rgba(3,15,50,0.48)', alignItems: 'center', justifyContent: 'center', padding: 22 }, calendar: { width: '100%', maxWidth: 390, borderRadius: 18, backgroundColor: 'white', padding: 18 }, calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }, calendarTitle: { color: NAVY, fontSize: 18, fontWeight: '900', textTransform: 'capitalize' }, week: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' }, days: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' }, dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: BLUE }, dayText: { color: NAVY, fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: 'white', fontWeight: '900' }, calendarClose: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, calendarCloseText: { color: BLUE, fontSize: 16, fontWeight: '800' },
 });
