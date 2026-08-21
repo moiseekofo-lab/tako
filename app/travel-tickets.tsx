@@ -1,23 +1,17 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Modal, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-type ChoiceKey = 'departure' | 'destination' | 'date' | 'passengers' | null;
+type ChoiceKey = 'departure' | 'destination' | 'passengers' | null;
 const cities = ['Kinshasa', 'Matadi', 'Boma', 'Muanda'];
-
-const dateChoices = () => Array.from({ length: 14 }, (_, index) => {
-  const date = new Date();
-  date.setDate(date.getDate() + index + 1);
-  return date.toLocaleDateString('fr-FR');
-});
 
 export default function TravelTickets() {
   const router = useRouter();
-  const dates = useMemo(dateChoices, []);
   const [departure, setDeparture] = useState('Kinshasa');
   const [destination, setDestination] = useState('Matadi');
-  const [date, setDate] = useState(dates[0]);
+  const [travelDate, setTravelDate] = useState(() => { const date = new Date(); date.setDate(date.getDate() + 1); return date; });
+  const [calendarVisible, setCalendarVisible] = useState(false);
   const [passengers, setPassengers] = useState('1 Passager');
   const [choice, setChoice] = useState<ChoiceKey>(null);
 
@@ -25,14 +19,11 @@ export default function TravelTickets() {
     ? cities.filter((city) => city !== destination)
     : choice === 'destination'
       ? cities.filter((city) => city !== departure)
-      : choice === 'date'
-        ? dates
-        : ['1 Passager', '2 Passagers', '3 Passagers', '4 Passagers', '5 Passagers'];
+      : ['1 Passager', '2 Passagers', '3 Passagers', '4 Passagers', '5 Passagers'];
 
   const choose = (value: string) => {
     if (choice === 'departure') setDeparture(value);
     if (choice === 'destination') setDestination(value);
-    if (choice === 'date') setDate(value);
     if (choice === 'passengers') setPassengers(value);
     setChoice(null);
   };
@@ -40,7 +31,7 @@ export default function TravelTickets() {
   const search = () => {
     router.push({
       pathname: '/travel-results',
-      params: { departure, destination, date, passengers },
+      params: { departure, destination, date: travelDate.toLocaleDateString('fr-FR'), passengers },
     });
   };
 
@@ -66,7 +57,7 @@ export default function TravelTickets() {
 
           <Field label="Ville de départ" value={departure} icon="location-outline" onPress={() => setChoice('departure')} />
           <Field label="Destination" value={destination} icon="location-outline" onPress={() => setChoice('destination')} />
-          <Field label="Date du voyage" value={date} icon="calendar-outline" onPress={() => setChoice('date')} />
+          <Field label="Date du voyage" value={travelDate.toLocaleDateString('fr-FR')} icon="calendar-outline" onPress={() => setCalendarVisible(true)} />
           <Field label="Nombre de passagers" value={passengers} icon="people-outline" onPress={() => setChoice('passengers')} />
 
           <TouchableOpacity style={styles.searchButton} onPress={search} activeOpacity={0.88}>
@@ -96,8 +87,39 @@ export default function TravelTickets() {
           </View>
         </TouchableOpacity>
       </Modal>
+      <CalendarModal visible={calendarVisible} value={travelDate} onSelect={(date) => { setTravelDate(date); setCalendarVisible(false); }} onClose={() => setCalendarVisible(false)} />
     </SafeAreaView>
   );
+}
+
+function CalendarModal({ visible, value, onSelect, onClose }: { visible: boolean; value: Date; onSelect: (date: Date) => void; onClose: () => void }) {
+  const [month, setMonth] = useState(new Date(value.getFullYear(), value.getMonth(), 1));
+  useEffect(() => { if (visible) setMonth(new Date(value.getFullYear(), value.getMonth(), 1)); }, [visible, value]);
+  const today = new Date();
+  const minimum = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const firstDay = (month.getDay() + 6) % 7;
+  const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells = [...Array(firstDay).fill(null), ...Array.from({ length: dayCount }, (_, index) => index + 1)];
+  const moveMonth = (offset: number) => setMonth(new Date(month.getFullYear(), month.getMonth() + offset, 1));
+
+  return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <View style={styles.calendarBackdrop}><View style={styles.calendarCard}>
+      <View style={styles.calendarHeader}>
+        <TouchableOpacity onPress={() => moveMonth(-1)}><Ionicons name="chevron-back" size={26} color="#061F68" /></TouchableOpacity>
+        <Text style={styles.calendarTitle}>{month.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</Text>
+        <TouchableOpacity onPress={() => moveMonth(1)}><Ionicons name="chevron-forward" size={26} color="#061F68" /></TouchableOpacity>
+      </View>
+      <View style={styles.weekRow}>{['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => <Text key={`${day}-${index}`} style={styles.weekDay}>{day}</Text>)}</View>
+      <View style={styles.dayGrid}>{cells.map((day, index) => {
+        if (!day) return <View key={`empty-${index}`} style={styles.dayCell} />;
+        const date = new Date(month.getFullYear(), month.getMonth(), day);
+        const disabled = date < minimum;
+        const selected = date.toDateString() === value.toDateString();
+        return <TouchableOpacity key={day} style={styles.dayCell} disabled={disabled} onPress={() => onSelect(date)}><View style={[styles.dayCircle, selected && styles.daySelected]}><Text style={[styles.dayText, disabled && styles.dayDisabled, selected && styles.dayTextSelected]}>{day}</Text></View></TouchableOpacity>;
+      })}</View>
+      <TouchableOpacity style={styles.closeCalendar} onPress={onClose}><Text style={styles.closeCalendarText}>Fermer</Text></TouchableOpacity>
+    </View></View>
+  </Modal>;
 }
 
 function Field({ label, value, icon, onPress }: { label: string; value: string; icon: keyof typeof Ionicons.glyphMap; onPress: () => void }) {
@@ -137,4 +159,13 @@ const styles = StyleSheet.create({
   choiceCard: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 30 },
   choiceRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: '#EDF0F5', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   choiceText: { color: '#071D59', fontSize: 17, fontWeight: '700' },
+  calendarBackdrop: { flex: 1, backgroundColor: 'rgba(1,15,50,.48)', alignItems: 'center', justifyContent: 'center', padding: 22 },
+  calendarCard: { width: '100%', maxWidth: 390, backgroundColor: '#fff', borderRadius: 18, padding: 18 },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  calendarTitle: { color: '#061F68', fontSize: 18, fontWeight: '900', textTransform: 'capitalize' },
+  weekRow: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  dayGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' },
+  dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: '#0877EA' },
+  dayText: { color: '#061F68', fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: '#fff', fontWeight: '900' },
+  closeCalendar: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, closeCalendarText: { color: '#0877EA', fontSize: 16, fontWeight: '800' },
 });
