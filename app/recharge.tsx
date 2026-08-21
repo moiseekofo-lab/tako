@@ -162,7 +162,14 @@ export default function Recharge() {
           <View style={styles.backButtonPlaceholder} />
         </View>
 
-        <View style={[styles.card, { minHeight: Math.max(620, screenHeight - 78 - insets.bottom) }]}>
+        <View
+          style={[
+            styles.card,
+            {
+              minHeight: Math.max(620, screenHeight - 78 - insets.bottom),
+              paddingBottom: 12 + insets.bottom,
+            },
+          ]}>
           <Text style={styles.fieldLabel}>Montant à recharger</Text>
           <View style={styles.inputBox}>
             <View style={styles.currencyBox}>
@@ -403,8 +410,7 @@ const styles = StyleSheet.create({
     marginVertical: 9,
   },
   agentSection: {
-    marginTop: 'auto',
-    paddingTop: 10,
+    marginTop: 10,
   },
   agentCard: {
     borderRadius: 14,
