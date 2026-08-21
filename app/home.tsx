@@ -398,7 +398,7 @@ export default function Home() {
 
   const menuItems = [
     { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
-    { icon: 'car-key', title: text.carRental, subtitle: text.carRentalSubtitle },
+    { icon: 'car-key', title: text.carRental, subtitle: text.carRentalSubtitle, route: '/car-rental' },
     { icon: 'ticket-confirmation-outline', title: text.travelTickets, subtitle: text.travelTicketsSubtitle, route: '/travel-tickets' },
     { icon: 'calendar-check-outline', title: text.myReservations, subtitle: text.myReservationsSubtitle, route: '/my-reservations' },
     { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
