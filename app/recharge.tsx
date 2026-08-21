@@ -260,11 +260,12 @@ export default function Recharge() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F5F8FF',
+    backgroundColor: 'white',
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 14,
+    backgroundColor: 'white',
+    paddingHorizontal: 0,
     paddingTop: 30,
     paddingBottom: 0,
   },
@@ -272,6 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    marginHorizontal: 18,
     marginBottom: 8,
   },
   backButton: {
@@ -293,15 +295,9 @@ const styles = StyleSheet.create({
   },
   card: {
     flexGrow: 1,
-    borderTopLeftRadius: 18,
-    borderTopRightRadius: 18,
     backgroundColor: 'white',
-    padding: 12,
-    shadowColor: '#B7C7E8',
-    shadowOffset: { width: 0, height: 5 },
-    shadowOpacity: 0.18,
-    shadowRadius: 14,
-    elevation: 3,
+    paddingHorizontal: 32,
+    paddingTop: 12,
   },
   fieldLabel: {
     color: '#061F68',
