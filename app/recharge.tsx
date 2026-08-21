@@ -1,5 +1,6 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +14,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { initiateMobileMoneyRecharge } from '../services/api';
@@ -27,6 +29,8 @@ const providers = [
 
 export default function Recharge() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const [amount, setAmount] = useState('');
   const [walletId, setWalletId] = useState('');
   const [selectedProvider, setSelectedProvider] = useState('M-Pesa');
@@ -158,7 +162,7 @@ export default function Recharge() {
           <View style={styles.backButtonPlaceholder} />
         </View>
 
-        <View style={styles.card}>
+        <View style={[styles.card, { minHeight: Math.max(620, screenHeight - 78 - insets.bottom) }]}>
           <Text style={styles.fieldLabel}>Montant à recharger</Text>
           <View style={styles.inputBox}>
             <View style={styles.currencyBox}>
@@ -220,24 +224,25 @@ export default function Recharge() {
             {loadingProvider ? <ActivityIndicator color="white" /> : <Text style={styles.continueText}>Continuer</Text>}
           </TouchableOpacity>
 
-          <Text style={styles.orText}>OU</Text>
-
-          <View style={styles.agentCard}>
-            <TouchableOpacity style={styles.agentTopRow} activeOpacity={0.88} onPress={handleInternalRecharge}>
-              <View style={styles.internalIcon}>
-                <MaterialCommunityIcons name="account-plus" size={29} color="#0877EA" />
-                <MaterialCommunityIcons name="qrcode" size={18} color="#061F68" />
-              </View>
-              <View style={styles.internalTextBox}>
-                <Text style={styles.internalTitle}>Recharger auprès d’un agent</Text>
-                <Text style={styles.internalHint}>Générez votre QR code et présentez-le à un agent TaKo.</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={28} color="#061F68" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.qrButton} activeOpacity={0.88} onPress={handleInternalRecharge}>
-              <MaterialCommunityIcons name="qrcode" size={25} color="#0877EA" />
-              <Text style={styles.qrButtonText}>Afficher mon QR code</Text>
-            </TouchableOpacity>
+          <View style={styles.agentSection}>
+            <Text style={styles.orText}>OU</Text>
+            <View style={styles.agentCard}>
+              <TouchableOpacity style={styles.agentTopRow} activeOpacity={0.88} onPress={handleInternalRecharge}>
+                <View style={styles.internalIcon}>
+                  <MaterialCommunityIcons name="account-plus" size={29} color="#0877EA" />
+                  <MaterialCommunityIcons name="qrcode" size={18} color="#061F68" />
+                </View>
+                <View style={styles.internalTextBox}>
+                  <Text style={styles.internalTitle}>Recharger auprès d’un agent</Text>
+                  <Text style={styles.internalHint}>Générez votre QR code et présentez-le à un agent TaKo.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={28} color="#061F68" />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.qrButton} activeOpacity={0.88} onPress={handleInternalRecharge}>
+                <MaterialCommunityIcons name="qrcode" size={25} color="#0877EA" />
+                <Text style={styles.qrButtonText}>Afficher mon QR code</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </ScrollView>
@@ -396,6 +401,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'center',
     marginVertical: 9,
+  },
+  agentSection: {
+    marginTop: 'auto',
+    paddingTop: 10,
   },
   agentCard: {
     borderRadius: 14,
