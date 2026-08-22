@@ -25,8 +25,9 @@ const paymentMethods = [
 ] as const;
 type Step = 1 | 2 | 3 | 4;
 type DateTarget = 'pickup' | 'return';
+type TimeTarget = 'pickup' | 'return';
 const formatDate = (date: Date) => date.toLocaleDateString('fr-FR');
-const daysBetween = (start: Date, end: Date) => Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
+const withTime = (date: Date, time: string) => { const [hour, minute] = time.split(':').map(Number); return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute); };
 
 export default function CarRental() {
   const router = useRouter();
@@ -38,13 +39,18 @@ export default function CarRental() {
   const [pickupDate, setPickupDate] = useState(new Date());
   const [returnDate, setReturnDate] = useState(() => { const date = new Date(); date.setDate(date.getDate() + 2); return date; });
   const [calendarTarget, setCalendarTarget] = useState<DateTarget | null>(null);
+  const [timeTarget, setTimeTarget] = useState<TimeTarget | null>(null);
+  const [pickupTime, setPickupTime] = useState('10:00');
+  const [returnTime, setReturnTime] = useState('10:00');
   const [vehicleKey, setVehicleKey] = useState<(typeof vehicles)[number]['key']>('economy');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('mpesa');
   const [mobileNumber, setMobileNumber] = useState(String(user?.phone || '').replace(/^\+243/, ''));
   const vehicle = vehicles.find((item) => item.key === vehicleKey) ?? vehicles[0];
   const chosenExtras = extras.filter((item) => selectedExtras.includes(item.key));
-  const rentalDays = daysBetween(pickupDate, returnDate);
+  const durationHours = Math.max(1, Math.ceil((withTime(returnDate, returnTime).getTime() - withTime(pickupDate, pickupTime).getTime()) / 3600000));
+  const rentalDays = Math.max(1, Math.ceil(durationHours / 24));
+  const durationText = durationHours % 24 === 0 ? `${durationHours / 24} jour${durationHours > 24 ? 's' : ''}` : `${Math.floor(durationHours / 24)} j ${durationHours % 24} h`;
   const total = useMemo(() => vehicle.price * rentalDays + chosenExtras.reduce((sum, item) => sum + item.price, 0), [vehicle.price, rentalDays, chosenExtras]);
   const toggle = (key: string) => setSelectedExtras((list) => list.includes(key) ? list.filter((item) => item !== key) : [...list, key]);
   const cycle = (value: string, setter: (next: string) => void) => setter(value === 'Kinshasa, Gombe' ? 'Aéroport de N’Djili' : 'Kinshasa, Gombe');
@@ -71,7 +77,7 @@ export default function CarRental() {
           <Field icon="location-outline" label="Lieu de retour" value={destination} onPress={() => cycle(destination, setDestination)} />
           <Text style={styles.section}>Dates et heures</Text>
           <View style={styles.columns}><View style={styles.half}><Field compact icon="calendar-outline" label="Date de prise en charge" value={formatDate(pickupDate)} onPress={() => setCalendarTarget('pickup')} /></View><View style={styles.half}><Field compact icon="calendar-outline" label="Date de retour" value={formatDate(returnDate)} onPress={() => setCalendarTarget('return')} /></View></View>
-          <View style={styles.columns}><View style={styles.half}><Field compact icon="time-outline" label="Heure de prise en charge" value="10:00" /></View><View style={styles.half}><Field compact icon="time-outline" label="Heure de retour" value="10:00" /></View></View>
+          <View style={styles.columns}><View style={styles.half}><Field compact icon="time-outline" label="Heure de prise en charge" value={pickupTime} onPress={() => setTimeTarget('pickup')} /></View><View style={styles.half}><Field compact icon="time-outline" label="Heure de retour" value={returnTime} onPress={() => setTimeTarget('return')} /></View></View>
         </>}
         {step === 2 && <>
           <Text style={styles.section}>Choisissez votre véhicule</Text>
@@ -91,8 +97,8 @@ export default function CarRental() {
           <Text style={styles.section}>Récapitulatif de votre réservation</Text>
           <View style={styles.summary}>
             <Summary icon="location-outline" label="Prise en charge" value={pickup} /><Summary icon="location-outline" label="Retour" value={destination} />
-            <Summary icon="calendar-outline" label="Du" value={`${formatDate(pickupDate)} à 10:00`} /><Summary icon="calendar-outline" label="Au" value={`${formatDate(returnDate)} à 10:00`} />
-            <Summary icon="time-outline" label="Durée" value={`${rentalDays} jour${rentalDays > 1 ? 's' : ''}`} /><Summary icon="car-outline" label="Véhicule" value={vehicle.label} />
+            <Summary icon="calendar-outline" label="Du" value={`${formatDate(pickupDate)} à ${pickupTime}`} /><Summary icon="calendar-outline" label="Au" value={`${formatDate(returnDate)} à ${returnTime}`} />
+            <Summary icon="time-outline" label="Durée" value={durationText} /><Summary icon="car-outline" label="Véhicule" value={vehicle.label} />
             <Summary icon="settings-outline" label="Options" value={chosenExtras.length ? chosenExtras.map((item) => item.title).join(', ') : 'Aucune'} />
           </View>
           <View style={styles.estimate}><View><Text style={styles.optionTitle}>Prix total estimé</Text><Text style={styles.detail}>Détail du prix</Text></View><Text style={styles.total}>{total.toLocaleString('fr-FR')} FC</Text></View>
@@ -124,8 +130,29 @@ export default function CarRental() {
         <Text style={styles.buttonText}>{step === 4 ? `Payer ${total.toLocaleString('fr-FR')} FC` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
       </TouchableOpacity>
       <CalendarModal visible={calendarTarget !== null} value={calendarTarget === 'return' ? returnDate : pickupDate} minimumDate={calendarTarget === 'return' ? new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate() + 1) : new Date()} onSelect={chooseDate} onClose={() => setCalendarTarget(null)} />
+      <TimeModal visible={timeTarget !== null} value={timeTarget === 'return' ? returnTime : pickupTime} onSelect={(value) => { if (timeTarget === 'return') setReturnTime(value); else setPickupTime(value); setTimeTarget(null); }} onClose={() => setTimeTarget(null)} />
     </View>
   </View>;
+}
+
+function TimeModal({ visible, value, onSelect, onClose }: { visible: boolean; value: string; onSelect: (value: string) => void; onClose: () => void }) {
+  const [hour, setHour] = useState(Number(value.split(':')[0]));
+  const [minute, setMinute] = useState(Number(value.split(':')[1]));
+  useEffect(() => { if (visible) { setHour(Number(value.split(':')[0])); setMinute(Number(value.split(':')[1])); } }, [visible, value]);
+  const changeHour = (offset: number) => setHour((current) => (current + offset + 24) % 24);
+  const changeMinute = (offset: number) => setMinute((current) => (current + offset + 60) % 60);
+  const formatted = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <View style={styles.modalShade}><View style={styles.timePicker}>
+      <Text style={styles.timePickerTitle}>Choisissez l’heure</Text>
+      <View style={styles.timeControls}>
+        <View style={styles.timeColumn}><TouchableOpacity style={styles.timeArrow} onPress={() => changeHour(1)}><Ionicons name="chevron-up" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeValue}>{String(hour).padStart(2, '0')}</Text><TouchableOpacity style={styles.timeArrow} onPress={() => changeHour(-1)}><Ionicons name="chevron-down" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeUnit}>Heure</Text></View>
+        <Text style={styles.timeColon}>:</Text>
+        <View style={styles.timeColumn}><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(5)}><Ionicons name="chevron-up" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeValue}>{String(minute).padStart(2, '0')}</Text><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(-5)}><Ionicons name="chevron-down" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeUnit}>Minute</Text></View>
+      </View>
+      <View style={styles.timeActions}><TouchableOpacity style={styles.timeCancel} onPress={onClose}><Text style={styles.timeCancelText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={styles.timeConfirm} onPress={() => onSelect(formatted)}><Text style={styles.timeConfirmText}>Confirmer</Text></TouchableOpacity></View>
+    </View></View>
+  </Modal>;
 }
 
 function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { visible: boolean; value: Date; minimumDate: Date; onSelect: (date: Date) => void; onClose: () => void }) {
@@ -171,4 +198,5 @@ const styles = StyleSheet.create({
   paymentTitle: { color: NAVY, fontSize: 22, fontWeight: '900', marginTop: 4 }, paymentSubtitle: { color: '#596274', fontSize: 14, marginTop: 5, marginBottom: 14 }, paymentMethods: { gap: 10 }, paymentMethod: { minHeight: 78, borderWidth: 1, borderColor: '#E0E4EB', borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 13 }, paymentMethodActive: { borderColor: BLUE, backgroundColor: '#F3F8FF' }, paymentLogo: { width: 52, height: 52, borderRadius: 8 }, paymentName: { color: NAVY, fontSize: 18, fontWeight: '900' }, paymentHint: { color: '#687184', fontSize: 14, marginTop: 4 }, radio: { width: 27, height: 27, borderRadius: 14, borderWidth: 2, borderColor: '#7A8291', alignItems: 'center', justifyContent: 'center' }, radioActive: { borderColor: BLUE, borderWidth: 6 }, radioDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' }, paymentLabel: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 18 }, paymentHelper: { color: '#687184', fontSize: 14, marginTop: 4, marginBottom: 10 }, phoneRow: { flexDirection: 'row', gap: 10 }, countryCode: { width: 112, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, countryCodeText: { color: '#4D5668', fontSize: 18 }, phoneInputWrap: { flex: 1, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }, phoneInput: { flex: 1, color: NAVY, fontSize: 18 }, amountBox: { height: 68, marginTop: 10, borderWidth: 1, borderColor: BLUE, borderRadius: 9, backgroundColor: '#F2F7FF', paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, amountLabel: { color: '#687184', fontSize: 14 }, amountValue: { color: BLUE, fontSize: 22, fontWeight: '900' }, secureRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 18 }, secureText: { color: '#687184', fontSize: 14, fontWeight: '700' },
   button: { height: 58, borderRadius: 11, backgroundColor: BLUE, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
   modalShade: { flex: 1, backgroundColor: 'rgba(3,15,50,0.48)', alignItems: 'center', justifyContent: 'center', padding: 22 }, calendar: { width: '100%', maxWidth: 390, borderRadius: 18, backgroundColor: 'white', padding: 18 }, calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }, calendarTitle: { color: NAVY, fontSize: 18, fontWeight: '900', textTransform: 'capitalize' }, week: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' }, days: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' }, dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: BLUE }, dayText: { color: NAVY, fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: 'white', fontWeight: '900' }, calendarClose: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, calendarCloseText: { color: BLUE, fontSize: 16, fontWeight: '800' },
+  timePicker: { width: '100%', maxWidth: 350, borderRadius: 18, backgroundColor: '#fff', padding: 20 }, timePickerTitle: { color: NAVY, fontSize: 22, fontWeight: '900', textAlign: 'center' }, timeControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 18 }, timeColumn: { alignItems: 'center' }, timeArrow: { width: 54, height: 42, alignItems: 'center', justifyContent: 'center' }, timeValue: { minWidth: 80, borderRadius: 12, backgroundColor: '#F1F6FF', color: NAVY, fontSize: 36, fontWeight: '900', textAlign: 'center', paddingVertical: 10 }, timeColon: { color: NAVY, fontSize: 36, fontWeight: '900', marginBottom: 15 }, timeUnit: { color: '#687184', fontSize: 14, marginTop: 4 }, timeActions: { flexDirection: 'row', gap: 10, marginTop: 22 }, timeCancel: { flex: 1, height: 48, borderWidth: 1, borderColor: BLUE, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }, timeCancelText: { color: BLUE, fontSize: 16, fontWeight: '800' }, timeConfirm: { flex: 1, height: 48, borderRadius: 9, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, timeConfirmText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });
