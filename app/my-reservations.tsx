@@ -45,12 +45,6 @@ export default function MyReservations() {
         <View style={styles.helpIcon}><Ionicons name="headset-outline" size={27} color={BLUE} /></View><View style={styles.grow}><Text style={styles.helpTitle}>Besoin d’aide ?</Text><Text style={styles.helpText}>Contactez notre service client pour toute question concernant vos réservations.</Text></View><Ionicons name="chevron-forward" size={23} color={NAVY} />
       </TouchableOpacity>
     </ScrollView>
-    <View style={styles.navigation}>
-      <NavItem icon="wallet-outline" label="Accueil" onPress={() => router.replace('/home')} />
-      <NavItem icon="qr-code-outline" label="Payer" onPress={() => router.push('/qr')} />
-      <NavItem icon="card-outline" label="Recharge" onPress={() => router.push('/recharge')} />
-      <NavItem icon="menu-outline" label="Menu" active onPress={() => router.replace('/home')} />
-    </View>
   </SafeAreaView>;
 }
 
@@ -73,15 +67,10 @@ function ReservationCard({ item, onCancel }: { item: Reservation; onCancel?: () 
   </View>;
 }
 
-function NavItem({ icon, label, active, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; active?: boolean; onPress: () => void }) {
-  return <TouchableOpacity style={styles.navItem} onPress={onPress}><Ionicons name={icon} size={24} color={active ? NAVY : '#666D78'} /><Text style={[styles.navText, active && styles.navTextActive]}>{label}</Text></TouchableOpacity>;
-}
-
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#fff' }, grow: { flex: 1 }, header: { height: 76, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, back: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, borderColor: '#E1E5EC', alignItems: 'center', justifyContent: 'center' }, title: { color: NAVY, fontSize: 24, fontWeight: '900' }, spacer: { width: 46 },
   filters: { flexDirection: 'row', gap: 12, paddingHorizontal: 22, paddingBottom: 14 }, filter: { flex: 1, height: 50, borderWidth: 1, borderColor: '#E2E6ED', borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, filterActive: { backgroundColor: NAVY, borderColor: NAVY }, filterText: { color: NAVY, fontSize: 14, fontWeight: '800' }, filterTextActive: { color: '#fff' },
   scroll: { paddingHorizontal: 22, paddingBottom: 20 }, section: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 14, marginBottom: 11 }, card: { borderWidth: 1, borderColor: '#E8EBF1', borderRadius: 13, padding: 13, marginBottom: 12, backgroundColor: '#fff', shadowColor: NAVY, shadowOpacity: .035, shadowRadius: 8, elevation: 1 }, cardTop: { flexDirection: 'row', alignItems: 'flex-start' }, transportIcon: { width: 54, height: 54, borderRadius: 10, backgroundColor: '#F1F6FF', alignItems: 'center', justifyContent: 'center', marginRight: 11 }, cardCopy: { flex: 1, minWidth: 0 }, cardTitle: { color: NAVY, fontSize: 16, fontWeight: '900', marginBottom: 6 }, metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }, cardMeta: { flex: 1, color: '#687184', fontSize: 14 }, cardRight: { minWidth: 100, alignItems: 'flex-end', gap: 7 }, status: { borderRadius: 14, paddingHorizontal: 11, paddingVertical: 6 }, confirmed: { backgroundColor: '#E5F8EF' }, pending: { backgroundColor: '#FFF4DF' }, finished: { backgroundColor: '#F1F3F8' }, statusText: { fontSize: 14, fontWeight: '800' }, confirmedText: { color: '#139760' }, pendingText: { color: '#E09A22' }, finishedText: { color: '#788096' }, price: { color: NAVY, fontSize: 16, fontWeight: '900' },
   actions: { flexDirection: 'row', gap: 10, marginTop: 13 }, outlineButton: { flex: 1, height: 39, borderWidth: 1, borderColor: BLUE, borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, outlineText: { color: BLUE, fontSize: 14, fontWeight: '800' }, primaryButton: { flex: 1, height: 39, borderRadius: 7, backgroundColor: BLUE, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, primaryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
   help: { minHeight: 88, marginTop: 5, borderRadius: 13, backgroundColor: '#F1F5FF', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }, helpIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }, helpTitle: { color: NAVY, fontSize: 16, fontWeight: '900' }, helpText: { color: '#596274', fontSize: 14, lineHeight: 19, marginTop: 3 },
-  navigation: { height: 72, borderTopWidth: 1, borderTopColor: '#E8EBF1', flexDirection: 'row', backgroundColor: '#fff' }, navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 3 }, navText: { color: '#666D78', fontSize: 14 }, navTextActive: { color: NAVY, fontWeight: '800' },
 });
