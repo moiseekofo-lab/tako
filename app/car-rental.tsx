@@ -28,6 +28,12 @@ type DateTarget = 'pickup' | 'return';
 type TimeTarget = 'pickup' | 'return';
 const formatDate = (date: Date) => date.toLocaleDateString('fr-FR');
 const withTime = (date: Date, time: string) => { const [hour, minute] = time.split(':').map(Number); return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hour, minute); };
+const currentHalfHour = () => {
+  const now = new Date();
+  const roundedMinutes = Math.round(now.getMinutes() / 30) * 30;
+  now.setMinutes(roundedMinutes, 0, 0);
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+};
 
 export default function CarRental() {
   const router = useRouter();
@@ -40,8 +46,8 @@ export default function CarRental() {
   const [returnDate, setReturnDate] = useState(() => { const date = new Date(); date.setDate(date.getDate() + 2); return date; });
   const [calendarTarget, setCalendarTarget] = useState<DateTarget | null>(null);
   const [timeTarget, setTimeTarget] = useState<TimeTarget | null>(null);
-  const [pickupTime, setPickupTime] = useState('10:00');
-  const [returnTime, setReturnTime] = useState('10:00');
+  const [pickupTime, setPickupTime] = useState(currentHalfHour);
+  const [returnTime, setReturnTime] = useState(currentHalfHour);
   const [vehicleKey, setVehicleKey] = useState<(typeof vehicles)[number]['key']>('economy');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('mpesa');
@@ -140,15 +146,19 @@ function TimeModal({ visible, value, onSelect, onClose }: { visible: boolean; va
   const [minute, setMinute] = useState(Number(value.split(':')[1]));
   useEffect(() => { if (visible) { setHour(Number(value.split(':')[0])); setMinute(Number(value.split(':')[1])); } }, [visible, value]);
   const changeHour = (offset: number) => setHour((current) => (current + offset + 24) % 24);
-  const changeMinute = (offset: number) => setMinute((current) => (current + offset + 60) % 60);
+  const changeMinute = (offset: number) => {
+    const total = (hour * 60 + minute + offset + 1440) % 1440;
+    setHour(Math.floor(total / 60));
+    setMinute(total % 60);
+  };
   const formatted = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
   return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
     <View style={styles.modalShade}><View style={styles.timePicker}>
-      <Text style={styles.timePickerTitle}>Choisissez l’heure</Text>
+      <Text style={styles.timePickerTitle}>Choisissez l’heure</Text><Text style={styles.timePickerHint}>Créneaux de 30 minutes</Text>
       <View style={styles.timeControls}>
         <View style={styles.timeColumn}><TouchableOpacity style={styles.timeArrow} onPress={() => changeHour(1)}><Ionicons name="chevron-up" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeValue}>{String(hour).padStart(2, '0')}</Text><TouchableOpacity style={styles.timeArrow} onPress={() => changeHour(-1)}><Ionicons name="chevron-down" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeUnit}>Heure</Text></View>
         <Text style={styles.timeColon}>:</Text>
-        <View style={styles.timeColumn}><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(5)}><Ionicons name="chevron-up" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeValue}>{String(minute).padStart(2, '0')}</Text><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(-5)}><Ionicons name="chevron-down" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeUnit}>Minute</Text></View>
+        <View style={styles.timeColumn}><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(30)}><Ionicons name="chevron-up" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeValue}>{String(minute).padStart(2, '0')}</Text><TouchableOpacity style={styles.timeArrow} onPress={() => changeMinute(-30)}><Ionicons name="chevron-down" size={28} color={BLUE} /></TouchableOpacity><Text style={styles.timeUnit}>Minute</Text></View>
       </View>
       <View style={styles.timeActions}><TouchableOpacity style={styles.timeCancel} onPress={onClose}><Text style={styles.timeCancelText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={styles.timeConfirm} onPress={() => onSelect(formatted)}><Text style={styles.timeConfirmText}>Confirmer</Text></TouchableOpacity></View>
     </View></View>
@@ -198,5 +208,5 @@ const styles = StyleSheet.create({
   paymentTitle: { color: NAVY, fontSize: 22, fontWeight: '900', marginTop: 4 }, paymentSubtitle: { color: '#596274', fontSize: 14, marginTop: 5, marginBottom: 14 }, paymentMethods: { gap: 10 }, paymentMethod: { minHeight: 78, borderWidth: 1, borderColor: '#E0E4EB', borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 13 }, paymentMethodActive: { borderColor: BLUE, backgroundColor: '#F3F8FF' }, paymentLogo: { width: 52, height: 52, borderRadius: 8 }, paymentName: { color: NAVY, fontSize: 18, fontWeight: '900' }, paymentHint: { color: '#687184', fontSize: 14, marginTop: 4 }, radio: { width: 27, height: 27, borderRadius: 14, borderWidth: 2, borderColor: '#7A8291', alignItems: 'center', justifyContent: 'center' }, radioActive: { borderColor: BLUE, borderWidth: 6 }, radioDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' }, paymentLabel: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 18 }, paymentHelper: { color: '#687184', fontSize: 14, marginTop: 4, marginBottom: 10 }, phoneRow: { flexDirection: 'row', gap: 10 }, countryCode: { width: 112, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, countryCodeText: { color: '#4D5668', fontSize: 18 }, phoneInputWrap: { flex: 1, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }, phoneInput: { flex: 1, color: NAVY, fontSize: 18 }, amountBox: { height: 68, marginTop: 10, borderWidth: 1, borderColor: BLUE, borderRadius: 9, backgroundColor: '#F2F7FF', paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, amountLabel: { color: '#687184', fontSize: 14 }, amountValue: { color: BLUE, fontSize: 22, fontWeight: '900' }, secureRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 18 }, secureText: { color: '#687184', fontSize: 14, fontWeight: '700' },
   button: { height: 58, borderRadius: 11, backgroundColor: BLUE, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
   modalShade: { flex: 1, backgroundColor: 'rgba(3,15,50,0.48)', alignItems: 'center', justifyContent: 'center', padding: 22 }, calendar: { width: '100%', maxWidth: 390, borderRadius: 18, backgroundColor: 'white', padding: 18 }, calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }, calendarTitle: { color: NAVY, fontSize: 18, fontWeight: '900', textTransform: 'capitalize' }, week: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' }, days: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' }, dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: BLUE }, dayText: { color: NAVY, fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: 'white', fontWeight: '900' }, calendarClose: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, calendarCloseText: { color: BLUE, fontSize: 16, fontWeight: '800' },
-  timePicker: { width: '100%', maxWidth: 350, borderRadius: 18, backgroundColor: '#fff', padding: 20 }, timePickerTitle: { color: NAVY, fontSize: 22, fontWeight: '900', textAlign: 'center' }, timeControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 18 }, timeColumn: { alignItems: 'center' }, timeArrow: { width: 54, height: 42, alignItems: 'center', justifyContent: 'center' }, timeValue: { minWidth: 80, borderRadius: 12, backgroundColor: '#F1F6FF', color: NAVY, fontSize: 36, fontWeight: '900', textAlign: 'center', paddingVertical: 10 }, timeColon: { color: NAVY, fontSize: 36, fontWeight: '900', marginBottom: 15 }, timeUnit: { color: '#687184', fontSize: 14, marginTop: 4 }, timeActions: { flexDirection: 'row', gap: 10, marginTop: 22 }, timeCancel: { flex: 1, height: 48, borderWidth: 1, borderColor: BLUE, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }, timeCancelText: { color: BLUE, fontSize: 16, fontWeight: '800' }, timeConfirm: { flex: 1, height: 48, borderRadius: 9, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, timeConfirmText: { color: '#fff', fontSize: 16, fontWeight: '800' },
+  timePicker: { width: '100%', maxWidth: 350, borderRadius: 18, backgroundColor: '#fff', padding: 20 }, timePickerTitle: { color: NAVY, fontSize: 22, fontWeight: '900', textAlign: 'center' }, timePickerHint: { color: '#687184', fontSize: 14, textAlign: 'center', marginTop: 4 }, timeControls: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 18, marginTop: 12 }, timeColumn: { alignItems: 'center' }, timeArrow: { width: 54, height: 42, alignItems: 'center', justifyContent: 'center' }, timeValue: { minWidth: 80, borderRadius: 12, backgroundColor: '#F1F6FF', color: NAVY, fontSize: 36, fontWeight: '900', textAlign: 'center', paddingVertical: 10 }, timeColon: { color: NAVY, fontSize: 36, fontWeight: '900', marginBottom: 15 }, timeUnit: { color: '#687184', fontSize: 14, marginTop: 4 }, timeActions: { flexDirection: 'row', gap: 10, marginTop: 22 }, timeCancel: { flex: 1, height: 48, borderWidth: 1, borderColor: BLUE, borderRadius: 9, alignItems: 'center', justifyContent: 'center' }, timeCancelText: { color: BLUE, fontSize: 16, fontWeight: '800' }, timeConfirm: { flex: 1, height: 48, borderRadius: 9, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, timeConfirmText: { color: '#fff', fontSize: 16, fontWeight: '800' },
 });
