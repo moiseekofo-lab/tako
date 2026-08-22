@@ -1,7 +1,7 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { Alert, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 
@@ -18,7 +18,12 @@ const extras = [
   { key: 'driver', title: 'Avec chauffeur', subtitle: 'Un chauffeur professionnel à votre disposition', icon: 'account-outline', price: 20000 },
   { key: 'wifi', title: 'Wi-Fi à bord', subtitle: 'Restez connecté pendant le trajet', icon: 'wifi', price: 5000 },
 ] as const;
-type Step = 1 | 2 | 3;
+const paymentMethods = [
+  { key: 'mpesa', label: 'M-Pesa', subtitle: 'Payer avec votre compte M-Pesa', logo: require('../assets/images/mpesa-logo.png') },
+  { key: 'orange', label: 'Orange Money', subtitle: 'Payer avec votre compte Orange Money', logo: require('../assets/images/orange-money-logo.png') },
+  { key: 'airtel', label: 'Airtel Money', subtitle: 'Payer avec votre compte Airtel Money', logo: require('../assets/images/airtel-money-logo.png') },
+] as const;
+type Step = 1 | 2 | 3 | 4;
 type DateTarget = 'pickup' | 'return';
 const formatDate = (date: Date) => date.toLocaleDateString('fr-FR');
 const daysBetween = (start: Date, end: Date) => Math.max(1, Math.ceil((end.getTime() - start.getTime()) / 86400000));
@@ -35,6 +40,8 @@ export default function CarRental() {
   const [calendarTarget, setCalendarTarget] = useState<DateTarget | null>(null);
   const [vehicleKey, setVehicleKey] = useState<(typeof vehicles)[number]['key']>('economy');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('mpesa');
+  const [mobileNumber, setMobileNumber] = useState(String(user?.phone || '').replace(/^\+243/, ''));
   const vehicle = vehicles.find((item) => item.key === vehicleKey) ?? vehicles[0];
   const chosenExtras = extras.filter((item) => selectedExtras.includes(item.key));
   const rentalDays = daysBetween(pickupDate, returnDate);
@@ -92,9 +99,29 @@ export default function CarRental() {
           <Text style={styles.section}>Informations du client</Text>
           <View style={styles.client}><View style={styles.iconBox}><Ionicons name="person-outline" size={25} color={BLUE} /></View><View><Text style={styles.clientLabel}>Nom complet</Text><Text style={styles.clientName}>{user?.fullName || 'Client TaKo'}</Text></View></View>
         </>}
+        {step === 4 && <>
+          <Text style={styles.paymentTitle}>Moyen de paiement</Text>
+          <Text style={styles.paymentSubtitle}>Choisissez votre moyen de paiement</Text>
+          <View style={styles.paymentMethods}>{paymentMethods.map((method) => { const active = paymentMethod === method.key; return <TouchableOpacity key={method.key} style={[styles.paymentMethod, active && styles.paymentMethodActive]} onPress={() => setPaymentMethod(method.key)} activeOpacity={0.82}>
+            <Image source={method.logo} style={styles.paymentLogo} resizeMode="contain" />
+            <View style={styles.grow}><Text style={styles.paymentName}>{method.label}</Text><Text style={styles.paymentHint}>{method.subtitle}</Text></View>
+            <View style={[styles.radio, active && styles.radioActive]}>{active && <View style={styles.radioDot} />}</View>
+          </TouchableOpacity>; })}</View>
+          <Text style={styles.paymentLabel}>Numéro Mobile Money</Text>
+          <Text style={styles.paymentHelper}>Entrez votre numéro pour recevoir la demande de paiement</Text>
+          <View style={styles.phoneRow}><View style={styles.countryCode}><Text style={styles.countryCodeText}>+243</Text><Ionicons name="chevron-down" size={18} color={BLUE} /></View><View style={styles.phoneInputWrap}><TextInput value={mobileNumber} onChangeText={(value) => setMobileNumber(value.replace(/[^0-9 ]/g, ''))} keyboardType="phone-pad" placeholder="81 234 5678" placeholderTextColor="#8A91A0" style={styles.phoneInput} /><Ionicons name="person-outline" size={22} color="#596274" /></View></View>
+          <Text style={styles.paymentLabel}>Montant à payer</Text>
+          <View style={styles.amountBox}><Text style={styles.amountLabel}>Montant total</Text><Text style={styles.amountValue}>{total.toLocaleString('fr-FR')} FC</Text></View>
+          <View style={styles.secureRow}><Ionicons name="lock-closed-outline" size={18} color={BLUE} /><Text style={styles.secureText}>Paiement 100% sécurisé</Text></View>
+        </>}
       </ScrollView>
-      <TouchableOpacity style={styles.button} onPress={() => step < 3 ? setStep((step + 1) as Step) : Alert.alert('Réservation confirmée', `${vehicle.label} • ${total.toLocaleString('fr-FR')} FC`)}>
-        <Text style={styles.buttonText}>{step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
+      <TouchableOpacity style={styles.button} onPress={() => {
+        if (step < 4) return setStep((step + 1) as Step);
+        if (mobileNumber.replace(/\s/g, '').length < 9) return Alert.alert('Numéro incorrect', 'Entrez un numéro Mobile Money valide.');
+        Alert.alert('Paiement envoyé', `Validez la demande ${paymentMethods.find((item) => item.key === paymentMethod)?.label} sur votre téléphone.`, [{ text: 'OK', onPress: () => router.replace('/my-reservations') }]);
+      }}>
+        {step === 4 && <Ionicons name="lock-closed-outline" size={20} color="white" />}
+        <Text style={styles.buttonText}>{step === 4 ? `Payer ${total.toLocaleString('fr-FR')} FC` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
       </TouchableOpacity>
       <CalendarModal visible={calendarTarget !== null} value={calendarTarget === 'return' ? returnDate : pickupDate} minimumDate={calendarTarget === 'return' ? new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate() + 1) : new Date()} onSelect={chooseDate} onClose={() => setCalendarTarget(null)} />
     </View>
@@ -120,7 +147,7 @@ function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { vis
 }
 
 function Stepper({ step }: { step: Step }) {
-  return <View style={styles.stepper}>{['Trajet & dates', 'Véhicule', 'Confirmation'].map((label, index) => { const number = (index + 1) as Step; const active = number === step; const done = number < step; return <View key={label} style={styles.stepItem}>
+  return <View style={styles.stepper}>{['Trajet & dates', 'Véhicule', 'Confirmation', 'Paiement'].map((label, index) => { const number = (index + 1) as Step; const active = number === step; const done = number < step; return <View key={label} style={styles.stepItem}>
     {index > 0 && <View style={[styles.line, (active || done) && styles.lineActive]} />}<View style={[styles.circle, (active || done) && styles.circleActive]}>{done ? <Ionicons name="checkmark" size={15} color="white" /> : <Text style={[styles.circleText, active && styles.circleTextActive]}>{number}</Text>}</View><Text style={[styles.stepText, active && styles.stepTextActive]}>{label}</Text>
   </View>; })}</View>;
 }
@@ -136,11 +163,12 @@ function Summary({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'white' }, page: { flex: 1, paddingHorizontal: 20 }, scroll: { flex: 1 }, scrollBody: { paddingBottom: 12 }, grow: { flex: 1 },
   header: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#B7D9FF', alignItems: 'center', justifyContent: 'center' }, spacer: { width: 42 }, title: { color: NAVY, fontSize: 22, fontWeight: '900' },
-  stepper: { height: 91, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 17, paddingTop: 12 }, stepItem: { width: '30%', alignItems: 'center' }, line: { position: 'absolute', top: 16, left: '-67%', width: '75%', height: 2, backgroundColor: '#D9DFE9' }, lineActive: { backgroundColor: BLUE }, circle: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: '#ADB6C7', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }, circleActive: { borderColor: BLUE, backgroundColor: BLUE }, circleText: { color: '#596274', fontSize: 14, fontWeight: '800' }, circleTextActive: { color: 'white' }, stepText: { color: '#687184', fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 7 }, stepTextActive: { color: BLUE, fontWeight: '900' },
+  stepper: { height: 91, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 3, paddingTop: 12 }, stepItem: { width: '24%', alignItems: 'center' }, line: { position: 'absolute', top: 16, left: '-58%', width: '67%', height: 2, backgroundColor: '#D9DFE9' }, lineActive: { backgroundColor: BLUE }, circle: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: '#ADB6C7', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }, circleActive: { borderColor: BLUE, backgroundColor: BLUE }, circleText: { color: '#596274', fontSize: 14, fontWeight: '800' }, circleTextActive: { color: 'white' }, stepText: { color: '#687184', fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 7 }, stepTextActive: { color: BLUE, fontWeight: '900' },
   section: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 5, marginBottom: 10 }, field: { minHeight: 76, borderWidth: 1, borderColor: '#D9DDE6', borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 }, fieldCompact: { minHeight: 84, paddingHorizontal: 10, gap: 7 }, fieldLabel: { color: '#667085', fontSize: 14, fontWeight: '700', marginBottom: 5 }, fieldValue: { color: NAVY, fontSize: 16, fontWeight: '900' }, columns: { flexDirection: 'row', gap: 12 }, half: { flex: 1 },
   vehicleList: { gap: 10, paddingBottom: 15 }, vehicle: { width: 142, minHeight: 180, borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, padding: 10, alignItems: 'center', justifyContent: 'center' }, vehicleActive: { borderWidth: 2, borderColor: BLUE, backgroundColor: '#F7FAFF' }, checkBadge: { position: 'absolute', top: 7, right: 7, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, vehicleName: { color: NAVY, fontSize: 16, fontWeight: '900', marginTop: 6 }, muted: { color: '#737A89', fontSize: 14, marginTop: 3 }, priceSmall: { color: BLUE, fontSize: 14, fontWeight: '900', marginTop: 3 },
   optionCard: { borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, overflow: 'hidden' }, option: { minHeight: 72, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#E7EAF0' }, iconBox: { width: 40, height: 40, borderRadius: 9, backgroundColor: '#F0F6FF', alignItems: 'center', justifyContent: 'center' }, optionTitle: { color: NAVY, fontSize: 16, fontWeight: '800' }, checkbox: { width: 24, height: 24, borderRadius: 5, borderWidth: 1.5, borderColor: '#A8ADB7', alignItems: 'center', justifyContent: 'center' }, checkboxActive: { borderColor: BLUE, backgroundColor: BLUE },
   summary: { borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, padding: 15, gap: 13 }, summaryRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 9 }, summaryLabel: { width: 112, color: NAVY, fontSize: 14, fontWeight: '800' }, summaryValue: { flex: 1, color: '#4C5567', fontSize: 14, lineHeight: 19 }, estimate: { minHeight: 86, marginTop: 16, borderRadius: 12, backgroundColor: '#F0F5FF', paddingHorizontal: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }, detail: { color: '#596274', fontSize: 14, marginTop: 8 }, total: { color: BLUE, fontSize: 22, fontWeight: '900' }, client: { minHeight: 72, borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }, clientLabel: { color: '#687184', fontSize: 14 }, clientName: { color: NAVY, fontSize: 16, fontWeight: '800', marginTop: 3 },
-  button: { height: 58, borderRadius: 11, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
+  paymentTitle: { color: NAVY, fontSize: 22, fontWeight: '900', marginTop: 4 }, paymentSubtitle: { color: '#596274', fontSize: 14, marginTop: 5, marginBottom: 14 }, paymentMethods: { gap: 10 }, paymentMethod: { minHeight: 78, borderWidth: 1, borderColor: '#E0E4EB', borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 13 }, paymentMethodActive: { borderColor: BLUE, backgroundColor: '#F3F8FF' }, paymentLogo: { width: 52, height: 52, borderRadius: 8 }, paymentName: { color: NAVY, fontSize: 18, fontWeight: '900' }, paymentHint: { color: '#687184', fontSize: 14, marginTop: 4 }, radio: { width: 27, height: 27, borderRadius: 14, borderWidth: 2, borderColor: '#7A8291', alignItems: 'center', justifyContent: 'center' }, radioActive: { borderColor: BLUE, borderWidth: 6 }, radioDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#fff' }, paymentLabel: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 18 }, paymentHelper: { color: '#687184', fontSize: 14, marginTop: 4, marginBottom: 10 }, phoneRow: { flexDirection: 'row', gap: 10 }, countryCode: { width: 112, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, countryCodeText: { color: '#4D5668', fontSize: 18 }, phoneInputWrap: { flex: 1, height: 57, borderWidth: 1, borderColor: BLUE, borderRadius: 9, paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center' }, phoneInput: { flex: 1, color: NAVY, fontSize: 18 }, amountBox: { height: 68, marginTop: 10, borderWidth: 1, borderColor: BLUE, borderRadius: 9, backgroundColor: '#F2F7FF', paddingHorizontal: 17, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, amountLabel: { color: '#687184', fontSize: 14 }, amountValue: { color: BLUE, fontSize: 22, fontWeight: '900' }, secureRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, marginTop: 18 }, secureText: { color: '#687184', fontSize: 14, fontWeight: '700' },
+  button: { height: 58, borderRadius: 11, backgroundColor: BLUE, flexDirection: 'row', gap: 10, alignItems: 'center', justifyContent: 'center', marginTop: 8 }, buttonText: { color: 'white', fontSize: 17, fontWeight: '900' },
   modalShade: { flex: 1, backgroundColor: 'rgba(3,15,50,0.48)', alignItems: 'center', justifyContent: 'center', padding: 22 }, calendar: { width: '100%', maxWidth: 390, borderRadius: 18, backgroundColor: 'white', padding: 18 }, calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }, calendarTitle: { color: NAVY, fontSize: 18, fontWeight: '900', textTransform: 'capitalize' }, week: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' }, days: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' }, dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: BLUE }, dayText: { color: NAVY, fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: 'white', fontWeight: '900' }, calendarClose: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, calendarCloseText: { color: BLUE, fontSize: 16, fontWeight: '800' },
 });
