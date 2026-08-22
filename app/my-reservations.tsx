@@ -14,7 +14,7 @@ const initialReservations: Reservation[] = [
   { id: '1', type: 'trip', title: 'Kinshasa  →  Matadi', date: '21/08/2026 à 08:00', meta: '1 passager  •  Aller simple', status: 'confirmed', price: '90 000 FC' },
   { id: '2', type: 'trip', title: 'Matadi  →  Kinshasa', date: '25/08/2026 à 14:00', meta: '1 passager  •  Aller simple', status: 'confirmed', price: '90 000 FC' },
   { id: '3', type: 'trip', title: 'Kinshasa  →  Muanda', date: '03/09/2026 à 07:30', meta: '1 passager  •  Aller simple', status: 'pending', price: '95 000 FC' },
-  { id: '4', type: 'car', title: 'Location de voiture', date: 'Du 28/08/2026 à 09:00 au 30/08/2026 à 09:00', meta: 'Toyota RAV4  •  Sans chauffeur', status: 'confirmed', price: '250 000 FC/jour' },
+  { id: '4', type: 'car', title: 'Location de voiture', date: 'Du 28/08/2026 à 09:00 au 30/08/2026 à 09:00', meta: 'Toyota RAV4  •  Sans chauffeur', status: 'confirmed', price: '250 USD/jour' },
   { id: '5', type: 'trip', title: 'Kinshasa  →  Boma', date: '10/08/2026 à 09:00', meta: '1 passager  •  Aller simple', status: 'completed', price: '85 000 FC' },
 ];
 

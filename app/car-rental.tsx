@@ -8,15 +8,15 @@ import { useStore } from './store';
 const NAVY = '#061F68';
 const BLUE = '#0877EA';
 const vehicles = [
-  { key: 'economy', label: 'Économique', model: 'Suzuki Swift', details: '5 places • 2 bagages', image: require('../assets/images/car-suzuki-swift-v3.png'), price: 40000 },
-  { key: 'suv', label: 'SUV', model: 'Nissan Qashqai', details: '5 places • 3 bagages', image: require('../assets/images/car-nissan-qashqai-v3.png'), price: 70000 },
-  { key: 'minibus', label: 'Minibus', model: 'Toyota Coaster', details: '18 places • 10 bagages', image: require('../assets/images/car-minibus-v3.png'), price: 120000 },
-  { key: 'luxury', label: 'Luxe', model: 'Mercedes Classe E', details: '5 places • 3 bagages', image: require('../assets/images/car-luxury-v3.png'), price: 150000 },
+  { key: 'economy', label: 'Économique', model: 'Suzuki Swift', details: '5 places • 2 bagages', image: require('../assets/images/car-suzuki-swift-v3.png'), price: 40 },
+  { key: 'suv', label: 'SUV', model: 'Nissan Qashqai', details: '5 places • 3 bagages', image: require('../assets/images/car-nissan-qashqai-v3.png'), price: 70 },
+  { key: 'minibus', label: 'Minibus', model: 'Toyota Coaster', details: '18 places • 10 bagages', image: require('../assets/images/car-minibus-v3.png'), price: 120 },
+  { key: 'luxury', label: 'Luxe', model: 'Mercedes Classe E', details: '5 places • 3 bagages', image: require('../assets/images/car-luxury-v3.png'), price: 150 },
 ] as const;
 const extras = [
-  { key: 'insurance', title: 'Assurance tous risques', subtitle: 'Protégez-vous durant votre trajet', icon: 'shield-check-outline', price: 10000 },
-  { key: 'driver', title: 'Avec chauffeur', subtitle: 'Un chauffeur professionnel à votre disposition', icon: 'account-outline', price: 20000 },
-  { key: 'wifi', title: 'Wi-Fi à bord', subtitle: 'Restez connecté pendant le trajet', icon: 'wifi', price: 5000 },
+  { key: 'insurance', title: 'Assurance tous risques', subtitle: 'Protégez-vous durant votre trajet', icon: 'shield-check-outline', price: 10 },
+  { key: 'driver', title: 'Avec chauffeur', subtitle: 'Un chauffeur professionnel à votre disposition', icon: 'account-outline', price: 20 },
+  { key: 'wifi', title: 'Wi-Fi à bord', subtitle: 'Restez connecté pendant le trajet', icon: 'wifi', price: 5 },
 ] as const;
 const paymentMethods = [
   { key: 'mpesa', label: 'M-Pesa', subtitle: 'Payer avec votre compte M-Pesa', logo: require('../assets/images/mpesa-logo.png') },
@@ -85,7 +85,7 @@ export default function CarRental() {
             {vehicles.map((item) => { const active = item.key === vehicleKey; return <TouchableOpacity key={item.key} style={[styles.vehicle, active && styles.vehicleActive]} onPress={() => setVehicleKey(item.key)}>
               {active && <View style={styles.checkBadge}><Ionicons name="checkmark" size={16} color="white" /></View>}
               <Image source={item.image} style={styles.vehicleImage} resizeMode="contain" />
-              <Text style={styles.vehicleName}>{item.label}</Text><Text style={styles.vehicleModel}>{item.model}</Text><Text style={styles.vehicleDetails}>{item.details}</Text><Text style={styles.muted}>à partir de</Text><Text style={styles.priceSmall}>{item.price.toLocaleString('fr-FR')} FC / jour</Text>
+              <Text style={styles.vehicleName}>{item.label}</Text><Text style={styles.vehicleModel}>{item.model}</Text><Text style={styles.vehicleDetails}>{item.details}</Text><Text style={styles.muted}>à partir de</Text><Text style={styles.priceSmall}>{item.price.toLocaleString('fr-FR')} USD / jour</Text>
             </TouchableOpacity>; })}
           </ScrollView>
           <Text style={styles.section}>Options (facultatif)</Text>
@@ -101,7 +101,7 @@ export default function CarRental() {
             <Summary icon="time-outline" label="Durée" value={durationText} /><Summary icon="car-outline" label="Véhicule" value={`${vehicle.label} • ${vehicle.model}`} />
             <Summary icon="settings-outline" label="Options" value={chosenExtras.length ? chosenExtras.map((item) => item.title).join(', ') : 'Aucune'} />
           </View>
-          <View style={styles.estimate}><View><Text style={styles.optionTitle}>Prix total estimé</Text><Text style={styles.detail}>Détail du prix</Text></View><Text style={styles.total}>{total.toLocaleString('fr-FR')} FC</Text></View>
+          <View style={styles.estimate}><View><Text style={styles.optionTitle}>Prix total estimé</Text><Text style={styles.detail}>Détail du prix</Text></View><Text style={styles.total}>{total.toLocaleString('fr-FR')} USD</Text></View>
           <Text style={styles.section}>Informations du client</Text>
           <View style={styles.client}><View style={styles.iconBox}><Ionicons name="person-outline" size={25} color={BLUE} /></View><View><Text style={styles.clientLabel}>Nom complet</Text><Text style={styles.clientName}>{user?.fullName || 'Client TaKo'}</Text></View></View>
         </>}
@@ -117,7 +117,7 @@ export default function CarRental() {
           <Text style={styles.paymentHelper}>Entrez votre numéro pour recevoir la demande de paiement</Text>
           <View style={styles.phoneRow}><View style={styles.countryCode}><Text style={styles.countryCodeText}>+243</Text><Ionicons name="chevron-down" size={18} color={BLUE} /></View><View style={styles.phoneInputWrap}><TextInput value={mobileNumber} onChangeText={(value) => setMobileNumber(value.replace(/[^0-9 ]/g, ''))} keyboardType="phone-pad" placeholder="81 234 5678" placeholderTextColor="#8A91A0" style={styles.phoneInput} /><Ionicons name="person-outline" size={22} color="#596274" /></View></View>
           <Text style={styles.paymentLabel}>Montant à payer</Text>
-          <View style={styles.amountBox}><Text style={styles.amountLabel}>Montant total</Text><Text style={styles.amountValue}>{total.toLocaleString('fr-FR')} FC</Text></View>
+          <View style={styles.amountBox}><Text style={styles.amountLabel}>Montant total</Text><Text style={styles.amountValue}>{total.toLocaleString('fr-FR')} USD</Text></View>
           <View style={styles.secureRow}><Ionicons name="lock-closed-outline" size={18} color={BLUE} /><Text style={styles.secureText}>Paiement 100% sécurisé</Text></View>
         </>}
       </ScrollView>
@@ -127,7 +127,7 @@ export default function CarRental() {
         Alert.alert('Paiement envoyé', `Validez la demande ${paymentMethods.find((item) => item.key === paymentMethod)?.label} sur votre téléphone.`, [{ text: 'OK', onPress: () => router.replace('/my-reservations') }]);
       }}>
         {step === 4 && <Ionicons name="lock-closed-outline" size={20} color="white" />}
-        <Text style={styles.buttonText}>{step === 4 ? `Payer ${total.toLocaleString('fr-FR')} FC` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
+        <Text style={styles.buttonText}>{step === 4 ? `Payer ${total.toLocaleString('fr-FR')} USD` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
       </TouchableOpacity>
       <CalendarModal visible={calendarTarget !== null} value={calendarTarget === 'return' ? returnDate : pickupDate} minimumDate={calendarTarget === 'return' ? new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate() + 1) : new Date()} onSelect={chooseDate} onClose={() => setCalendarTarget(null)} />
       <TimeModal visible={timeTarget !== null} value={timeTarget === 'return' ? returnTime : pickupTime} onSelect={(value) => { if (timeTarget === 'return') setReturnTime(value); else setPickupTime(value); setTimeTarget(null); }} onClose={() => setTimeTarget(null)} />
