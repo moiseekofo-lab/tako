@@ -26,6 +26,7 @@ const LIGHT_BLUE = '#F1F5FF';
 
 type Step = 1 | 2 | 3 | 4;
 type Role = 'passager' | 'chauffeur' | 'agent';
+type RegistrationMethod = 'phone' | 'email';
 type Country = { name: string; flag: string; dialCode: string; minDigits: number; maxDigits: number };
 
 const COUNTRIES: Country[] = [
@@ -263,10 +264,12 @@ export default function Register() {
   const router = useRouter();
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
   const [step, setStep] = useState<Step>(1);
+  const [registrationMethod, setRegistrationMethod] = useState<RegistrationMethod>('phone');
   const [selectedCountry, setSelectedCountry] = useState<Country>(() => COUNTRIES.find((country) => country.dialCode === '+243') || COUNTRIES[0]);
   const [countryPickerOpen, setCountryPickerOpen] = useState(false);
   const [phoneInput, setPhoneInput] = useState('');
-  const [verifiedPhone, setVerifiedPhone] = useState('');
+  const [emailInput, setEmailInput] = useState('');
+  const [verifiedContact, setVerifiedContact] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
   const [fallbackCode, setFallbackCode] = useState('');
   const [fullName, setFullName] = useState('');
@@ -301,16 +304,24 @@ export default function Register() {
 
   const sendCode = async (resend = false) => {
     if (loading || (resend && resendCooldown > 0)) return;
-    const phone = resend ? verifiedPhone : normalizePhone(phoneInput, selectedCountry);
+    const contact = resend
+      ? verifiedContact
+      : registrationMethod === 'email'
+        ? emailInput.trim().toLowerCase()
+        : normalizePhone(phoneInput, selectedCountry);
     const nationalDigits = phoneInput.replace(/\D/g, '');
-    if (!resend && nationalDigits.length < selectedCountry.minDigits) {
+    if (!resend && registrationMethod === 'phone' && nationalDigits.length < selectedCountry.minDigits) {
       Alert.alert('Numéro invalide', `Entrez un numéro valide pour ${selectedCountry.name}.`);
+      return;
+    }
+    if (!resend && registrationMethod === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) {
+      Alert.alert('E-mail invalide', 'Entrez une adresse e-mail valide.');
       return;
     }
     try {
       setLoading(true);
-      const result = await requestVerificationCode(phone, 'register');
-      setVerifiedPhone(phone);
+      const result = await requestVerificationCode(contact, 'register');
+      setVerifiedContact(contact);
       setFallbackCode(result?.code ? String(result.code) : '');
       setVerificationCode('');
       setResendCooldown(60);
@@ -329,7 +340,7 @@ export default function Register() {
     try {
       setLoading(true);
       if (fallbackCode && fallbackCode !== verificationCode) throw new Error('Le code OTP est incorrect.');
-      await verifyVerificationCode(verifiedPhone, verificationCode, 'register');
+      await verifyVerificationCode(verifiedContact, verificationCode, 'register');
       setStep(3);
     } catch (error: any) {
       Alert.alert('Code incorrect', error?.message || 'Vérifiez le code reçu.');
@@ -362,7 +373,7 @@ export default function Register() {
     try {
       setLoading(true);
       const result = await registerAccount({
-        contact: verifiedPhone,
+        contact: verifiedContact,
         code: verificationCode,
         fullName: fullName.trim(),
         birthDate: birthDate.replace(/\s/g, ''),
@@ -414,9 +425,13 @@ export default function Register() {
               <Text style={styles.logoWord}>TaKo</Text>
               <Text style={styles.welcomeTitleText}>!</Text>
             </View>
-            <Text style={styles.subtitle}>Commencez par entrer votre numéro{`\n`}de téléphone.</Text>
-            <Text style={styles.label}>Numéro de téléphone</Text>
-            <View style={styles.phoneField}>
+            <Text style={styles.subtitle}>{registrationMethod === 'email' ? 'Commencez par entrer votre adresse e-mail.' : 'Commencez par entrer votre numéro\nde téléphone.'}</Text>
+            <TouchableOpacity style={styles.methodButton} activeOpacity={0.82} onPress={() => setRegistrationMethod((current) => current === 'phone' ? 'email' : 'phone')}>
+              <Ionicons name={registrationMethod === 'phone' ? 'mail-outline' : 'call-outline'} size={21} color={BLUE} />
+              <Text style={styles.methodButtonText}>{registrationMethod === 'phone' ? 'S’inscrire avec un e-mail' : 'S’inscrire avec un téléphone'}</Text>
+            </TouchableOpacity>
+            <Text style={styles.label}>{registrationMethod === 'email' ? 'Adresse e-mail' : 'Numéro de téléphone'}</Text>
+            {registrationMethod === 'phone' ? <View style={styles.phoneField}>
               <TouchableOpacity style={styles.countryPickerButton} activeOpacity={0.8} onPress={() => setCountryPickerOpen(true)}>
                 <Text style={styles.flag}>{selectedCountry.flag}</Text>
                 <Ionicons name="chevron-down" size={18} color={MUTED} />
@@ -433,17 +448,21 @@ export default function Register() {
                 keyboardType="phone-pad"
                 autoComplete="tel"
               />
-            </View>
-            <InfoBox text="Nous vous enverrons un code OTP pour vérifier votre numéro." />
-            <PrimaryButton label="Continuer" loading={loading} disabled={phoneInput.replace(/\D/g, '').length < selectedCountry.minDigits} onPress={() => sendCode()} />
+            </View> : <View style={styles.phoneField}>
+              <Ionicons name="mail-outline" size={25} color={BLUE} />
+              <View style={styles.divider} />
+              <TextInput style={styles.phoneInput} value={emailInput} onChangeText={setEmailInput} placeholder="Entrez votre adresse e-mail" placeholderTextColor="#9296A8" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" />
+            </View>}
+            <InfoBox text={registrationMethod === 'email' ? 'Nous vous enverrons un code OTP pour vérifier votre e-mail.' : 'Nous vous enverrons un code OTP pour vérifier votre numéro.'} />
+            <PrimaryButton label="Continuer" loading={loading} disabled={registrationMethod === 'email' ? !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailInput.trim()) : phoneInput.replace(/\D/g, '').length < selectedCountry.minDigits} onPress={() => sendCode()} />
           </View>
         )}
 
         {step === 2 && (
           <View style={styles.content}>
-            <Text style={styles.title}>Vérifiez votre numéro</Text>
+            <Text style={styles.title}>{registrationMethod === 'email' ? 'Vérifiez votre e-mail' : 'Vérifiez votre numéro'}</Text>
             <Text style={styles.subtitle}>Nous avons envoyé un code OTP à</Text>
-            <Text style={styles.phonePreview}>{selectedCountry.flag}   {verifiedPhone.replace(selectedCountry.dialCode, `${selectedCountry.dialCode} `)}</Text>
+            <Text style={styles.phonePreview}>{registrationMethod === 'email' ? verifiedContact : `${selectedCountry.flag}   ${verifiedContact.replace(selectedCountry.dialCode, `${selectedCountry.dialCode} `)}`}</Text>
             <Text style={styles.otpInstruction}>Entrez le code à 6 chiffres pour continuer.</Text>
             <Pressable style={styles.otpRow} onPress={() => otpRef.current?.focus()}>
               <TextInput
@@ -638,6 +657,8 @@ const styles = StyleSheet.create({
   logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 31, lineHeight: 38, fontWeight: 'normal', letterSpacing: 0.4 },
   subtitle: { color: MUTED, fontSize: 19, lineHeight: 29, fontWeight: '500', marginBottom: 52 },
   label: { color: NAVY, fontSize: 17, fontWeight: '800', marginBottom: 14 },
+  methodButton: { alignSelf: 'flex-start', minHeight: 43, borderWidth: 1.3, borderColor: BLUE, borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: -30, marginBottom: 28 },
+  methodButtonText: { color: BLUE, fontSize: 14, fontWeight: '800' },
   phoneField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
   countryPickerButton: { minWidth: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   flag: { fontSize: 29 },
