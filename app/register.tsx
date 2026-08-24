@@ -271,7 +271,6 @@ export default function Register() {
   const [emailInput, setEmailInput] = useState('');
   const [verifiedContact, setVerifiedContact] = useState('');
   const [verificationCode, setVerificationCode] = useState('');
-  const [fallbackCode, setFallbackCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
   const [role, setRole] = useState<Role>('passager');
@@ -320,13 +319,11 @@ export default function Register() {
     }
     try {
       setLoading(true);
-      const result = await requestVerificationCode(contact, 'register');
+      await requestVerificationCode(contact, 'register');
       setVerifiedContact(contact);
-      setFallbackCode(result?.code ? String(result.code) : '');
       setVerificationCode('');
       setResendCooldown(60);
       setStep(2);
-      if (result?.code) Alert.alert('Code OTP', `Votre code est ${result.code}`);
       setTimeout(() => otpRef.current?.focus(), 250);
     } catch (error: any) {
       Alert.alert('Erreur', error?.message || 'Impossible d’envoyer le code OTP.');
@@ -339,7 +336,6 @@ export default function Register() {
     if (verificationCode.length !== 6) return;
     try {
       setLoading(true);
-      if (fallbackCode && fallbackCode !== verificationCode) throw new Error('Le code OTP est incorrect.');
       await verifyVerificationCode(verifiedContact, verificationCode, 'register');
       setStep(3);
     } catch (error: any) {

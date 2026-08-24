@@ -12,6 +12,8 @@ const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
 const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/\/+$/, '');
 const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
 const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || 'TaKo').trim();
+const infobipEmailFrom = String(process.env.INFOBIP_EMAIL_FROM || '').trim();
+const infobipEmailFromName = String(process.env.INFOBIP_EMAIL_FROM_NAME || 'TaKo').trim();
 const infobipWhatsAppSender = String(process.env.INFOBIP_WHATSAPP_SENDER || '').trim();
 const infobipWhatsAppTemplate = String(
   process.env.INFOBIP_WHATSAPP_TEMPLATE || 'tako'
@@ -99,6 +101,10 @@ function isPhoneContact(contact) {
 
 function isInfobipSmsEnabled() {
   return Boolean(infobipBaseUrl && infobipApiKey && infobipSmsSender);
+}
+
+function isInfobipEmailEnabled() {
+  return Boolean(infobipBaseUrl && infobipApiKey && infobipEmailFrom);
 }
 
 function isInfobipWhatsAppEnabled() {
@@ -270,11 +276,7 @@ async function isEmailAlreadyUsed(contact) {
   return existing.rowCount > 0;
 }
 
-async function sendVerificationEmail(contact, code, purpose) {
-  if (!sendGridApiKey || !sendGridFromEmail || !contact.includes('@')) {
-    return false;
-  }
-
+async function sendInfobipVerificationEmail(contact, code, purpose) {
   const subject =
     purpose === 'reset'
       ? 'Code de récupération TaKo'
@@ -294,50 +296,35 @@ async function sendVerificationEmail(contact, code, purpose) {
     </div>
   `;
 
-  const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+  const baseUrl = /^https?:\/\//i.test(infobipBaseUrl)
+    ? infobipBaseUrl
+    : `https://${infobipBaseUrl}`;
+  const form = new FormData();
+  form.append('from', infobipEmailFromName ? `${infobipEmailFromName} <${infobipEmailFrom}>` : infobipEmailFrom);
+  form.append('to', contact);
+  form.append('replyTo', infobipEmailFrom);
+  form.append('subject', subject);
+  form.append('text', text);
+  form.append('html', html);
+
+  const response = await fetch(`${baseUrl}/email/3/send`, {
     method: 'POST',
     headers: {
-      Authorization: `Bearer ${sendGridApiKey}`,
-      'Content-Type': 'application/json',
+      Authorization: `App ${infobipApiKey}`,
+      Accept: 'application/json',
     },
-    body: JSON.stringify({
-      personalizations: [
-        {
-          to: [{ email: contact }],
-          subject,
-        },
-      ],
-      from: {
-        email: sendGridFromEmail,
-        name: sendGridFromName,
-      },
-      reply_to: {
-        email: sendGridFromEmail,
-        name: sendGridFromName,
-      },
-      tracking_settings: {
-        click_tracking: {
-          enable: false,
-          enable_text: false,
-        },
-        open_tracking: {
-          enable: false,
-        },
-      },
-      content: [
-        { type: 'text/plain', value: text },
-        { type: 'text/html', value: html },
-      ],
-    }),
+    body: form,
   });
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => '');
-    console.error('SendGrid failed:', response.status, errorText);
-    return false;
+    const result = await response.json().catch(() => ({}));
+    console.error('Infobip Email failed:', { status: response.status, error: result, destination: contact, sender: infobipEmailFrom, baseUrl });
+    const error = new Error('Impossible d’envoyer le code par e-mail. Vérifiez l’adresse puis réessayez.');
+    error.statusCode = 502;
+    throw error;
   }
 
-  return true;
+  return { delivery: 'email', provider: 'infobip' };
 }
 
 async function sendAccountCreatedEmail(user) {
@@ -718,6 +705,10 @@ async function handleRequest(request, response) {
       sendJson(response, 503, { ok: false, error: 'Le service OTP Infobip n’est pas configuré.' });
       return;
     }
+    if (!useSms && !isInfobipEmailEnabled()) {
+      sendJson(response, 503, { ok: false, error: 'Le service OTP e-mail Infobip n’est pas configuré.' });
+      return;
+    }
     const code = generateCode();
     await query(
       `
@@ -749,13 +740,18 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const emailSent = await sendVerificationEmail(contact, code, purpose);
+    let delivery;
+    try {
+      delivery = await sendInfobipVerificationEmail(contact, code, purpose);
+    } catch (error) {
+      await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, purpose]);
+      throw error;
+    }
 
     sendJson(response, 200, {
       ok: true,
-      message: emailSent ? 'Code envoyé par email' : 'Code généré',
-      delivery: emailSent ? 'email' : 'demo',
-      ...(emailSent ? {} : { code }),
+      message: 'Code envoyé par e-mail',
+      ...delivery,
     });
     return;
   }

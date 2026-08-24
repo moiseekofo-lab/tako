@@ -51,6 +51,10 @@ services:
         sync: false
       - key: INFOBIP_SMS_SENDER
         sync: false
+      - key: INFOBIP_EMAIL_FROM
+        value: contact@takotransport.online
+      - key: INFOBIP_EMAIL_FROM_NAME
+        value: TaKo
       - key: INFOBIP_WHATSAPP_SENDER
         sync: false
       - key: INFOBIP_WHATSAPP_TEMPLATE
