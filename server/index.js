@@ -450,6 +450,12 @@ async function initDatabase() {
   `);
 
   await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS users_email_lower_unique_idx
+    ON users (LOWER(email))
+    WHERE email IS NOT NULL;
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS verification_codes (
       contact TEXT PRIMARY KEY,
       code TEXT NOT NULL,
@@ -897,12 +903,8 @@ async function handleRequest(request, response) {
       return;
     }
 
-    await verifyCode(contact, body.code, 'register');
-
-    const id = await generateUniqueClientId();
     const email = contact.includes('@') ? contact : null;
     const phone = contact.includes('@') ? null : contact;
-    const status = role === 'chauffeur' || role === 'agent' ? 'pending' : 'active';
 
     if (email && await isEmailAlreadyUsed(email)) {
       sendJson(response, 409, {
@@ -912,14 +914,31 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const result = await query(
-      `
-        INSERT INTO users (id, full_name, email, phone, birth_date, password_hash, role, status)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-        RETURNING *;
-      `,
-      [id, fullName, email, phone, birthDate, hashPassword(password), role, status],
-    );
+    await verifyCode(contact, body.code, 'register');
+
+    const id = await generateUniqueClientId();
+    const status = role === 'chauffeur' || role === 'agent' ? 'pending' : 'active';
+    let result;
+
+    try {
+      result = await query(
+        `
+          INSERT INTO users (id, full_name, email, phone, birth_date, password_hash, role, status)
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+          RETURNING *;
+        `,
+        [id, fullName, email, phone, birthDate, hashPassword(password), role, status],
+      );
+    } catch (error) {
+      if (email && error?.code === '23505') {
+        sendJson(response, 409, {
+          ok: false,
+          error: 'Cet email est déjà utilisé. Connectez-vous avec ce compte ou utilisez un autre email.',
+        });
+        return;
+      }
+      throw error;
+    }
     const accountEmailSent = await sendAccountCreatedEmail(result.rows[0]);
 
     sendJson(response, 201, {
