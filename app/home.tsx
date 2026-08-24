@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Animated, Image, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, Linking, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TakoLogo } from '../components/tako-logo';
 import { getClientProfile, saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
@@ -15,6 +15,7 @@ const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
 const NEWS_CARD_COUNT = 4;
+const WHATSAPP_CHAT_URL = 'https://wa.me/message/XI2NHEELHNTDM1';
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 const takoPetitTransportNews = require('../assets/images/news-tako-petit-transport.jpeg');
 const takoPublicTransportNews = require('../assets/images/news-tako-public-transport.jpeg');
@@ -653,9 +654,12 @@ export default function Home() {
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.bottomNavItem} activeOpacity={0.85}>
-            <Ionicons name="help-circle-outline" size={32} color="#061F68" />
-            <Text style={styles.bottomNavText}>{text.help}</Text>
+          <TouchableOpacity
+            style={styles.bottomNavItem}
+            activeOpacity={0.85}
+            onPress={() => Linking.openURL(WHATSAPP_CHAT_URL).catch(() => Alert.alert('WhatsApp indisponible', 'Impossible d’ouvrir le chat WhatsApp pour le moment.'))}>
+            <MaterialCommunityIcons name="whatsapp" size={32} color="#061F68" />
+            <Text style={styles.bottomNavText}>{text.chat}</Text>
           </TouchableOpacity>
         </View>
 
