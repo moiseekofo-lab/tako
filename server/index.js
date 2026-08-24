@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import http from 'node:http';
 import pg from 'pg';
 
@@ -32,6 +33,16 @@ const pool = databaseUrl
 
 function nowIso() {
   return new Date().toISOString();
+}
+
+function bundledNewsImage(fileName) {
+  try {
+    const data = fs.readFileSync(new URL(`../assets/images/${fileName}`, import.meta.url));
+    return `data:image/jpeg;base64,${data.toString('base64')}`;
+  } catch (error) {
+    console.warn(`Bundled news image unavailable: ${fileName}`, error.message);
+    return '';
+  }
 }
 
 function adminPublicUser() {
@@ -521,6 +532,56 @@ async function initDatabase() {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS news_items (
+      id TEXT PRIMARY KEY,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL DEFAULT '',
+      category TEXT NOT NULL DEFAULT 'Information',
+      image_url TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'draft',
+      publish_start TIMESTAMPTZ,
+      publish_end TIMESTAMPTZ,
+      created_by TEXT NOT NULL DEFAULT 'Admin TaKo',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS app_migrations (
+      id TEXT PRIMARY KEY,
+      applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  const newsSeedMigration = await pool.query(
+    'SELECT id FROM app_migrations WHERE id = $1 LIMIT 1;',
+    ['seed-initial-news-v1'],
+  );
+  if (!newsSeedMigration.rowCount) {
+    const initialNews = [
+      ['news-tako-trajets', 'Voyagez avec TaKo', 'Découvrez les services TaKo pour vos déplacements.', 'Information', 'news-tako-trajets.jpeg'],
+      ['news-tako-petit-transport', 'TaKo, même pour les petits transports', 'Payez simplement votre transport avec TaKo.', 'Information', 'news-tako-petit-transport.jpeg'],
+      ['news-tako-public-transport', 'Je paye mon transport public', 'Votre paiement de transport, simple et rapide avec TaKo.', 'Promotion', 'news-tako-public-transport.jpeg'],
+      ['news-tako-eglise', 'Vous allez à l’église ?', 'Payez votre transport avec TaKo.', 'Annonce', 'news-tako-eglise.jpeg'],
+    ];
+    for (const [id, title, content, category, fileName] of initialNews) {
+      const imageUrl = bundledNewsImage(fileName);
+      if (imageUrl) {
+        await pool.query(`
+          INSERT INTO news_items (id, title, content, category, image_url, status, publish_start)
+          VALUES ($1, $2, $3, $4, $5, 'published', NOW())
+          ON CONFLICT (id) DO NOTHING;
+        `, [id, title, content, category, imageUrl]);
+      }
+    }
+    await pool.query(
+      'INSERT INTO app_migrations (id) VALUES ($1) ON CONFLICT (id) DO NOTHING;',
+      ['seed-initial-news-v1'],
+    );
+  }
 }
 
 function sendJson(response, statusCode, data) {
@@ -2290,6 +2351,92 @@ async function handleRequest(request, response) {
     }
 
     sendJson(response, 201, { ok: true, payment: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/news') {
+    const result = await query(`
+      SELECT id, title, content, category, image_url AS "imageUrl",
+             status, publish_start AS "publishStart", publish_end AS "publishEnd",
+             created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM news_items
+      WHERE status = 'published'
+        AND (publish_start IS NULL OR publish_start <= NOW())
+        AND (publish_end IS NULL OR publish_end >= NOW())
+      ORDER BY COALESCE(publish_start, created_at) DESC, created_at DESC;
+    `);
+    sendJson(response, 200, { ok: true, news: result.rows });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/news/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur invalide ou expirée' });
+      return;
+    }
+    const result = await query(`
+      SELECT id, title, content, category, image_url AS "imageUrl",
+             status, publish_start AS "publishStart", publish_end AS "publishEnd",
+             created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM news_items
+      ORDER BY created_at DESC;
+    `);
+    sendJson(response, 200, { ok: true, news: result.rows });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/news/save') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur invalide ou expirée' });
+      return;
+    }
+    const id = String(body.id || crypto.randomUUID());
+    const title = String(body.title || '').trim();
+    const content = String(body.content || '').trim();
+    const category = String(body.category || 'Information').trim();
+    const imageUrl = String(body.imageUrl || '').trim();
+    const status = ['draft', 'published', 'archived'].includes(body.status) ? body.status : 'draft';
+    const publishStart = body.publishStart || null;
+    const publishEnd = body.publishEnd || null;
+    if (!title || !imageUrl) {
+      sendJson(response, 400, { ok: false, error: 'Le titre et l’image sont obligatoires.' });
+      return;
+    }
+    const result = await query(`
+      INSERT INTO news_items
+        (id, title, content, category, image_url, status, publish_start, publish_end, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+      ON CONFLICT (id) DO UPDATE SET
+        title = EXCLUDED.title,
+        content = EXCLUDED.content,
+        category = EXCLUDED.category,
+        image_url = EXCLUDED.image_url,
+        status = EXCLUDED.status,
+        publish_start = EXCLUDED.publish_start,
+        publish_end = EXCLUDED.publish_end,
+        updated_at = NOW()
+      RETURNING id, title, content, category, image_url AS "imageUrl",
+                status, publish_start AS "publishStart", publish_end AS "publishEnd",
+                created_by AS "createdBy", created_at AS "createdAt", updated_at AS "updatedAt";
+    `, [id, title, content, category, imageUrl, status, publishStart, publishEnd]);
+    sendJson(response, body.id ? 200 : 201, { ok: true, newsItem: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/news/delete') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur invalide ou expirée' });
+      return;
+    }
+    const result = await query('DELETE FROM news_items WHERE id = $1 RETURNING id;', [String(body.id || '')]);
+    if (!result.rowCount) {
+      sendJson(response, 404, { ok: false, error: 'Actualité introuvable.' });
+      return;
+    }
+    sendJson(response, 200, { ok: true, id: result.rows[0].id });
     return;
   }
 

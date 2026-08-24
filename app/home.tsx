@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Animated, Image, Linking, PanResponder, Platform, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TakoLogo } from '../components/tako-logo';
-import { getClientProfile, saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked } from '../services/api';
+import { getClientProfile, getPublishedNews, saveDriverTripSettings, setNfcCardBlocked as setRemoteNfcCardBlocked, type NewsItem } from '../services/api';
 import { translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -14,7 +14,6 @@ const NFC_CARD_ID_KEY = 'tako:nfcCardId';
 const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
-const NEWS_CARD_COUNT = 4;
 const WHATSAPP_CHAT_URL = 'https://wa.me/message/XI2NHEELHNTDM1';
 const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
 const takoPetitTransportNews = require('../assets/images/news-tako-petit-transport.jpeg');
@@ -40,7 +39,9 @@ export default function Home() {
   const webHeroTouchStartY = useRef<number | null>(null);
   const newsTouchStartX = useRef<number | null>(null);
   const isNewsTouched = useRef(false);
+  const newsCountRef = useRef(4);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const [publishedNews, setPublishedNews] = useState<NewsItem[]>([]);
   const balance = useStore((state: any) => state.balance);
   const nfcCardId = useStore((state: any) => state.nfcCardId);
   const nfcCardBlocked = useStore((state: any) => state.nfcCardBlocked);
@@ -57,6 +58,20 @@ export default function Home() {
     (state: any) => state.notifications.filter((notification: any) => !notification.read).length
   );
   const text = translations[language];
+
+  const loadPublishedNews = async () => {
+    try {
+      const result = await getPublishedNews();
+      const nextNews = (result?.news || []) as NewsItem[];
+      setPublishedNews(nextNews);
+      newsCountRef.current = Math.max(1, nextNews.length || 4);
+      setActiveNewsIndex(0);
+    } catch {
+      newsCountRef.current = 4;
+    }
+  };
+
+  useEffect(() => { loadPublishedNews(); }, []);
 
   const role = params.role === 'chauffeur' || currentUser?.role === 'chauffeur' ? 'chauffeur' : 'passager';
   const now = useMemo(() => new Date(), []);
@@ -208,7 +223,7 @@ export default function Home() {
         return;
       }
 
-      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
+      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % newsCountRef.current);
     }, NEWS_AUTO_SCROLL_INTERVAL_MS);
 
     return () => clearInterval(intervalId);
@@ -314,11 +329,11 @@ export default function Home() {
       },
       onPanResponderRelease: (_, gesture) => {
         if (gesture.dx <= -34) {
-          setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
+          setActiveNewsIndex((currentIndex) => (currentIndex + 1) % newsCountRef.current);
         }
 
         if (gesture.dx >= 34) {
-          setActiveNewsIndex((currentIndex) => (currentIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT);
+          setActiveNewsIndex((currentIndex) => (currentIndex + newsCountRef.current - 1) % newsCountRef.current);
         }
 
         Animated.spring(newsDragX, {
@@ -380,11 +395,11 @@ export default function Home() {
     newsTouchStartX.current = null;
 
     if (distance <= -34) {
-      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % NEWS_CARD_COUNT);
+      setActiveNewsIndex((currentIndex) => (currentIndex + 1) % newsCountRef.current);
     }
 
     if (distance >= 34) {
-      setActiveNewsIndex((currentIndex) => (currentIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT);
+      setActiveNewsIndex((currentIndex) => (currentIndex + newsCountRef.current - 1) % newsCountRef.current);
     }
 
     Animated.spring(newsDragX, {
@@ -432,7 +447,7 @@ export default function Home() {
     }
 
     setRefreshing(true);
-    setTimeout(() => setRefreshing(false), 750);
+    loadPublishedNews().finally(() => setRefreshing(false));
   };
 
   const startWebHeroPull = (event: any) => {
@@ -474,17 +489,14 @@ export default function Home() {
     }
   };
 
-  const newsCards = [
-    takoTrajetsNews,
-    takoPetitTransportNews,
-    takoPublicTransportNews,
-    takoEgliseNews,
-  ];
+  const newsCards: { source: any; title?: string }[] = publishedNews.length
+    ? publishedNews.map((item) => ({ source: { uri: item.imageUrl }, title: item.title }))
+    : [takoTrajetsNews, takoPetitTransportNews, takoPublicTransportNews, takoEgliseNews].map((source) => ({ source }));
 
   const renderNewsCardContent = (index: number) => {
-    const card = newsCards[index % NEWS_CARD_COUNT];
+    const card = newsCards[index % newsCards.length];
 
-    return <Image source={card} style={styles.newsImage} resizeMode="cover" />;
+    return <Image source={card.source} style={styles.newsImage} resizeMode="cover" accessibilityLabel={card.title || text.news} />;
   };
 
   if (role === 'passager') {
@@ -613,10 +625,10 @@ export default function Home() {
             onTouchCancel={endNewsTouch}
             {...newsPanResponder.panHandlers}>
             <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
-              {renderNewsCardContent((activeNewsIndex + NEWS_CARD_COUNT - 1) % NEWS_CARD_COUNT)}
+              {renderNewsCardContent((activeNewsIndex + newsCards.length - 1) % newsCards.length)}
             </Animated.View>
             <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
-              {renderNewsCardContent((activeNewsIndex + 1) % NEWS_CARD_COUNT)}
+              {renderNewsCardContent((activeNewsIndex + 1) % newsCards.length)}
             </Animated.View>
             <Animated.View style={[styles.news3dCard, styles.news3dMain, { transform: [{ translateX: newsDragX }] }]}>
               {renderNewsCardContent(activeNewsIndex)}

@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { AdminNewsManager } from '../components/admin-news-manager';
 import {
   activatePrepaidCard,
   approveUser,
@@ -524,6 +525,7 @@ type AdminSection =
   | 'treasury'
   | 'reconciliation'
   | 'claims'
+  | 'news'
   | 'notifications'
   | 'reports'
   | 'roles'
@@ -542,6 +544,7 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
   { key: 'treasury', label: 'Trésorerie', icon: 'wallet-outline' },
   { key: 'reconciliation', label: 'Rapprochement', icon: 'git-compare-outline' },
   { key: 'claims', label: 'Réclamations', icon: 'chatbox-ellipses-outline' },
+  { key: 'news', label: 'Actualités', icon: 'megaphone-outline' },
   { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
   { key: 'reports', label: 'Rapports', icon: 'bar-chart-outline' },
   { key: 'roles', label: 'Administrateurs et rôles', icon: 'shield-checkmark-outline' },
@@ -555,14 +558,14 @@ const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, stri
     dashboard: 'Dashboard', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
     nfcCards: 'NFC cards', transactions: 'Transactions', recharges: 'Top-ups',
     payouts: 'Payouts', treasury: 'Treasury', reconciliation: 'Reconciliation',
-    claims: 'Claims', notifications: 'Notifications', reports: 'Reports',
+    claims: 'Claims', news: 'News', notifications: 'Notifications', reports: 'Reports',
     roles: 'Administrators and roles', audit: 'Activity log', settings: 'Settings',
   },
   pt: {
     dashboard: 'Painel', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
     nfcCards: 'Cartões NFC', transactions: 'Transações', recharges: 'Recargas',
     payouts: 'Pagamentos', treasury: 'Tesouraria', reconciliation: 'Reconciliação',
-    claims: 'Reclamações', notifications: 'Notificações', reports: 'Relatórios',
+    claims: 'Reclamações', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
     roles: 'Administradores e funções', audit: 'Registo de atividades', settings: 'Definições',
   },
 };
@@ -2018,6 +2021,8 @@ export default function Admin() {
               </View>
             </View>
           ) : null}
+
+          {activeSection === 'news' ? <AdminNewsManager /> : null}
 
           {activeSection === 'nfcCards' ? (
             <>

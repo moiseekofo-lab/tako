@@ -3,6 +3,20 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL;
 type PaymentMethod = 'qr' | 'nfc';
 type UserRole = 'passager' | 'chauffeur' | 'agent' | 'admin';
 
+export type NewsItem = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  imageUrl: string;
+  status: 'draft' | 'published' | 'archived';
+  publishStart?: string | null;
+  publishEnd?: string | null;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 async function requestJson(path: string, options: RequestInit = {}) {
   if (!API_URL) {
     throw new Error('Serveur API non configuré. Vérifiez EXPO_PUBLIC_API_URL.');
@@ -336,4 +350,20 @@ export function getPayments(clientId?: string) {
 
 export function getNotifications(clientId: string) {
   return requestJson(`/notifications?clientId=${encodeURIComponent(clientId)}`);
+}
+
+export function getPublishedNews() {
+  return requestJson('/news');
+}
+
+export function getAdminNews(sessionToken: string) {
+  return postJson('/admin/news/list', { sessionToken });
+}
+
+export function saveAdminNews(sessionToken: string, item: Partial<NewsItem>) {
+  return postJson('/admin/news/save', { sessionToken, ...item });
+}
+
+export function deleteAdminNews(sessionToken: string, id: string) {
+  return postJson('/admin/news/delete', { sessionToken, id });
 }
