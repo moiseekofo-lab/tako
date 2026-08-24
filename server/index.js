@@ -12,7 +12,9 @@ const sendGridFromName = process.env.SENDGRID_FROM_NAME || 'TaKo';
 const infobipBaseUrl = String(process.env.INFOBIP_BASE_URL || '').trim().replace(/\/+$/, '');
 const infobipApiKey = String(process.env.INFOBIP_API_KEY || '').trim();
 const infobipSmsSender = String(process.env.INFOBIP_SMS_SENDER || 'TaKo').trim();
-const infobipEmailFrom = String(process.env.INFOBIP_EMAIL_FROM || '').trim();
+const infobipEmailFrom = String(
+  process.env.INFOBIP_EMAIL_FROM || process.env.ADMIN_EMAIL || 'contact@takotransport.online'
+).trim().toLowerCase();
 const infobipEmailFromName = String(process.env.INFOBIP_EMAIL_FROM_NAME || 'TaKo').trim();
 const infobipWhatsAppSender = String(process.env.INFOBIP_WHATSAPP_SENDER || '').trim();
 const infobipWhatsAppTemplate = String(
