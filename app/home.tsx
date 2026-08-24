@@ -659,6 +659,7 @@ export default function Home() {
             activeOpacity={0.85}
             onPress={() => Linking.openURL(WHATSAPP_CHAT_URL).catch(() => Alert.alert('WhatsApp indisponible', 'Impossible d’ouvrir le chat WhatsApp pour le moment.'))}>
             <Ionicons name="chatbubble-ellipses-outline" size={33} color="#061F68" />
+            <Text style={styles.bottomNavText}>{text.chat}</Text>
           </TouchableOpacity>
         </View>
 
