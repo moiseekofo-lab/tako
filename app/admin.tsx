@@ -3410,7 +3410,7 @@ const styles = StyleSheet.create({
   brandSubtitle: {
     color: '#BFE4FF',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 8,
     marginLeft: 6,
     textTransform: 'uppercase',
@@ -3451,7 +3451,7 @@ const styles = StyleSheet.create({
   navText: {
     color: 'white',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   navTextActive: {
     color: TAKO_BLUE,
@@ -3468,13 +3468,13 @@ const styles = StyleSheet.create({
   privateTitle: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 8,
   },
   privateText: {
     color: '#BFE4FF',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 18,
     marginTop: 6,
   },
@@ -3496,7 +3496,7 @@ const styles = StyleSheet.create({
   sidebarLogoutText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   content: {
     flexGrow: 1,
@@ -3534,20 +3534,20 @@ const styles = StyleSheet.create({
   kicker: {
     color: TAKO_ACTION,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   title: {
     color: TAKO_BLUE,
     fontSize: 34,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 6,
   },
   subtitle: {
     color: '#5C667A',
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   adminBadge: {
     minWidth: 0,
@@ -3576,12 +3576,12 @@ const styles = StyleSheet.create({
   adminName: {
     color: TAKO_BLUE,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   adminEmail: {
     color: '#6B7280',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     marginTop: 2,
   },
   adminMenu: {
@@ -3610,7 +3610,7 @@ const styles = StyleSheet.create({
   adminMenuText: {
     color: '#17213B',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   adminMenuDivider: {
     height: 1,
@@ -3620,7 +3620,7 @@ const styles = StyleSheet.create({
   adminMenuLogout: {
     color: '#D64545',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   logoutButton: {
     minHeight: 58,
@@ -3635,7 +3635,7 @@ const styles = StyleSheet.create({
   logoutButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   statsGrid: {
     flexDirection: 'row',
@@ -3670,7 +3670,7 @@ const styles = StyleSheet.create({
   periodButtonText: {
     color: '#64748B',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   periodButtonTextActive: {
     color: '#FFFFFF',
@@ -3719,7 +3719,7 @@ const styles = StyleSheet.create({
   activityMessage: {
     color: '#334155',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   activityDate: {
     color: '#94A3B8',
@@ -3748,7 +3748,7 @@ const styles = StyleSheet.create({
   moreLink: {
     color: TAKO_ACTION,
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   recentHeader: {
     minHeight: 40,
@@ -3761,7 +3761,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#475569',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   recentRow: {
     minHeight: 46,
@@ -3775,13 +3775,13 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#475569',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   recentStatus: {
     flex: 1,
     color: '#087B35',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   recentEmpty: {
     minHeight: 110,
@@ -3808,7 +3808,7 @@ const styles = StyleSheet.create({
   donutValue: {
     color: TAKO_BLUE,
     fontSize: 20,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   chartLegend: {
     flexDirection: 'row',
@@ -3818,17 +3818,17 @@ const styles = StyleSheet.create({
   legendBlue: {
     color: TAKO_ACTION,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   legendGreen: {
     color: TAKO_GREEN,
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   legendOrange: {
     color: '#D97706',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   lineChart: {
     minHeight: 190,
@@ -3866,19 +3866,19 @@ const styles = StyleSheet.create({
   statusLabel: {
     color: '#64748B',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   statusSuccess: {
     color: '#087B35',
-    fontWeight: '900',
+    fontWeight: '700',
   },
   statusPending: {
     color: '#B45309',
-    fontWeight: '900',
+    fontWeight: '700',
   },
   statusFailed: {
     color: '#B91C1C',
-    fontWeight: '900',
+    fontWeight: '700',
   },
   alertPanel: {
     flexBasis: 300,
@@ -3896,7 +3896,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#92400E',
     fontSize: 13,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   mobileStatsGrid: {
     flexDirection: 'column',
@@ -3926,13 +3926,13 @@ const styles = StyleSheet.create({
   statLabel: {
     color: '#6B7280',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 6,
   },
   statValue: {
     color: TAKO_BLUE,
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   statComparison: {
     flexDirection: 'row',
@@ -3943,7 +3943,7 @@ const styles = StyleSheet.create({
   statChange: {
     color: '#087B35',
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   statChangeNegative: {
     color: '#B91C1C',
@@ -3951,7 +3951,7 @@ const styles = StyleSheet.create({
   statComparisonLabel: {
     color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   referencePage: {
     gap: 18,
@@ -3995,18 +3995,18 @@ const styles = StyleSheet.create({
   clientStatLabel: {
     color: '#475569',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   clientStatValue: {
     color: '#111827',
     fontSize: 23,
-    fontWeight: '900',
+    fontWeight: '700',
     marginVertical: 3,
   },
   clientSubtext: {
     color: '#94A3B8',
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   clientFilters: {
     flexDirection: 'row',
@@ -4055,7 +4055,7 @@ const styles = StyleSheet.create({
   filterChipText: {
     color: '#64748B',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   filterChipTextActive: {
     color: '#FFFFFF',
@@ -4088,7 +4088,7 @@ const styles = StyleSheet.create({
     width: 145,
     color: '#475569',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     paddingRight: 10,
   },
   clientTableRow: {
@@ -4110,32 +4110,32 @@ const styles = StyleSheet.create({
   clientTableHeaderText: {
     color: '#334155',
     fontSize: 11,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   clientTableCellText: {
     width: 145,
     color: '#475569',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     paddingRight: 10,
   },
   clientName: {
     color: '#111827',
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   clientBalance: {
     width: 145,
     color: TAKO_BLUE,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     paddingRight: 10,
   },
   statusActive: {
     alignSelf: 'flex-start',
     color: '#087B35',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
     backgroundColor: '#E9FFF1',
     borderRadius: 4,
     paddingHorizontal: 7,
@@ -4145,7 +4145,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     color: '#B45309',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
     backgroundColor: '#FFF7ED',
     borderRadius: 4,
     paddingHorizontal: 7,
@@ -4155,7 +4155,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     color: '#B91C1C',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
     backgroundColor: '#FEF2F2',
     borderRadius: 4,
     paddingHorizontal: 7,
@@ -4202,7 +4202,7 @@ const styles = StyleSheet.create({
   pageCurrent: {
     color: TAKO_BLUE,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   clientProfilePanel: {
     marginTop: 20,
@@ -4249,7 +4249,7 @@ const styles = StyleSheet.create({
     borderColor: '#DCE5F2',
     color: '#111827',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
     paddingHorizontal: 14,
     marginTop: 20,
   },
@@ -4264,13 +4264,13 @@ const styles = StyleSheet.create({
   confirmTitle: {
     color: '#111827',
     fontSize: 21,
-    fontWeight: '900',
+    fontWeight: '700',
     textAlign: 'center',
   },
   confirmText: {
     color: '#64748B',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     lineHeight: 22,
     textAlign: 'center',
     marginTop: 10,
@@ -4283,7 +4283,7 @@ const styles = StyleSheet.create({
     borderColor: '#DCE5F2',
     color: '#111827',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     paddingHorizontal: 14,
     marginTop: 14,
   },
@@ -4305,7 +4305,7 @@ const styles = StyleSheet.create({
   confirmNoText: {
     color: TAKO_BLUE,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   confirmYes: {
     minHeight: 44,
@@ -4318,7 +4318,7 @@ const styles = StyleSheet.create({
   confirmYesText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   profileModalCard: {
     width: '100%',
@@ -4399,7 +4399,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     color: '#0369A1',
     fontSize: 10,
-    fontWeight: '900',
+    fontWeight: '700',
     backgroundColor: '#E0F2FE',
     borderRadius: 4,
     paddingHorizontal: 7,
@@ -4434,7 +4434,7 @@ const styles = StyleSheet.create({
   secondaryActionText: {
     color: TAKO_BLUE,
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   referenceHeader: {
     flexDirection: 'row',
@@ -4445,7 +4445,7 @@ const styles = StyleSheet.create({
   referenceTitle: {
     color: '#111827',
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 5,
   },
   referencePrimary: {
@@ -4461,7 +4461,7 @@ const styles = StyleSheet.create({
   referencePrimaryText: {
     color: '#FFFFFF',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   referenceSearch: {
     minHeight: 44,
@@ -4477,7 +4477,7 @@ const styles = StyleSheet.create({
   referencePlaceholder: {
     color: '#94A3B8',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
   },
   referenceTable: {
     overflow: 'hidden',
@@ -4499,7 +4499,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#334155',
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   referenceEmpty: {
     minHeight: 220,
@@ -4525,18 +4525,18 @@ const styles = StyleSheet.create({
   miniMetricLabel: {
     color: '#64748B',
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   miniMetricValue: {
     color: TAKO_BLUE,
     fontSize: 24,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 8,
   },
   miniMetricStatus: {
     color: '#087B35',
     fontSize: 11,
-    fontWeight: '800',
+    fontWeight: '600',
     marginTop: 6,
   },
   reportMetrics: {
@@ -4569,7 +4569,7 @@ const styles = StyleSheet.create({
   formLabel: {
     color: '#334155',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 18,
     marginBottom: 8,
   },
@@ -4594,7 +4594,7 @@ const styles = StyleSheet.create({
   channelChoiceText: {
     color: TAKO_BLUE,
     fontSize: 12,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   messageInput: {
     minHeight: 150,
@@ -4617,7 +4617,7 @@ const styles = StyleSheet.create({
   moduleTitle: {
     color: TAKO_BLUE,
     fontSize: 28,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 8,
   },
   moduleAction: {
@@ -4632,7 +4632,7 @@ const styles = StyleSheet.create({
   moduleActionText: {
     color: TAKO_BLUE,
     fontSize: 14,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   grid: {
     flexDirection: 'row',
@@ -4682,13 +4682,13 @@ const styles = StyleSheet.create({
   cardTitle: {
     color: TAKO_BLUE,
     fontSize: 21,
-    fontWeight: '900',
+    fontWeight: '700',
     marginBottom: 8,
   },
   cardText: {
     color: '#6B7280',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     marginBottom: 18,
   },
   inputBox: {
@@ -4707,7 +4707,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#111827',
     fontSize: 16,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   primaryButton: {
     height: 56,
@@ -4733,7 +4733,7 @@ const styles = StyleSheet.create({
   secondaryButtonText: {
     color: TAKO_BLUE,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   nfcButton: {
     height: 52,
@@ -4764,7 +4764,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: '#087B35',
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   pendingRow: {
     minHeight: 72,
@@ -4789,12 +4789,12 @@ const styles = StyleSheet.create({
   pendingName: {
     color: TAKO_BLUE,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   pendingMeta: {
     color: '#6B7280',
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '500',
     marginTop: 3,
   },
   pendingButton: {
@@ -4809,12 +4809,12 @@ const styles = StyleSheet.create({
   pendingButtonText: {
     color: 'white',
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   currencyLabel: {
     color: TAKO_BLUE,
     fontSize: 17,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   successButton: {
     height: 56,
@@ -4829,7 +4829,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: 'white',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   infoRow: {
     flexDirection: 'row',
@@ -4840,7 +4840,7 @@ const styles = StyleSheet.create({
   infoText: {
     color: '#263247',
     fontSize: 15,
-    fontWeight: '800',
+    fontWeight: '600',
   },
   activeState: {
     height: 56,
@@ -4855,7 +4855,7 @@ const styles = StyleSheet.create({
   activeText: {
     color: '#087B35',
     fontSize: 16,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   feedbackBox: {
     minHeight: 48,
@@ -4880,7 +4880,7 @@ const styles = StyleSheet.create({
   feedbackText: {
     flex: 1,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   feedbackSuccessText: {
     color: '#087B35',
@@ -4900,7 +4900,7 @@ const styles = StyleSheet.create({
   clientPillText: {
     color: TAKO_BLUE,
     fontSize: 13,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   detailsGrid: {
     flexDirection: 'column',
@@ -4924,20 +4924,20 @@ const styles = StyleSheet.create({
   detailLabel: {
     color: '#7B8798',
     fontSize: 12,
-    fontWeight: '900',
+    fontWeight: '700',
     textTransform: 'uppercase',
     marginBottom: 3,
   },
   detailValue: {
     color: '#1F2937',
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   detailInput: {
     minHeight: 34,
     color: '#1F2937',
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
     borderBottomWidth: 1,
     borderBottomColor: '#D7E0EF',
     paddingVertical: 4,
@@ -4955,7 +4955,7 @@ const styles = StyleSheet.create({
     flex: 1,
     color: TAKO_BLUE,
     fontSize: 14,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   channelRow: {
     minHeight: 54,
@@ -4973,7 +4973,7 @@ const styles = StyleSheet.create({
   channelValue: {
     color: TAKO_BLUE,
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   transactionRow: {
     minHeight: 74,
@@ -4998,12 +4998,12 @@ const styles = StyleSheet.create({
   transactionTitle: {
     color: TAKO_BLUE,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   transactionMessage: {
     color: '#6B7280',
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '500',
     marginTop: 4,
   },
   transactionMeta: {
@@ -5013,12 +5013,12 @@ const styles = StyleSheet.create({
   transactionAmount: {
     color: TAKO_GREEN,
     fontSize: 15,
-    fontWeight: '900',
+    fontWeight: '700',
   },
   transactionDate: {
     color: '#8B95A5',
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '500',
     marginTop: 4,
   },
   checkRow: {
@@ -5038,13 +5038,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     color: TAKO_BLUE,
     fontSize: 18,
-    fontWeight: '900',
+    fontWeight: '700',
     marginTop: 12,
   },
   emptyText: {
     color: '#6B7280',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '500',
     textAlign: 'center',
     marginTop: 6,
   },
