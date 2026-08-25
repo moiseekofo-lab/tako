@@ -674,6 +674,7 @@ export default function Admin() {
   const balance = useStore((state: any) => state.balance);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -1659,18 +1660,24 @@ export default function Admin() {
             </View>
 
             <View style={[styles.topActions, isNarrow && styles.mobileTopActions]}>
-              <View style={styles.adminBadge}>
-                <Ionicons name="person-circle-outline" size={24} color={TAKO_BLUE} />
+              <TouchableOpacity style={styles.adminBadge} activeOpacity={0.82} onPress={() => setIsAdminMenuOpen((open) => !open)}>
+                <View style={styles.adminAvatar}><Ionicons name="person" size={24} color="white" /></View>
                 <View>
-                  <Text style={styles.adminName}>Administrateur</Text>
-                  <Text style={styles.adminEmail}>{currentUser?.email || 'contact@takotransport.online'}</Text>
+                  <Text style={styles.adminName}>Admin TaKo</Text>
+                  <Text style={styles.adminEmail}>Super administrateur</Text>
                 </View>
-              </View>
-
-              <TouchableOpacity style={styles.logoutButton} activeOpacity={0.85} onPress={logout}>
-                <Ionicons name="log-out-outline" size={20} color="white" />
-                <Text style={styles.logoutButtonText}>Déconnecter</Text>
+                <Ionicons name={isAdminMenuOpen ? 'chevron-up' : 'chevron-down'} size={18} color={TAKO_BLUE} />
               </TouchableOpacity>
+
+              {isAdminMenuOpen ? (
+                <View style={styles.adminMenu}>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('settings'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('settings'); setIsAdminMenuOpen(false); }}><Ionicons name="key-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Changer le mot de passe</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('audit'); setIsAdminMenuOpen(false); }}><Ionicons name="time-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Journal d’activité</Text></TouchableOpacity>
+                  <View style={styles.adminMenuDivider} />
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={logout}><Ionicons name="log-out-outline" size={19} color="#D64545" /><Text style={styles.adminMenuLogout}>Se déconnecter</Text></TouchableOpacity>
+                </View>
+              ) : null}
             </View>
           </View>
 
@@ -3489,6 +3496,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 20,
     marginBottom: 24,
+    zIndex: 20,
   },
   mobileTopBar: {
     flexDirection: 'column',
@@ -3497,6 +3505,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+    position: 'relative',
+    zIndex: 30,
   },
   mobileTopActions: {
     width: '100%',
@@ -3527,11 +3537,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#D7E0EF',
+    borderRadius: 10,
     backgroundColor: 'white',
-    paddingHorizontal: 14,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  adminAvatar: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: TAKO_BLUE,
   },
   adminName: {
     color: TAKO_BLUE,
@@ -3543,6 +3560,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
+  },
+  adminMenu: {
+    position: 'absolute',
+    top: 66,
+    right: 0,
+    width: 245,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E1E7F0',
+    backgroundColor: 'white',
+    paddingVertical: 8,
+    shadowColor: '#102A56',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    elevation: 12,
+  },
+  adminMenuItem: {
+    minHeight: 46,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+  },
+  adminMenuText: {
+    color: '#17213B',
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  adminMenuDivider: {
+    height: 1,
+    backgroundColor: '#E8EDF4',
+    marginVertical: 6,
+  },
+  adminMenuLogout: {
+    color: '#D64545',
+    fontSize: 13,
+    fontWeight: '900',
   },
   logoutButton: {
     minHeight: 58,
