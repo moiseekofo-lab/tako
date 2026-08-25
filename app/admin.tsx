@@ -1681,8 +1681,6 @@ export default function Admin() {
               {isAdminMenuOpen ? (
                 <View style={styles.adminMenu}>
                   <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setProfileInitialTab('personal'); setProfileCurrentTab('personal'); setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setProfileInitialTab('security'); setProfileCurrentTab('security'); setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="key-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Changer le mot de passe</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('audit'); setIsAdminMenuOpen(false); }}><Ionicons name="time-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Journal d’activité</Text></TouchableOpacity>
                   <View style={styles.adminMenuDivider} />
                   <TouchableOpacity style={styles.adminMenuItem} onPress={logout}><Ionicons name="log-out-outline" size={19} color="#D64545" /><Text style={styles.adminMenuLogout}>Se déconnecter</Text></TouchableOpacity>
                 </View>
