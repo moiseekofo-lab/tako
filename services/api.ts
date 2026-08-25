@@ -409,3 +409,11 @@ export function saveAdminNews(sessionToken: string, item: Partial<NewsItem>) {
 export function deleteAdminNews(sessionToken: string, id: string) {
   return postJson('/admin/news/delete', { sessionToken, id });
 }
+
+export function getAdminServerActivity(sessionToken: string, limit = 30) {
+  return postJson('/admin/activity/list', { sessionToken, limit });
+}
+
+export function markAdminServerActivityRead(sessionToken: string) {
+  return postJson('/admin/activity/read', { sessionToken });
+}

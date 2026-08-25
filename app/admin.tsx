@@ -17,6 +17,7 @@ import {
   getAdminClients,
   getAdminNfcCards,
   getAdminProfile,
+  getAdminServerActivity,
   getAdminDashboard,
   getAdminDrivers,
   getAgentAccount,
@@ -33,6 +34,7 @@ import {
   updateDriverByAdmin,
   updateDriverStatus,
   updateAdminNfcCardStatus,
+  markAdminServerActivityRead,
   validateAdminSession,
 } from '../services/api';
 import { useStore, type TransactionNotification, type TripHistoryItem } from './store';
@@ -680,6 +682,10 @@ export default function Admin() {
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [isServerNotificationsOpen, setIsServerNotificationsOpen] = useState(false);
+  const [serverEvents, setServerEvents] = useState<any[]>([]);
+  const [serverUnreadCount, setServerUnreadCount] = useState(0);
+  const [serverEventsLoading, setServerEventsLoading] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'personal' | 'security'>('personal');
   const [profileCurrentTab, setProfileCurrentTab] = useState<'personal' | 'security'>('personal');
   const [adminProfile, setAdminProfile] = useState<any>(null);
@@ -690,6 +696,35 @@ export default function Admin() {
       .then((result) => result?.profile && setAdminProfile(result.profile))
       .catch(() => {});
   }, []);
+
+  const loadServerActivity = async (showLoader = false) => {
+    if (showLoader) setServerEventsLoading(true);
+    try {
+      const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!sessionToken) return;
+      const result = await getAdminServerActivity(sessionToken, 30);
+      setServerEvents(result.events || []);
+      setServerUnreadCount(Number(result.unreadCount || 0));
+    } catch {
+      // Le reste de l'administration reste disponible si le journal est momentanément indisponible.
+    } finally {
+      if (showLoader) setServerEventsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadServerActivity();
+    const timer = setInterval(() => loadServerActivity(), 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const markServerActivityAsRead = async () => {
+    const sessionToken = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+    if (!sessionToken) return;
+    await markAdminServerActivityRead(sessionToken);
+    setServerUnreadCount(0);
+    setServerEvents((events) => events.map((event) => ({ ...event, read: true })));
+  };
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -1671,7 +1706,40 @@ export default function Admin() {
             </View>
 
             <View style={[styles.topActions, isNarrow && styles.mobileTopActions]}>
-              <TouchableOpacity style={styles.adminBadge} activeOpacity={0.82} onPress={() => setIsAdminMenuOpen((open) => !open)}>
+              <View style={styles.serverNotificationWrap}>
+                <TouchableOpacity
+                  style={styles.serverNotificationButton}
+                  activeOpacity={0.82}
+                  accessibilityLabel="Notifications du serveur"
+                  onPress={() => {
+                    setIsAdminMenuOpen(false);
+                    setIsServerNotificationsOpen((open) => !open);
+                    loadServerActivity(true);
+                  }}>
+                  <Ionicons name="notifications-outline" size={25} color={TAKO_BLUE} />
+                  {serverUnreadCount > 0 ? <View style={styles.serverNotificationBadge}><Text style={styles.serverNotificationBadgeText}>{serverUnreadCount > 99 ? '99+' : serverUnreadCount}</Text></View> : null}
+                </TouchableOpacity>
+                {isServerNotificationsOpen ? (
+                  <View style={styles.serverNotificationsPanel}>
+                    <View style={styles.serverNotificationsHeader}>
+                      <View><Text style={styles.serverNotificationsTitle}>Activité du serveur</Text><Text style={styles.serverNotificationsSubtitle}>Mise à jour automatique toutes les 15 secondes</Text></View>
+                      {serverUnreadCount > 0 ? <TouchableOpacity onPress={markServerActivityAsRead}><Text style={styles.serverNotificationsRead}>Tout lire</Text></TouchableOpacity> : null}
+                    </View>
+                    <ScrollView style={styles.serverNotificationsList} nestedScrollEnabled>
+                      {serverEventsLoading && serverEvents.length === 0 ? <ActivityIndicator color={TAKO_ACTION} style={styles.serverNotificationsLoader} /> : null}
+                      {!serverEventsLoading && serverEvents.length === 0 ? <Text style={styles.serverNotificationsEmpty}>Aucun mouvement du serveur.</Text> : null}
+                      {serverEvents.map((event) => (
+                        <View key={event.id} style={[styles.serverEventRow, !event.read && styles.serverEventUnread]}>
+                          <View style={[styles.serverEventIcon, { backgroundColor: event.statusCode >= 400 ? '#FFF0F0' : '#EAFBF1' }]}><Ionicons name={event.statusCode >= 400 ? 'warning-outline' : 'checkmark-circle-outline'} size={18} color={event.statusCode >= 400 ? '#D64545' : '#079447'} /></View>
+                          <View style={styles.serverEventContent}><Text style={styles.serverEventTitle}>{event.title}</Text><Text style={styles.serverEventMeta}>{event.method} · HTTP {event.statusCode} · {formatDate(event.createdAt)}</Text></View>
+                          {!event.read ? <View style={styles.serverEventDot} /> : null}
+                        </View>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
+              </View>
+              <TouchableOpacity style={styles.adminBadge} activeOpacity={0.82} onPress={() => { setIsServerNotificationsOpen(false); setIsAdminMenuOpen((open) => !open); }}>
                 <View style={styles.adminAvatar}>{adminProfile?.photoUrl ? <Image source={{ uri: adminProfile.photoUrl }} style={styles.adminAvatarImage} resizeMode="cover" /> : <Ionicons name="person" size={24} color="white" />}</View>
                 <View>
                   <Text style={styles.adminName}>{adminProfile?.fullName || 'Admin TaKo'}</Text>
@@ -3556,6 +3624,66 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
   },
+  serverNotificationWrap: {
+    position: 'relative',
+    zIndex: 40,
+  },
+  serverNotificationButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: '#E1E7F0',
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  serverNotificationBadge: {
+    position: 'absolute',
+    top: -5,
+    right: -6,
+    minWidth: 21,
+    height: 21,
+    borderRadius: 11,
+    paddingHorizontal: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#E53935',
+    borderWidth: 2,
+    borderColor: 'white',
+  },
+  serverNotificationBadgeText: { color: 'white', fontSize: 10, fontWeight: '700' },
+  serverNotificationsPanel: {
+    position: 'absolute',
+    top: 58,
+    right: -72,
+    width: 410,
+    maxHeight: 520,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E1E7F0',
+    backgroundColor: 'white',
+    shadowColor: '#102A56',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 22,
+    elevation: 14,
+    overflow: 'hidden',
+  },
+  serverNotificationsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16, borderBottomWidth: 1, borderBottomColor: '#EDF1F7' },
+  serverNotificationsTitle: { color: TAKO_BLUE, fontSize: 16, fontWeight: '700' },
+  serverNotificationsSubtitle: { color: '#7A8495', fontSize: 11, marginTop: 3 },
+  serverNotificationsRead: { color: TAKO_ACTION, fontSize: 12, fontWeight: '700' },
+  serverNotificationsList: { maxHeight: 430 },
+  serverNotificationsLoader: { marginVertical: 28 },
+  serverNotificationsEmpty: { color: '#7A8495', fontSize: 13, textAlign: 'center', paddingVertical: 32 },
+  serverEventRow: { minHeight: 74, flexDirection: 'row', alignItems: 'center', gap: 11, paddingHorizontal: 14, paddingVertical: 11, borderBottomWidth: 1, borderBottomColor: '#F0F3F8' },
+  serverEventUnread: { backgroundColor: '#F3F8FF' },
+  serverEventIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
+  serverEventContent: { flex: 1 },
+  serverEventTitle: { color: '#17213B', fontSize: 12, fontWeight: '600' },
+  serverEventMeta: { color: '#7A8495', fontSize: 10, marginTop: 4 },
+  serverEventDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: TAKO_ACTION },
   adminAvatar: {
     width: 42,
     height: 42,

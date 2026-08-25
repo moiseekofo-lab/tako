@@ -607,6 +607,21 @@ async function initDatabase() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS server_activity_events (
+      id TEXT PRIMARY KEY,
+      method TEXT NOT NULL,
+      path TEXT NOT NULL,
+      status_code INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      read BOOLEAN NOT NULL DEFAULT FALSE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`CREATE INDEX IF NOT EXISTS server_activity_events_created_at_idx ON server_activity_events (created_at DESC);`);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_profiles (
       id TEXT PRIMARY KEY,
       full_name TEXT NOT NULL,
@@ -833,6 +848,26 @@ async function verifyCode(contact, code, purpose, consume = true) {
 
 async function handleRequest(request, response) {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
+
+  const ignoredActivityPaths = ['/', '/health', '/admin/activity/list', '/admin/activity/read'];
+  const shouldTrackActivity = request.method !== 'OPTIONS'
+    && !ignoredActivityPaths.includes(url.pathname)
+    && !url.pathname.startsWith('/assets/');
+  if (shouldTrackActivity && pool) {
+    const context = requestSecurityContext(request);
+    response.once('finish', () => {
+      const method = String(request.method || 'GET').toUpperCase();
+      const action = method === 'POST' ? 'Action' : method === 'DELETE' ? 'Suppression' : method === 'PATCH' || method === 'PUT' ? 'Modification' : 'Consultation';
+      const status = response.statusCode >= 400 ? 'Échec' : 'Succès';
+      pool.query(`INSERT INTO server_activity_events
+        (id, method, path, status_code, title, ip_address, user_agent)
+        VALUES ($1, $2, $3, $4, $5, $6, $7);`, [
+        crypto.randomUUID(), method, url.pathname, response.statusCode,
+        `${status} · ${action} ${url.pathname}`,
+        context.ipAddress, context.userAgent,
+      ]).catch((error) => console.error('Unable to record server activity:', error));
+    });
+  }
 
   if (request.method === 'OPTIONS') {
     sendJson(response, 204, {});
@@ -1336,6 +1371,36 @@ async function handleRequest(request, response) {
         events: events.rows,
       },
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/activity/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const requestedLimit = Number(body.limit || 30);
+    const limit = Math.max(1, Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 30, 100));
+    const [events, unread] = await Promise.all([
+      query(`SELECT id, method, path, status_code AS "statusCode", title,
+        ip_address AS "ipAddress", user_agent AS "userAgent", read,
+        created_at AS "createdAt"
+        FROM server_activity_events ORDER BY created_at DESC LIMIT $1;`, [limit]),
+      query('SELECT COUNT(*)::int AS count FROM server_activity_events WHERE read = FALSE;'),
+    ]);
+    sendJson(response, 200, { ok: true, events: events.rows, unreadCount: unread.rows[0]?.count || 0 });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/activity/read') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    await query('UPDATE server_activity_events SET read = TRUE WHERE read = FALSE;');
+    sendJson(response, 200, { ok: true, unreadCount: 0 });
     return;
   }
 
