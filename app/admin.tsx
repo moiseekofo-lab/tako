@@ -1648,10 +1648,6 @@ export default function Admin() {
             ))}
           </ScrollView>
 
-          <TouchableOpacity style={[styles.sidebarLogout, isNarrow && styles.mobileSidebarLogout]} activeOpacity={0.85} onPress={logout}>
-            <Ionicons name="log-out-outline" size={22} color="white" />
-            <Text style={styles.sidebarLogoutText}>Déconnexion</Text>
-          </TouchableOpacity>
         </View>
 
         <ScrollView
