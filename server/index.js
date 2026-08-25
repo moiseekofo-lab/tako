@@ -632,6 +632,12 @@ async function initDatabase() {
   } else {
     await pool.query('UPDATE admin_accounts SET email = $1, updated_at = NOW() WHERE id = $2;', [adminEmail, 'ADMIN']);
   }
+  await pool.query(`
+    UPDATE admin_accounts AS account
+    SET full_name = profile.full_name, email = profile.email, phone = profile.phone, updated_at = NOW()
+    FROM admin_profiles AS profile
+    WHERE account.id = 'ADMIN' AND profile.id = 'ADMIN';
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_preferences (
@@ -1376,6 +1382,8 @@ async function handleRequest(request, response) {
                 company_name AS "companyName", business_sector AS "businessSector",
                 country, city, created_at AS "createdAt", updated_at AS "updatedAt";
     `, [fullName, email, phone, photoUrl, companyName, businessSector, country, city]);
+    await query(`UPDATE admin_accounts SET full_name = $1, email = $2, phone = $3, updated_at = NOW()
+      WHERE id = 'ADMIN';`, [fullName, email, phone]);
     sendJson(response, 200, { ok: true, profile: result.rows[0] });
     return;
   }
