@@ -187,8 +187,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       password: 'Mot de passe',
       passwordPlaceholder: 'Entrez votre mot de passe',
       connect: 'Se connecter',
-      or: 'ou',
-      accessCode: "Connexion avec code d’accès",
       reserved: 'Accès réservé aux administrateurs autorisés',
       copyright: 'Tous droits réservés 2026',
     },
@@ -204,8 +202,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       password: 'Password',
       passwordPlaceholder: 'Enter your password',
       connect: 'Sign in',
-      or: 'or',
-      accessCode: 'Sign in with access code',
       reserved: 'Access restricted to authorized administrators',
       copyright: 'All rights reserved 2026',
     },
@@ -221,8 +217,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
       password: 'Senha',
       passwordPlaceholder: 'Digite sua senha',
       connect: 'Entrar',
-      or: 'ou',
-      accessCode: 'Entrar com código de acesso',
       reserved: 'Acesso reservado a administradores autorizados',
       copyright: 'Todos os direitos reservados 2026',
     },
@@ -736,17 +730,6 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
                   <Text style={styles.adminSubmitText}>{adminText.connect}</Text>
                 </>
               )}
-            </TouchableOpacity>
-
-            <View style={[styles.adminOrRow, isCompactAdmin && styles.adminOrRowCompact]}>
-              <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
-              <Text style={[styles.adminOrText, !adminThemeLight && styles.adminLoginMutedTextDark]}>{adminText.or}</Text>
-              <View style={[styles.adminOrLine, !adminThemeLight && styles.adminOrLineDark]} />
-            </View>
-
-            <TouchableOpacity style={[styles.adminAccessCodeButton, !adminThemeLight && styles.adminAccessCodeButtonDark]} activeOpacity={1}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#1769D2" />
-              <Text style={styles.adminAccessCodeText}>{adminText.accessCode}</Text>
             </TouchableOpacity>
 
             <View style={[styles.adminReservedRow, isCompactAdmin && styles.adminReservedRowCompact]}>
@@ -1504,47 +1487,6 @@ const styles = StyleSheet.create({
   },
   adminSubmitText: {
     color: 'white',
-    fontSize: 17,
-    fontWeight: '600',
-  },
-  adminOrRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 18,
-    marginVertical: 30,
-  },
-  adminOrRowCompact: {
-    marginVertical: 18,
-  },
-  adminOrLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5EAF2',
-  },
-  adminOrLineDark: {
-    backgroundColor: '#344054',
-  },
-  adminOrText: {
-    color: '#667085',
-    fontSize: 15,
-    fontWeight: '400',
-  },
-  adminAccessCodeButton: {
-    minHeight: 52,
-    borderRadius: 7,
-    borderWidth: 1,
-    borderColor: '#D7DEE9',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-  },
-  adminAccessCodeButtonDark: {
-    borderColor: '#3A4960',
-    backgroundColor: '#182538',
-  },
-  adminAccessCodeText: {
-    color: '#1769D2',
     fontSize: 17,
     fontWeight: '600',
   },
