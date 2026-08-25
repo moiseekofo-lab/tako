@@ -101,6 +101,10 @@ export function loginAdmin(login: string, password: string) {
   });
 }
 
+export function verifyAdminLoginTwoFactor(contact: string, code: string) {
+  return postJson('/auth/admin-login-verify', { contact, code });
+}
+
 export function validateAdminSession(sessionToken: string) {
   return postJson('/auth/admin-session', {
     sessionToken,
@@ -109,6 +113,14 @@ export function validateAdminSession(sessionToken: string) {
 
 export function getAdminSecurity(sessionToken: string) {
   return postJson('/admin/security', { sessionToken });
+}
+
+export function requestAdminTwoFactorSetup(sessionToken: string) {
+  return postJson('/admin/2fa/request', { sessionToken });
+}
+
+export function verifyAdminTwoFactorSetup(sessionToken: string, contact: string, code: string) {
+  return postJson('/admin/2fa/verify', { sessionToken, contact, code });
 }
 
 export function getAdminProfile(sessionToken: string) {

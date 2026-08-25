@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getAdminPreferences, getAdminProfile, getAdminSecurity, updateAdminPreferences, updateAdminProfile } from '../services/api';
+import { getAdminPreferences, getAdminProfile, getAdminSecurity, requestAdminTwoFactorSetup, updateAdminPreferences, updateAdminProfile, verifyAdminTwoFactorSetup } from '../services/api';
 
 const BLUE = '#061F68';
 const ACTION = '#1268E8';
@@ -31,6 +31,7 @@ export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, 
   const [profileSaving, setProfileSaving] = useState(false);
   const [preferences, setPreferences] = useState<any>(defaultPreferences);
   const [preferencesSaving, setPreferencesSaving] = useState(false);
+  const [twoFactorLoading, setTwoFactorLoading] = useState(false);
   const browser = Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').slice(-2).join(' ') : 'Application TaKo';
 
   useEffect(() => setTab(initialTab), [initialTab]);
@@ -108,6 +109,22 @@ export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, 
     finally { setPreferencesSaving(false); }
   };
 
+  const configureTwoFactor = async () => {
+    try {
+      setTwoFactorLoading(true);
+      const token = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!token) throw new Error('Session administrateur expirée.');
+      const requestResult = await requestAdminTwoFactorSetup(token);
+      if (Platform.OS !== 'web' || typeof window === 'undefined') throw new Error('Terminez la configuration depuis l’administration Web.');
+      const code = window.prompt(`Code Infobip envoyé à ${requestResult.contact}. Entrez les 6 chiffres :`);
+      if (!code) return;
+      await verifyAdminTwoFactorSetup(token, requestResult.contact, code.trim());
+      setSecurityData((current: any) => ({ ...(current || {}), twoFactorEnabled: true }));
+      Alert.alert('2FA activée', 'Un code Infobip sera maintenant exigé à chaque connexion administrateur.');
+    } catch (error) { Alert.alert('Configuration impossible', error instanceof Error ? error.message : 'Réessayez plus tard.'); }
+    finally { setTwoFactorLoading(false); }
+  };
+
   return (
     <View style={styles.page}>
       <View style={styles.tabs}>
@@ -152,7 +169,7 @@ export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, 
             <SecuritySection icon="lock-closed-outline" tone="#EAF3FF" title="Mot de passe" description="Assurez-vous d’utiliser un mot de passe fort pour protéger votre compte.">
               {changingPassword ? <View style={styles.passwordForm}><TextInput style={styles.input} secureTextEntry value={passwords.current} onChangeText={(current) => setPasswords({ ...passwords, current })} placeholder="Mot de passe actuel" /><TextInput style={styles.input} secureTextEntry value={passwords.next} onChangeText={(next) => setPasswords({ ...passwords, next })} placeholder="Nouveau mot de passe" /><TextInput style={styles.input} secureTextEntry value={passwords.confirm} onChangeText={(confirm) => setPasswords({ ...passwords, confirm })} placeholder="Confirmer le nouveau mot de passe" /><View style={styles.inlineActions}><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(false)}><Text style={styles.outlineText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={styles.primaryButton} onPress={savePassword}><Text style={styles.primaryText}>Enregistrer</Text></TouchableOpacity></View></View> : <View style={styles.securityActionRow}><View><Text style={styles.fieldLabel}>Mot de passe actuel</Text><Text style={styles.passwordDots}>••••••••••••</Text></View><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(true)}><Ionicons name="lock-closed-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Changer le mot de passe</Text></TouchableOpacity></View>}
             </SecuritySection>
-            <SecuritySection icon="shield-checkmark-outline" tone="#E8FAEF" title="Authentification à deux facteurs (2FA)" description="État réel de la protection 2FA configurée sur le serveur." badge={securityData?.twoFactorEnabled ? 'Activée' : 'Non configurée'}><Text style={styles.fieldValue}>{securityData?.twoFactorEnabled ? 'Protection à deux facteurs active' : 'Aucune méthode 2FA configurée'}</Text></SecuritySection>
+            <SecuritySection icon="shield-checkmark-outline" tone="#E8FAEF" title="Authentification à deux facteurs (2FA)" description="Protection par code OTP e-mail envoyé avec Infobip." badge={securityData?.twoFactorEnabled ? 'Activée' : 'Non configurée'}><View style={styles.securityActionRow}><Text style={styles.fieldValue}>{securityData?.twoFactorEnabled ? 'Infobip OTP e-mail actif' : 'Activez la vérification à chaque connexion'}</Text>{!securityData?.twoFactorEnabled ? <TouchableOpacity style={styles.outlineButton} disabled={twoFactorLoading} onPress={configureTwoFactor}><Ionicons name="settings-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>{twoFactorLoading ? 'Envoi…' : 'Configurer'}</Text></TouchableOpacity> : null}</View></SecuritySection>
             <SecuritySection icon="mail-outline" tone="#F3ECFF" title="E-mails de connexion" description="État réel des alertes de nouvelle connexion configurées sur le serveur."><Switch value={emailAlerts} disabled trackColor={{ false: '#CBD5E1', true: ACTION }} /></SecuritySection>
             <SecuritySection icon="desktop-outline" tone="#FFF3E8" title="Session active" description="Informations réelles de la session administrateur actuelle."><View style={styles.sessionRow}><Ionicons name={Platform.OS === 'web' ? 'desktop-outline' : 'phone-portrait-outline'} size={24} color={BLUE} /><View style={{ flex: 1 }}><Text style={styles.fieldValue}>{securityData?.session?.userAgent || 'Indisponible'}</Text><Text style={styles.smallText}>IP : {securityData?.session?.ipAddress || 'Indisponible'} · Connexion : {securityData?.session?.issuedAt ? new Date(securityData.session.issuedAt).toLocaleString('fr-FR') : 'Indisponible'}</Text></View><Text style={styles.activeNow}>Actif maintenant</Text></View></SecuritySection>
           </View>

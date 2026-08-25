@@ -601,6 +601,7 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE admin_profiles ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE;`);
   await pool.query(`
     INSERT INTO admin_profiles (id, full_name, email)
     VALUES ('ADMIN', 'Admin TaKo', $1)
@@ -1121,6 +1122,22 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const adminProfileResult = await query('SELECT email, two_factor_enabled FROM admin_profiles WHERE id = $1;', ['ADMIN']);
+    const adminProfile = adminProfileResult.rows[0] || { email: adminEmail, two_factor_enabled: false };
+    if (adminProfile.two_factor_enabled || adminTwoFactorEnabled) {
+      if (!isInfobipEmailEnabled()) {
+        sendJson(response, 503, { ok: false, error: 'Le service OTP e-mail Infobip n’est pas configuré.' });
+        return;
+      }
+      const code = generateCode();
+      const contact = normalizeContact(adminProfile.email || adminEmail);
+      await query(`INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at) VALUES ($1, $2, 'admin-2fa-login', NOW() + INTERVAL '10 minutes', NOW()) ON CONFLICT (contact) DO UPDATE SET code = EXCLUDED.code, purpose = EXCLUDED.purpose, expires_at = EXCLUDED.expires_at, created_at = NOW();`, [contact, code]);
+      try { await sendInfobipVerificationEmail(contact, code, 'admin-2fa-login'); }
+      catch (error) { await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, 'admin-2fa-login']); throw error; }
+      sendJson(response, 200, { ok: true, requiresTwoFactor: true, contact });
+      return;
+    }
+
     const securityContext = requestSecurityContext(request);
     await query(
       'INSERT INTO admin_security_events (id, event_type, ip_address, user_agent) VALUES ($1, $2, $3, $4);',
@@ -1132,6 +1149,16 @@ async function handleRequest(request, response) {
       user: adminPublicUser(),
       sessionToken: createAdminSessionToken(),
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/auth/admin-login-verify') {
+    const body = await readJson(request);
+    const contact = normalizeContact(body.contact);
+    await verifyCode(contact, body.code, 'admin-2fa-login');
+    const securityContext = requestSecurityContext(request);
+    await query('INSERT INTO admin_security_events (id, event_type, ip_address, user_agent) VALUES ($1, $2, $3, $4);', [crypto.randomUUID(), 'login_2fa_success', securityContext.ipAddress, securityContext.userAgent]);
+    sendJson(response, 200, { ok: true, user: adminPublicUser(), sessionToken: createAdminSessionToken() });
     return;
   }
 
@@ -1164,10 +1191,11 @@ async function handleRequest(request, response) {
       ORDER BY created_at DESC
       LIMIT 10;
     `);
+    const profileSecurity = await query('SELECT two_factor_enabled FROM admin_profiles WHERE id = $1;', ['ADMIN']);
     sendJson(response, 200, {
       ok: true,
       security: {
-        twoFactorEnabled: adminTwoFactorEnabled,
+        twoFactorEnabled: Boolean(profileSecurity.rows[0]?.two_factor_enabled || adminTwoFactorEnabled),
         loginEmailAlertsEnabled: adminLoginEmailAlertsEnabled,
         session: {
           issuedAt: session.issuedAt ? new Date(session.issuedAt).toISOString() : null,
@@ -1178,6 +1206,41 @@ async function handleRequest(request, response) {
         events: events.rows,
       },
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/2fa/request') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    if (!isInfobipEmailEnabled()) {
+      sendJson(response, 503, { ok: false, error: 'Le service OTP e-mail Infobip n’est pas configuré.' });
+      return;
+    }
+    const profile = await query('SELECT email FROM admin_profiles WHERE id = $1;', ['ADMIN']);
+    const contact = normalizeContact(profile.rows[0]?.email || adminEmail);
+    const code = generateCode();
+    await query(`INSERT INTO verification_codes (contact, code, purpose, expires_at, created_at) VALUES ($1, $2, 'admin-2fa-setup', NOW() + INTERVAL '10 minutes', NOW()) ON CONFLICT (contact) DO UPDATE SET code = EXCLUDED.code, purpose = EXCLUDED.purpose, expires_at = EXCLUDED.expires_at, created_at = NOW();`, [contact, code]);
+    try { await sendInfobipVerificationEmail(contact, code, 'admin-2fa-setup'); }
+    catch (error) { await query('DELETE FROM verification_codes WHERE contact = $1 AND purpose = $2;', [contact, 'admin-2fa-setup']); throw error; }
+    sendJson(response, 200, { ok: true, contact, message: 'Code 2FA envoyé par e-mail avec Infobip.' });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/2fa/verify') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const contact = normalizeContact(body.contact);
+    await verifyCode(contact, body.code, 'admin-2fa-setup');
+    await query('UPDATE admin_profiles SET two_factor_enabled = TRUE, updated_at = NOW() WHERE id = $1;', ['ADMIN']);
+    const context = requestSecurityContext(request);
+    await query('INSERT INTO admin_security_events (id, event_type, ip_address, user_agent) VALUES ($1, $2, $3, $4);', [crypto.randomUUID(), 'two_factor_enabled', context.ipAddress, context.userAgent]);
+    sendJson(response, 200, { ok: true, twoFactorEnabled: true });
     return;
   }
 

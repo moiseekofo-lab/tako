@@ -22,7 +22,7 @@ import {
   View,
 } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
-import { loginAccount, loginAdmin, requestVerificationCode, resetPassword, verifyVerificationCode } from '../services/api';
+import { loginAccount, loginAdmin, requestVerificationCode, resetPassword, verifyAdminLoginTwoFactor, verifyVerificationCode } from '../services/api';
 import { languageOptions, translations, type Language } from './i18n';
 import { useStore } from './store';
 
@@ -458,7 +458,15 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
     } catch (error: any) {
       if (API_URL && !chauffeurOnly) {
         try {
-          const adminResult = await loginAdmin(cleanLogin, password);
+          let adminResult = await loginAdmin(cleanLogin, password);
+          if (adminResult?.requiresTwoFactor) {
+            if (Platform.OS !== 'web' || typeof window === 'undefined') {
+              throw new Error('La vérification 2FA administrateur doit être effectuée depuis l’administration Web.');
+            }
+            const code = window.prompt(`Un code Infobip a été envoyé à ${adminResult.contact}. Entrez le code à 6 chiffres :`);
+            if (!code) throw new Error('Code 2FA obligatoire pour continuer.');
+            adminResult = await verifyAdminLoginTwoFactor(adminResult.contact, code.trim());
+          }
           if (adminResult?.user) {
             if (adminResult.sessionToken) {
               await AsyncStorage.setItem(ADMIN_SESSION_KEY, adminResult.sessionToken);
@@ -475,9 +483,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             router.replace('/admin' as any);
             return;
           }
-        } catch {
+        } catch (adminError: any) {
           setIsLoggingIn(false);
-          Alert.alert('Erreur', error?.message || 'Connexion impossible.');
+          Alert.alert('Erreur', adminError?.message || error?.message || 'Connexion impossible.');
         }
         return;
       }
