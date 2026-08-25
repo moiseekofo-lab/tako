@@ -1,17 +1,34 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Platform, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Alert, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const BLUE = '#061F68';
 const ACTION = '#1268E8';
 
-export function AdminProfile({ user, onOpenSecurity }: { user: any; onOpenSecurity: () => void }) {
-  const [tab, setTab] = useState<'personal' | 'security' | 'preferences' | 'activity'>('personal');
+type ProfileTab = 'personal' | 'security' | 'preferences' | 'activity';
+
+export function AdminProfile({ user, initialTab = 'personal' }: { user: any; initialTab?: ProfileTab }) {
+  const [tab, setTab] = useState<ProfileTab>(initialTab);
   const [editing, setEditing] = useState(false);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [changingPassword, setChangingPassword] = useState(false);
+  const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
   const [name, setName] = useState(user?.fullName || 'Admin TaKo');
   const [email, setEmail] = useState(user?.email || 'contact@takotransport.online');
   const [phone, setPhone] = useState(user?.phone || '+243 000 000 000');
   const browser = Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').slice(-2).join(' ') : 'Application TaKo';
+
+  useEffect(() => setTab(initialTab), [initialTab]);
+
+  const savePassword = () => {
+    if (!passwords.current || passwords.next.length < 8 || passwords.next !== passwords.confirm) {
+      Alert.alert('Mot de passe invalide', 'Vérifiez le mot de passe actuel et utilisez au moins 8 caractères identiques dans les deux nouveaux champs.');
+      return;
+    }
+    Alert.alert('Demande enregistrée', 'La modification du mot de passe doit être confirmée dans la configuration sécurisée du serveur.');
+    setPasswords({ current: '', next: '', confirm: '' });
+    setChangingPassword(false);
+  };
 
   return (
     <View style={styles.page}>
@@ -47,11 +64,24 @@ export function AdminProfile({ user, onOpenSecurity }: { user: any; onOpenSecuri
 
           <View style={styles.sideColumn}>
             <View style={styles.card}><Text style={styles.cardTitle}>À propos du compte</Text><InfoRow label="Rôle" value="Super administrateur" /><InfoRow label="Statut du compte" value="Actif" success /><InfoRow label="Dernière connexion" value={new Date().toLocaleString('fr-FR')} /><InfoRow label="Navigateur" value={browser} /><InfoRow label="Appareil" value={Platform.OS === 'web' ? 'Ordinateur' : Platform.OS} /></View>
-            <View style={styles.securityCard}><View style={styles.securityTitle}><Ionicons name="shield-checkmark" size={27} color={ACTION} /><Text style={styles.securityHeading}>Conseils de sécurité</Text></View><Text style={styles.securityIntro}>Pour sécuriser votre compte, nous vous recommandons :</Text>{['Utiliser un mot de passe fort', 'Ne jamais partager vos identifiants', 'Activer la double authentification'].map((text) => <View key={text} style={styles.tip}><Ionicons name="checkmark-circle" size={18} color={ACTION} /><Text style={styles.tipText}>{text}</Text></View>)}<TouchableOpacity style={styles.outlineButton} onPress={onOpenSecurity}><Ionicons name="lock-closed-outline" size={18} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Changer le mot de passe</Text></TouchableOpacity></View>
+            <View style={styles.securityCard}><View style={styles.securityTitle}><Ionicons name="shield-checkmark" size={27} color={ACTION} /><Text style={styles.securityHeading}>Conseils de sécurité</Text></View><Text style={styles.securityIntro}>Pour sécuriser votre compte, nous vous recommandons :</Text>{['Utiliser un mot de passe fort', 'Ne jamais partager vos identifiants', 'Activer la double authentification'].map((text) => <View key={text} style={styles.tip}><Ionicons name="checkmark-circle" size={18} color={ACTION} /><Text style={styles.tipText}>{text}</Text></View>)}<TouchableOpacity style={styles.outlineButton} onPress={() => setTab('security')}><Ionicons name="lock-closed-outline" size={18} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Changer le mot de passe</Text></TouchableOpacity></View>
           </View>
         </View>
+      ) : tab === 'security' ? (
+        <View style={styles.securityColumns}>
+          <View style={styles.securityMain}>
+            <SecuritySection icon="lock-closed-outline" tone="#EAF3FF" title="Mot de passe" description="Assurez-vous d’utiliser un mot de passe fort pour protéger votre compte.">
+              {changingPassword ? <View style={styles.passwordForm}><TextInput style={styles.input} secureTextEntry value={passwords.current} onChangeText={(current) => setPasswords({ ...passwords, current })} placeholder="Mot de passe actuel" /><TextInput style={styles.input} secureTextEntry value={passwords.next} onChangeText={(next) => setPasswords({ ...passwords, next })} placeholder="Nouveau mot de passe" /><TextInput style={styles.input} secureTextEntry value={passwords.confirm} onChangeText={(confirm) => setPasswords({ ...passwords, confirm })} placeholder="Confirmer le nouveau mot de passe" /><View style={styles.inlineActions}><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(false)}><Text style={styles.outlineText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={styles.primaryButton} onPress={savePassword}><Text style={styles.primaryText}>Enregistrer</Text></TouchableOpacity></View></View> : <View style={styles.securityActionRow}><View><Text style={styles.fieldLabel}>Mot de passe actuel</Text><Text style={styles.passwordDots}>••••••••••••</Text></View><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(true)}><Ionicons name="lock-closed-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Changer le mot de passe</Text></TouchableOpacity></View>}
+            </SecuritySection>
+            <SecuritySection icon="shield-checkmark-outline" tone="#E8FAEF" title="Authentification à deux facteurs (2FA)" description="L’authentification à deux facteurs ajoute une couche de sécurité supplémentaire à votre compte." badge="À configurer"><View style={styles.securityActionRow}><View><Text style={styles.fieldLabel}>Méthode recommandée</Text><Text style={styles.fieldValue}>Application d’authentification</Text><Text style={styles.smallText}>Google Authenticator ou application similaire</Text></View><TouchableOpacity style={styles.outlineButton} onPress={() => Alert.alert('2FA', 'La configuration 2FA sera reliée au serveur sécurisé TaKo.')}><Ionicons name="settings-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Configurer</Text></TouchableOpacity></View></SecuritySection>
+            <SecuritySection icon="mail-outline" tone="#F3ECFF" title="E-mails de connexion" description="Recevez un e-mail lorsqu’une nouvelle connexion est détectée sur votre compte."><Switch value={emailAlerts} onValueChange={setEmailAlerts} trackColor={{ false: '#CBD5E1', true: ACTION }} /></SecuritySection>
+            <SecuritySection icon="desktop-outline" tone="#FFF3E8" title="Sessions actives" description="Gérez les appareils sur lesquels vous êtes actuellement connecté."><View style={styles.sessionRow}><Ionicons name="logo-windows" size={24} color={BLUE} /><View style={{ flex: 1 }}><Text style={styles.fieldValue}>Windows · {browser}</Text><Text style={styles.smallText}>Kinshasa, RDC · Cet appareil</Text></View><Text style={styles.activeNow}>Actif maintenant</Text></View></SecuritySection>
+            <View style={[styles.card, styles.deleteSection]}><View style={styles.sectionIcon}><Ionicons name="trash-outline" size={25} color="#D92D20" /></View><View style={{ flex: 1 }}><Text style={styles.sectionTitle}>Supprimer le compte</Text><Text style={styles.sectionDescription}>La suppression d’un compte super administrateur nécessite une validation sécurisée.</Text></View><TouchableOpacity style={styles.dangerButton} onPress={() => Alert.alert('Action protégée', 'Contactez le responsable système pour supprimer ce compte.')}><Text style={styles.dangerText}>Supprimer le compte</Text></TouchableOpacity></View>
+          </View>
+          <View style={styles.securitySide}><View style={styles.card}><View style={styles.securityTitle}><Ionicons name="shield-checkmark" size={26} color={ACTION} /><Text style={styles.cardTitleInline}>Conseils de sécurité</Text></View>{['Utilisez un mot de passe fort et unique.', 'Ne partagez jamais vos identifiants.', 'Activez l’authentification à deux facteurs.', 'Déconnectez-vous des appareils inutilisés.'].map((text) => <View key={text} style={styles.tip}><Ionicons name="checkmark-circle" size={18} color={ACTION} /><Text style={styles.tipText}>{text}</Text></View>)}</View><View style={styles.card}><Text style={styles.cardTitle}>Activité de sécurité récente</Text>{['Connexion réussie', 'Mot de passe consulté', 'Paramètres de sécurité ouverts'].map((text, index) => <View key={text} style={styles.activityRow}><Ionicons name={index === 0 ? 'checkmark-circle-outline' : 'information-circle-outline'} size={21} color={index === 0 ? '#0A9D50' : ACTION} /><View style={{ flex: 1 }}><Text style={styles.activityTitle}>{text}</Text><Text style={styles.smallText}>{index === 0 ? 'Maintenant' : `${index + 1} jour(s)`} · Kinshasa, RDC</Text></View></View>)}</View></View>
+        </View>
       ) : (
-        <View style={styles.card}><Ionicons name={tab === 'security' ? 'shield-checkmark-outline' : tab === 'preferences' ? 'options-outline' : 'time-outline'} size={42} color={ACTION} /><Text style={[styles.cardTitle, { marginTop: 12 }]}>{tab === 'security' ? 'Sécurité du compte' : tab === 'preferences' ? 'Préférences' : 'Activité récente'}</Text><Text style={styles.placeholder}>{tab === 'security' ? 'Gérez votre mot de passe et les options de protection du compte.' : tab === 'preferences' ? 'Configurez la langue et les préférences de l’administration.' : 'Consultez les dernières actions réalisées avec votre compte administrateur.'}</Text>{tab === 'security' ? <TouchableOpacity style={styles.primaryButton} onPress={onOpenSecurity}><Text style={styles.primaryText}>Ouvrir les paramètres de sécurité</Text></TouchableOpacity> : null}</View>
+        <View style={styles.card}><Ionicons name={tab === 'preferences' ? 'options-outline' : 'time-outline'} size={42} color={ACTION} /><Text style={[styles.cardTitle, { marginTop: 12 }]}>{tab === 'preferences' ? 'Préférences' : 'Activité récente'}</Text><Text style={styles.placeholder}>{tab === 'preferences' ? 'Configurez la langue et les préférences de l’administration.' : 'Consultez les dernières actions réalisées avec votre compte administrateur.'}</Text></View>
       )}
     </View>
   );
@@ -62,7 +92,31 @@ function ProfileField({ label, value, editing, onChange }: { label: string; valu
 }
 function Info({ label, value }: { label: string; value: string }) { return <View style={styles.companyItem}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue}>{value}</Text></View>; }
 function InfoRow({ label, value, success }: { label: string; value: string; success?: boolean }) { return <View style={styles.infoRow}><Text style={styles.infoLabel}>{label}</Text>{success ? <View style={styles.activeBadge}><Text style={styles.activeText}>{value}</Text></View> : <Text style={styles.infoValue}>{value}</Text>}</View>; }
+function SecuritySection({ icon, tone, title, description, badge, children }: { icon: keyof typeof Ionicons.glyphMap; tone: string; title: string; description: string; badge?: string; children: ReactNode }) { return <View style={styles.securitySection}><View style={[styles.sectionIcon, { backgroundColor: tone }]}><Ionicons name={icon} size={25} color={ACTION} /></View><View style={styles.sectionBody}><View style={styles.sectionTitleRow}><Text style={styles.sectionTitle}>{title}</Text>{badge ? <View style={styles.activeBadge}><Text style={styles.activeText}>{badge}</Text></View> : null}</View><Text style={styles.sectionDescription}>{description}</Text><View style={styles.sectionContent}>{children}</View></View></View>; }
 
 const styles = StyleSheet.create({
+  securityColumns: { flexDirection: 'row', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' },
+  securityMain: { flex: 2, minWidth: 520, gap: 14 },
+  securitySide: { flex: 1, minWidth: 300, gap: 14 },
+  securitySection: { borderRadius: 10, borderWidth: 1, borderColor: '#E3E9F2', backgroundColor: 'white', padding: 20, flexDirection: 'row', alignItems: 'flex-start', gap: 16 },
+  sectionIcon: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#FFF0F0', alignItems: 'center', justifyContent: 'center' },
+  sectionBody: { flex: 1 },
+  sectionTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  sectionTitle: { color: BLUE, fontSize: 16, fontWeight: '900' },
+  sectionDescription: { color: '#667085', fontSize: 12, lineHeight: 18, marginTop: 4 },
+  sectionContent: { marginTop: 16 },
+  securityActionRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
+  passwordDots: { color: BLUE, fontSize: 18, letterSpacing: 2 },
+  passwordForm: { gap: 9, maxWidth: 560 },
+  inlineActions: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', gap: 8 },
+  smallText: { color: '#667085', fontSize: 11, lineHeight: 17, marginTop: 3 },
+  sessionRow: { minHeight: 62, borderRadius: 7, borderWidth: 1, borderColor: '#E3E9F2', flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 13 },
+  activeNow: { color: '#07833C', fontSize: 11, fontWeight: '900' },
+  deleteSection: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  dangerButton: { minHeight: 42, borderRadius: 7, borderWidth: 1, borderColor: '#F1A8A8', alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
+  dangerText: { color: '#D92D20', fontSize: 12, fontWeight: '900' },
+  cardTitleInline: { color: BLUE, fontSize: 17, fontWeight: '900' },
+  activityRow: { minHeight: 62, flexDirection: 'row', alignItems: 'center', gap: 10, borderBottomWidth: 1, borderBottomColor: '#EEF2F6' },
+  activityTitle: { color: BLUE, fontSize: 12, fontWeight: '900' },
   page: { gap: 18 }, tabs: { minHeight: 64, flexDirection: 'row', flexWrap: 'wrap', borderRadius: 9, borderWidth: 1, borderColor: '#E3E9F2', backgroundColor: 'white', paddingHorizontal: 10 }, tab: { minHeight: 64, paddingHorizontal: 22, justifyContent: 'center', borderBottomWidth: 3, borderBottomColor: 'transparent' }, tabActive: { borderBottomColor: ACTION }, tabText: { color: '#344054', fontSize: 13, fontWeight: '800' }, tabTextActive: { color: ACTION }, columns: { flexDirection: 'row', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' }, mainColumn: { flex: 2, minWidth: 520, gap: 18 }, sideColumn: { flex: 1, minWidth: 300, gap: 18 }, card: { borderRadius: 10, borderWidth: 1, borderColor: '#E3E9F2', backgroundColor: 'white', padding: 20 }, cardTitle: { color: BLUE, fontSize: 18, fontWeight: '900', marginBottom: 20 }, personalLayout: { flexDirection: 'row', alignItems: 'flex-start', gap: 38, flexWrap: 'wrap' }, photoColumn: { width: 220, alignItems: 'center', gap: 14 }, avatar: { width: 158, height: 158, borderRadius: 79, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, details: { flex: 1, minWidth: 260, gap: 18 }, fieldLabel: { color: '#344054', fontSize: 12, fontWeight: '800', marginBottom: 6 }, fieldValue: { color: BLUE, fontSize: 14, fontWeight: '800' }, input: { minHeight: 42, borderRadius: 7, borderWidth: 1, borderColor: '#CCD6E5', paddingHorizontal: 11, color: BLUE, fontSize: 13 }, roleBadge: { alignSelf: 'flex-start', borderRadius: 6, backgroundColor: '#E8F1FF', paddingHorizontal: 10, paddingVertical: 6 }, roleText: { color: ACTION, fontSize: 12, fontWeight: '900' }, primaryButton: { alignSelf: 'flex-start', minHeight: 44, borderRadius: 7, backgroundColor: ACTION, justifyContent: 'center', paddingHorizontal: 16, marginTop: 4 }, primaryText: { color: 'white', fontSize: 13, fontWeight: '900' }, outlineButton: { minHeight: 42, borderRadius: 7, borderWidth: 1, borderColor: '#CCD6E5', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 14 }, outlineText: { color: BLUE, fontSize: 12, fontWeight: '900' }, companyGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 22 }, companyItem: { width: '46%', minWidth: 230, borderBottomWidth: 1, borderBottomColor: '#EEF2F6', paddingBottom: 12 }, infoRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 15, borderBottomWidth: 1, borderBottomColor: '#EEF2F6' }, infoLabel: { color: '#475467', fontSize: 12 }, infoValue: { flex: 1, color: BLUE, fontSize: 12, fontWeight: '800', textAlign: 'right' }, activeBadge: { borderRadius: 99, backgroundColor: '#DDF8E8', paddingHorizontal: 10, paddingVertical: 5 }, activeText: { color: '#07833C', fontSize: 11, fontWeight: '900' }, securityCard: { borderRadius: 10, borderWidth: 1, borderColor: '#BDD7FF', backgroundColor: '#F5F9FF', padding: 20, gap: 12 }, securityTitle: { flexDirection: 'row', alignItems: 'center', gap: 10 }, securityHeading: { color: ACTION, fontSize: 17, fontWeight: '900' }, securityIntro: { color: '#475467', fontSize: 12 }, tip: { flexDirection: 'row', alignItems: 'center', gap: 8 }, tipText: { color: '#344054', fontSize: 12, fontWeight: '700' }, placeholder: { color: '#667085', fontSize: 14, lineHeight: 21, marginBottom: 14 },
 });

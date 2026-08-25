@@ -677,6 +677,7 @@ export default function Admin() {
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
+  const [profileInitialTab, setProfileInitialTab] = useState<'personal' | 'security'>('personal');
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -1655,9 +1656,9 @@ export default function Admin() {
           <View style={[styles.topBar, isNarrow && styles.mobileTopBar]}>
             <View>
               <Text style={styles.kicker}>Administration TaKo</Text>
-              <Text style={styles.title}>{adminNavTranslations[language][activeSection]}</Text>
+              <Text style={styles.title}>{activeSection === 'profile' && profileInitialTab === 'security' ? 'Sécurité' : adminNavTranslations[language][activeSection]}</Text>
               <Text style={styles.subtitle}>
-                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : activeSection === 'profile' ? 'Consultez et gérez vos informations personnelles.' : 'Gestion et suivi des opérations.'}
+                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : activeSection === 'profile' ? (profileInitialTab === 'security' ? 'Gérez la sécurité de votre compte et protégez vos données.' : 'Consultez et gérez vos informations personnelles.') : 'Gestion et suivi des opérations.'}
               </Text>
             </View>
 
@@ -1673,8 +1674,8 @@ export default function Admin() {
 
               {isAdminMenuOpen ? (
                 <View style={styles.adminMenu}>
-                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
-                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('settings'); setIsAdminMenuOpen(false); }}><Ionicons name="key-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Changer le mot de passe</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setProfileInitialTab('personal'); setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setProfileInitialTab('security'); setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="key-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Changer le mot de passe</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('audit'); setIsAdminMenuOpen(false); }}><Ionicons name="time-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Journal d’activité</Text></TouchableOpacity>
                   <View style={styles.adminMenuDivider} />
                   <TouchableOpacity style={styles.adminMenuItem} onPress={logout}><Ionicons name="log-out-outline" size={19} color="#D64545" /><Text style={styles.adminMenuLogout}>Se déconnecter</Text></TouchableOpacity>
@@ -2033,7 +2034,7 @@ export default function Admin() {
 
           {activeSection === 'news' ? <AdminNewsManager /> : null}
 
-          {activeSection === 'profile' ? <AdminProfile user={currentUser} onOpenSecurity={() => setActiveSection('settings')} /> : null}
+          {activeSection === 'profile' ? <AdminProfile user={currentUser} initialTab={profileInitialTab} /> : null}
 
           {activeSection === 'nfcCards' ? (
             <>
