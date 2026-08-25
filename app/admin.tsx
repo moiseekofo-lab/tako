@@ -47,7 +47,6 @@ const adminPhraseTranslations = {
   en: {
     'Administration TaKo': 'TaKo Administration',
     'Vue générale de l’activité TaKo.': 'Overview of TaKo activity.',
-    'Vue d’ensemble de l’activité de TaKo': 'Overview of TaKo activity',
     'Transactions (période)': 'Transactions (period)',
     'Argent agent': 'Agent funds',
     'À verser aux chauffeurs': 'Payable to drivers',
@@ -260,7 +259,6 @@ const adminPhraseTranslations = {
   pt: {
     'Administration TaKo': 'Administração TaKo',
     'Vue générale de l’activité TaKo.': 'Visão geral da atividade da TaKo.',
-    'Vue d’ensemble de l’activité de TaKo': 'Visão geral da atividade da TaKo',
     'Transactions (période)': 'Transações (período)',
     'Argent agent': 'Dinheiro dos agentes',
     'À verser aux chauffeurs': 'A pagar aos motoristas',
@@ -1693,7 +1691,6 @@ export default function Admin() {
             <>
               <View style={styles.dashboardToolbar}>
                 <View>
-                  <Text style={styles.cardText}>Vue d’ensemble de l’activité de TaKo</Text>
                 </View>
               </View>
 
