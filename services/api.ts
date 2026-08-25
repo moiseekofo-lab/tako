@@ -107,6 +107,10 @@ export function validateAdminSession(sessionToken: string) {
   });
 }
 
+export function getAdminSecurity(sessionToken: string) {
+  return postJson('/admin/security', { sessionToken });
+}
+
 export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' | 'month') {
   return postJson('/admin/dashboard', {
     sessionToken,

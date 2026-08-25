@@ -1,9 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { getAdminSecurity } from '../services/api';
 
 const BLUE = '#061F68';
 const ACTION = '#1268E8';
+const ADMIN_SESSION_KEY = 'tako:adminSession';
 
 type ProfileTab = 'personal' | 'security' | 'preferences' | 'activity';
 
@@ -13,12 +16,25 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [changingPassword, setChangingPassword] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', next: '', confirm: '' });
+  const [securityData, setSecurityData] = useState<any>(null);
   const [name, setName] = useState(user?.fullName || 'Admin TaKo');
   const [email, setEmail] = useState(user?.email || 'contact@takotransport.online');
   const [phone, setPhone] = useState(user?.phone || '+243 000 000 000');
   const browser = Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').slice(-2).join(' ') : 'Application TaKo';
 
   useEffect(() => setTab(initialTab), [initialTab]);
+  useEffect(() => {
+    if (tab !== 'security') return;
+    AsyncStorage.getItem(ADMIN_SESSION_KEY)
+      .then((token) => token ? getAdminSecurity(token) : null)
+      .then((result) => {
+        if (result?.security) {
+          setSecurityData(result.security);
+          setEmailAlerts(Boolean(result.security.loginEmailAlertsEnabled));
+        }
+      })
+      .catch(() => setSecurityData(null));
+  }, [tab]);
 
   const savePassword = () => {
     if (!passwords.current || passwords.next.length < 8 || passwords.next !== passwords.confirm) {
@@ -73,12 +89,12 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
             <SecuritySection icon="lock-closed-outline" tone="#EAF3FF" title="Mot de passe" description="Assurez-vous d’utiliser un mot de passe fort pour protéger votre compte.">
               {changingPassword ? <View style={styles.passwordForm}><TextInput style={styles.input} secureTextEntry value={passwords.current} onChangeText={(current) => setPasswords({ ...passwords, current })} placeholder="Mot de passe actuel" /><TextInput style={styles.input} secureTextEntry value={passwords.next} onChangeText={(next) => setPasswords({ ...passwords, next })} placeholder="Nouveau mot de passe" /><TextInput style={styles.input} secureTextEntry value={passwords.confirm} onChangeText={(confirm) => setPasswords({ ...passwords, confirm })} placeholder="Confirmer le nouveau mot de passe" /><View style={styles.inlineActions}><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(false)}><Text style={styles.outlineText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={styles.primaryButton} onPress={savePassword}><Text style={styles.primaryText}>Enregistrer</Text></TouchableOpacity></View></View> : <View style={styles.securityActionRow}><View><Text style={styles.fieldLabel}>Mot de passe actuel</Text><Text style={styles.passwordDots}>••••••••••••</Text></View><TouchableOpacity style={styles.outlineButton} onPress={() => setChangingPassword(true)}><Ionicons name="lock-closed-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Changer le mot de passe</Text></TouchableOpacity></View>}
             </SecuritySection>
-            <SecuritySection icon="shield-checkmark-outline" tone="#E8FAEF" title="Authentification à deux facteurs (2FA)" description="L’authentification à deux facteurs ajoute une couche de sécurité supplémentaire à votre compte." badge="À configurer"><View style={styles.securityActionRow}><View><Text style={styles.fieldLabel}>Méthode recommandée</Text><Text style={styles.fieldValue}>Application d’authentification</Text><Text style={styles.smallText}>Google Authenticator ou application similaire</Text></View><TouchableOpacity style={styles.outlineButton} onPress={() => Alert.alert('2FA', 'La configuration 2FA sera reliée au serveur sécurisé TaKo.')}><Ionicons name="settings-outline" size={17} color={ACTION} /><Text style={[styles.outlineText, { color: ACTION }]}>Configurer</Text></TouchableOpacity></View></SecuritySection>
-            <SecuritySection icon="mail-outline" tone="#F3ECFF" title="E-mails de connexion" description="Recevez un e-mail lorsqu’une nouvelle connexion est détectée sur votre compte."><Switch value={emailAlerts} onValueChange={setEmailAlerts} trackColor={{ false: '#CBD5E1', true: ACTION }} /></SecuritySection>
-            <SecuritySection icon="desktop-outline" tone="#FFF3E8" title="Sessions actives" description="Gérez les appareils sur lesquels vous êtes actuellement connecté."><View style={styles.sessionRow}><Ionicons name="logo-windows" size={24} color={BLUE} /><View style={{ flex: 1 }}><Text style={styles.fieldValue}>Windows · {browser}</Text><Text style={styles.smallText}>Kinshasa, RDC · Cet appareil</Text></View><Text style={styles.activeNow}>Actif maintenant</Text></View></SecuritySection>
+            <SecuritySection icon="shield-checkmark-outline" tone="#E8FAEF" title="Authentification à deux facteurs (2FA)" description="État réel de la protection 2FA configurée sur le serveur." badge={securityData?.twoFactorEnabled ? 'Activée' : 'Non configurée'}><Text style={styles.fieldValue}>{securityData?.twoFactorEnabled ? 'Protection à deux facteurs active' : 'Aucune méthode 2FA configurée'}</Text></SecuritySection>
+            <SecuritySection icon="mail-outline" tone="#F3ECFF" title="E-mails de connexion" description="État réel des alertes de nouvelle connexion configurées sur le serveur."><Switch value={emailAlerts} disabled trackColor={{ false: '#CBD5E1', true: ACTION }} /></SecuritySection>
+            <SecuritySection icon="desktop-outline" tone="#FFF3E8" title="Session active" description="Informations réelles de la session administrateur actuelle."><View style={styles.sessionRow}><Ionicons name={Platform.OS === 'web' ? 'desktop-outline' : 'phone-portrait-outline'} size={24} color={BLUE} /><View style={{ flex: 1 }}><Text style={styles.fieldValue}>{securityData?.session?.userAgent || 'Indisponible'}</Text><Text style={styles.smallText}>IP : {securityData?.session?.ipAddress || 'Indisponible'} · Connexion : {securityData?.session?.issuedAt ? new Date(securityData.session.issuedAt).toLocaleString('fr-FR') : 'Indisponible'}</Text></View><Text style={styles.activeNow}>Actif maintenant</Text></View></SecuritySection>
             <View style={[styles.card, styles.deleteSection]}><View style={styles.sectionIcon}><Ionicons name="trash-outline" size={25} color="#D92D20" /></View><View style={{ flex: 1 }}><Text style={styles.sectionTitle}>Supprimer le compte</Text><Text style={styles.sectionDescription}>La suppression d’un compte super administrateur nécessite une validation sécurisée.</Text></View><TouchableOpacity style={styles.dangerButton} onPress={() => Alert.alert('Action protégée', 'Contactez le responsable système pour supprimer ce compte.')}><Text style={styles.dangerText}>Supprimer le compte</Text></TouchableOpacity></View>
           </View>
-          <View style={styles.securitySide}><View style={styles.card}><View style={styles.securityTitle}><Ionicons name="shield-checkmark" size={26} color={ACTION} /><Text style={styles.cardTitleInline}>Conseils de sécurité</Text></View>{['Utilisez un mot de passe fort et unique.', 'Ne partagez jamais vos identifiants.', 'Activez l’authentification à deux facteurs.', 'Déconnectez-vous des appareils inutilisés.'].map((text) => <View key={text} style={styles.tip}><Ionicons name="checkmark-circle" size={18} color={ACTION} /><Text style={styles.tipText}>{text}</Text></View>)}</View><View style={styles.card}><Text style={styles.cardTitle}>Activité de sécurité récente</Text>{['Connexion réussie', 'Mot de passe consulté', 'Paramètres de sécurité ouverts'].map((text, index) => <View key={text} style={styles.activityRow}><Ionicons name={index === 0 ? 'checkmark-circle-outline' : 'information-circle-outline'} size={21} color={index === 0 ? '#0A9D50' : ACTION} /><View style={{ flex: 1 }}><Text style={styles.activityTitle}>{text}</Text><Text style={styles.smallText}>{index === 0 ? 'Maintenant' : `${index + 1} jour(s)`} · Kinshasa, RDC</Text></View></View>)}</View></View>
+          <View style={styles.securitySide}><View style={styles.card}><View style={styles.securityTitle}><Ionicons name="shield-checkmark" size={26} color={ACTION} /><Text style={styles.cardTitleInline}>Conseils de sécurité</Text></View>{['Utilisez un mot de passe fort et unique.', 'Ne partagez jamais vos identifiants.', 'Activez l’authentification à deux facteurs.', 'Déconnectez-vous des appareils inutilisés.'].map((text) => <View key={text} style={styles.tip}><Ionicons name="checkmark-circle" size={18} color={ACTION} /><Text style={styles.tipText}>{text}</Text></View>)}</View><View style={styles.card}><Text style={styles.cardTitle}>Activité de sécurité récente</Text>{securityData?.events?.length ? securityData.events.map((event: any) => <View key={event.id} style={styles.activityRow}><Ionicons name="checkmark-circle-outline" size={21} color="#0A9D50" /><View style={{ flex: 1 }}><Text style={styles.activityTitle}>{event.eventType === 'login_success' ? 'Connexion administrateur réussie' : event.eventType}</Text><Text style={styles.smallText}>{event.createdAt ? new Date(event.createdAt).toLocaleString('fr-FR') : 'Date indisponible'} · IP {event.ipAddress || 'indisponible'}</Text><Text style={styles.smallText} numberOfLines={2}>{event.userAgent || 'Appareil indisponible'}</Text></View></View>) : <Text style={styles.placeholder}>Aucune activité de sécurité réelle enregistrée.</Text>}</View></View>
         </View>
       ) : (
         <View style={styles.card}><Ionicons name={tab === 'preferences' ? 'options-outline' : 'time-outline'} size={42} color={ACTION} /><Text style={[styles.cardTitle, { marginTop: 12 }]}>{tab === 'preferences' ? 'Préférences' : 'Activité récente'}</Text><Text style={styles.placeholder}>{tab === 'preferences' ? 'Configurez la langue et les préférences de l’administration.' : 'Consultez les dernières actions réalisées avec votre compte administrateur.'}</Text></View>

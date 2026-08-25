@@ -23,6 +23,8 @@ const infobipWhatsAppTemplate = String(
 ).trim();
 const infobipWhatsAppLanguage = String(process.env.INFOBIP_WHATSAPP_LANGUAGE || 'fr').trim();
 const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
+const adminTwoFactorEnabled = String(process.env.ADMIN_2FA_ENABLED || '').toLowerCase() === 'true';
+const adminLoginEmailAlertsEnabled = String(process.env.ADMIN_LOGIN_EMAIL_ALERTS || '').toLowerCase() === 'true';
 
 const pool = databaseUrl
   ? new pg.Pool({
@@ -59,11 +61,29 @@ function adminPublicUser() {
 }
 
 function createAdminSessionToken() {
+  const issuedAt = Date.now();
   const payload = Buffer.from(
-    JSON.stringify({ role: 'admin', expiresAt: Date.now() + ADMIN_SESSION_DURATION_MS }),
+    JSON.stringify({ role: 'admin', issuedAt, expiresAt: issuedAt + ADMIN_SESSION_DURATION_MS, sessionId: crypto.randomUUID() }),
   ).toString('base64url');
   const signature = crypto.createHmac('sha256', adminPassword).update(payload).digest('base64url');
   return `${payload}.${signature}`;
+}
+
+function readAdminSessionToken(token = '') {
+  try {
+    const [payload] = String(token).split('.');
+    return payload ? JSON.parse(Buffer.from(payload, 'base64url').toString('utf8')) : null;
+  } catch {
+    return null;
+  }
+}
+
+function requestSecurityContext(request) {
+  const forwarded = String(request.headers['x-forwarded-for'] || '').split(',')[0].trim();
+  return {
+    ipAddress: forwarded || request.socket?.remoteAddress || 'Indisponible',
+    userAgent: String(request.headers['user-agent'] || 'Indisponible'),
+  };
 }
 
 function verifyAdminSessionToken(token = '') {
@@ -553,6 +573,16 @@ async function initDatabase() {
     CREATE TABLE IF NOT EXISTS app_migrations (
       id TEXT PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_security_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      ip_address TEXT,
+      user_agent TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
 
@@ -1052,6 +1082,12 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const securityContext = requestSecurityContext(request);
+    await query(
+      'INSERT INTO admin_security_events (id, event_type, ip_address, user_agent) VALUES ($1, $2, $3, $4);',
+      [crypto.randomUUID(), 'login_success', securityContext.ipAddress, securityContext.userAgent],
+    );
+
     sendJson(response, 200, {
       ok: true,
       user: adminPublicUser(),
@@ -1070,6 +1106,38 @@ async function handleRequest(request, response) {
     sendJson(response, 200, {
       ok: true,
       user: adminPublicUser(),
+    });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/security') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const session = readAdminSessionToken(body.sessionToken) || {};
+    const context = requestSecurityContext(request);
+    const events = await query(`
+      SELECT id, event_type AS "eventType", ip_address AS "ipAddress",
+             user_agent AS "userAgent", created_at AS "createdAt"
+      FROM admin_security_events
+      ORDER BY created_at DESC
+      LIMIT 10;
+    `);
+    sendJson(response, 200, {
+      ok: true,
+      security: {
+        twoFactorEnabled: adminTwoFactorEnabled,
+        loginEmailAlertsEnabled: adminLoginEmailAlertsEnabled,
+        session: {
+          issuedAt: session.issuedAt ? new Date(session.issuedAt).toISOString() : null,
+          expiresAt: session.expiresAt ? new Date(session.expiresAt).toISOString() : null,
+          ipAddress: context.ipAddress,
+          userAgent: context.userAgent,
+        },
+        events: events.rows,
+      },
     });
     return;
   }
