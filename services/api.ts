@@ -134,14 +134,6 @@ export function updateAdminProfile(sessionToken: string, profile: {
   return postJson('/admin/profile/update', { sessionToken, ...profile });
 }
 
-export function getAdminPreferences(sessionToken: string) {
-  return postJson('/admin/preferences', { sessionToken });
-}
-
-export function updateAdminPreferences(sessionToken: string, preferences: Record<string, unknown>) {
-  return postJson('/admin/preferences/update', { sessionToken, preferences });
-}
-
 export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' | 'month') {
   return postJson('/admin/dashboard', {
     sessionToken,
