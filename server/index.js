@@ -607,6 +607,24 @@ async function initDatabase() {
     ON CONFLICT (id) DO NOTHING;
   `, [adminEmail]);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_preferences (
+      admin_id TEXT PRIMARY KEY,
+      preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    INSERT INTO admin_preferences (admin_id, preferences)
+    VALUES ('ADMIN', $1::jsonb)
+    ON CONFLICT (admin_id) DO NOTHING;
+  `, [JSON.stringify({
+    theme: 'light', primaryColor: '#1268E8', language: 'fr', timezone: 'Africa/Kinshasa',
+    dateFormat: 'DD/MM/YYYY', timeFormat: '24h', rowsPerPage: 10, density: 'comfortable',
+    animations: true, defaultPage: 'dashboard', reportPeriod: '30d', emailLanguage: 'fr',
+    communications: true, emailNotifications: true, pushNotifications: true, smsNotifications: false,
+  })]);
+
   const newsSeedMigration = await pool.query(
     'SELECT id FROM app_migrations WHERE id = $1 LIMIT 1;',
     ['seed-initial-news-v1'],
@@ -1210,6 +1228,36 @@ async function handleRequest(request, response) {
                 country, city, created_at AS "createdAt", updated_at AS "updatedAt";
     `, [fullName, email, phone, photoUrl, companyName, businessSector, country, city]);
     sendJson(response, 200, { ok: true, profile: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/preferences') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const result = await query('SELECT preferences, updated_at AS "updatedAt" FROM admin_preferences WHERE admin_id = $1;', ['ADMIN']);
+    sendJson(response, 200, { ok: true, preferences: result.rows[0]?.preferences || {}, updatedAt: result.rows[0]?.updatedAt || null });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/preferences/update') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const preferences = body.preferences && typeof body.preferences === 'object' ? body.preferences : null;
+    if (!preferences || JSON.stringify(preferences).length > 20_000) {
+      sendJson(response, 400, { ok: false, error: 'Préférences invalides.' });
+      return;
+    }
+    const result = await query(`
+      UPDATE admin_preferences SET preferences = $1::jsonb, updated_at = NOW()
+      WHERE admin_id = 'ADMIN' RETURNING preferences, updated_at AS "updatedAt";
+    `, [JSON.stringify(preferences)]);
+    sendJson(response, 200, { ok: true, preferences: result.rows[0].preferences, updatedAt: result.rows[0].updatedAt });
     return;
   }
 
