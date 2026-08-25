@@ -123,7 +123,6 @@ export function AdminNewsManager() {
   return (
     <View style={styles.page}>
       <View style={styles.heading}>
-        <View style={styles.headingTitle}><View style={styles.titleIcon}><Ionicons name="megaphone-outline" size={25} color="white" /></View><View><Text style={styles.title}>Actualités</Text><Text style={styles.subtitle}>Gérez les actualités affichées dans l’application TaKo.</Text></View></View>
         <TouchableOpacity style={styles.primary} onPress={() => { setForm(emptyForm); setEditing(true); }}>
           <Ionicons name="add" size={20} color="white" /><Text style={styles.primaryText}>Nouvelle actualité</Text>
         </TouchableOpacity>
@@ -186,11 +185,7 @@ export function AdminNewsManager() {
 
 const styles = StyleSheet.create({
   page: { gap: 18 },
-  heading: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: 16, flexWrap: 'wrap' },
-  headingTitle: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  titleIcon: { width: 50, height: 50, borderRadius: 10, backgroundColor: '#8B5CF6', alignItems: 'center', justifyContent: 'center' },
-  title: { color: BLUE, fontSize: 24, fontWeight: '900' },
-  subtitle: { color: '#667085', fontSize: 14, marginTop: 3 },
+  heading: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center' },
   primary: { minHeight: 46, borderRadius: 8, backgroundColor: ACTION, paddingHorizontal: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   primaryText: { color: 'white', fontSize: 14, fontWeight: '900' },
   workspace: { flexDirection: 'row', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' },
