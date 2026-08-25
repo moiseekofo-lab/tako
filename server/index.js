@@ -53,6 +53,7 @@ function adminPublicUser(account = {}) {
     fullName: account.full_name || account.fullName || 'Administrateur TaKo',
     email: account.email || adminEmail,
     phone: account.phone || '',
+    photoUrl: account.photo_url || account.photoUrl || '',
     birthDate: '',
     role: 'admin',
     status: 'active',
@@ -615,6 +616,7 @@ async function initDatabase() {
       full_name TEXT NOT NULL,
       email TEXT NOT NULL UNIQUE,
       phone TEXT NOT NULL DEFAULT '',
+      photo_url TEXT NOT NULL DEFAULT '',
       password_hash TEXT NOT NULL,
       admin_role TEXT NOT NULL DEFAULT 'Administrateur',
       status TEXT NOT NULL DEFAULT 'active',
@@ -623,6 +625,7 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`ALTER TABLE admin_accounts ADD COLUMN IF NOT EXISTS photo_url TEXT NOT NULL DEFAULT '';`);
   const rootAdmin = await pool.query('SELECT id FROM admin_accounts WHERE id = $1 LIMIT 1;', ['ADMIN']);
   if (!rootAdmin.rowCount) {
     await pool.query(`
@@ -634,7 +637,8 @@ async function initDatabase() {
   }
   await pool.query(`
     UPDATE admin_accounts AS account
-    SET full_name = profile.full_name, email = profile.email, phone = profile.phone, updated_at = NOW()
+    SET full_name = profile.full_name, email = profile.email, phone = profile.phone,
+        photo_url = profile.photo_url, updated_at = NOW()
     FROM admin_profiles AS profile
     WHERE account.id = 'ADMIN' AND profile.id = 'ADMIN';
   `);
@@ -1228,7 +1232,7 @@ async function handleRequest(request, response) {
       sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
       return;
     }
-    const result = await query(`SELECT id, full_name AS "fullName", email, phone, admin_role AS role,
+    const result = await query(`SELECT id, full_name AS "fullName", email, phone, photo_url AS "photoUrl", admin_role AS role,
       status, must_change_password AS "mustChangePassword", created_at AS "createdAt", updated_at AS "updatedAt"
       FROM admin_accounts ORDER BY created_at ASC;`);
     sendJson(response, 200, { ok: true, accounts: result.rows });
@@ -1382,8 +1386,8 @@ async function handleRequest(request, response) {
                 company_name AS "companyName", business_sector AS "businessSector",
                 country, city, created_at AS "createdAt", updated_at AS "updatedAt";
     `, [fullName, email, phone, photoUrl, companyName, businessSector, country, city]);
-    await query(`UPDATE admin_accounts SET full_name = $1, email = $2, phone = $3, updated_at = NOW()
-      WHERE id = 'ADMIN';`, [fullName, email, phone]);
+    await query(`UPDATE admin_accounts SET full_name = $1, email = $2, phone = $3, photo_url = $4, updated_at = NOW()
+      WHERE id = 'ADMIN';`, [fullName, email, phone, photoUrl]);
     sendJson(response, 200, { ok: true, profile: result.rows[0] });
     return;
   }
