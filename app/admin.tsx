@@ -14,6 +14,7 @@ import {
   getAdminAgents,
   getAdminClients,
   getAdminNfcCards,
+  getAdminProfile,
   getAdminDashboard,
   getAdminDrivers,
   getAgentAccount,
@@ -678,6 +679,14 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'personal' | 'security'>('personal');
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ADMIN_SESSION_KEY)
+      .then((sessionToken) => sessionToken ? getAdminProfile(sessionToken) : null)
+      .then((result) => result?.profile && setAdminProfile(result.profile))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
@@ -1664,9 +1673,9 @@ export default function Admin() {
 
             <View style={[styles.topActions, isNarrow && styles.mobileTopActions]}>
               <TouchableOpacity style={styles.adminBadge} activeOpacity={0.82} onPress={() => setIsAdminMenuOpen((open) => !open)}>
-                <View style={styles.adminAvatar}><Ionicons name="person" size={24} color="white" /></View>
+                <View style={styles.adminAvatar}>{adminProfile?.photoUrl ? <Image source={{ uri: adminProfile.photoUrl }} style={styles.adminAvatarImage} resizeMode="cover" /> : <Ionicons name="person" size={24} color="white" />}</View>
                 <View>
-                  <Text style={styles.adminName}>Admin TaKo</Text>
+                  <Text style={styles.adminName}>{adminProfile?.fullName || 'Admin TaKo'}</Text>
                   <Text style={styles.adminEmail}>Super administrateur</Text>
                 </View>
                 <Ionicons name={isAdminMenuOpen ? 'chevron-up' : 'chevron-down'} size={18} color={TAKO_BLUE} />
@@ -2034,7 +2043,7 @@ export default function Admin() {
 
           {activeSection === 'news' ? <AdminNewsManager /> : null}
 
-          {activeSection === 'profile' ? <AdminProfile user={currentUser} initialTab={profileInitialTab} /> : null}
+          {activeSection === 'profile' ? <AdminProfile user={currentUser} initialTab={profileInitialTab} onProfileUpdated={setAdminProfile} /> : null}
 
           {activeSection === 'nfcCards' ? (
             <>
@@ -3554,6 +3563,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: TAKO_BLUE,
+  },
+  adminAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 21,
   },
   adminName: {
     color: TAKO_BLUE,

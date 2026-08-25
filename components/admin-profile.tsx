@@ -10,7 +10,7 @@ const ADMIN_SESSION_KEY = 'tako:adminSession';
 
 type ProfileTab = 'personal' | 'security' | 'preferences' | 'activity';
 
-export function AdminProfile({ user, initialTab = 'personal' }: { user: any; initialTab?: ProfileTab }) {
+export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated }: { user: any; initialTab?: ProfileTab; onProfileUpdated?: (profile: any) => void }) {
   const [tab, setTab] = useState<ProfileTab>(initialTab);
   const [editing, setEditing] = useState(false);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -42,10 +42,11 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
         setName(profile.fullName || 'Admin TaKo'); setEmail(profile.email || ''); setPhone(profile.phone || '');
         setPhotoUrl(profile.photoUrl || ''); setCompanyName(profile.companyName || ''); setBusinessSector(profile.businessSector || '');
         setCountry(profile.country || ''); setCity(profile.city || ''); setCreatedAt(profile.createdAt || null);
+        onProfileUpdated?.(profile);
       })
       .catch(() => Alert.alert('Profil indisponible', 'Impossible de charger les informations administrateur.'))
       .finally(() => setProfileLoading(false));
-  }, [tab]);
+  }, [tab, onProfileUpdated]);
   useEffect(() => {
     if (tab !== 'security') return;
     AsyncStorage.getItem(ADMIN_SESSION_KEY)
@@ -75,18 +76,19 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
       return;
     }
     const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
-    input.onchange = () => { const file = input.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { Alert.alert('Photo trop lourde', 'Choisissez une photo de 2 Mo maximum.'); return; } const reader = new FileReader(); reader.onload = () => setPhotoUrl(String(reader.result || '')); reader.readAsDataURL(file); };
+    input.onchange = () => { const file = input.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { Alert.alert('Photo trop lourde', 'Choisissez une photo de 2 Mo maximum.'); return; } const reader = new FileReader(); reader.onload = () => { const nextPhotoUrl = String(reader.result || ''); setPhotoUrl(nextPhotoUrl); saveProfile({ photoUrl: nextPhotoUrl }, false); }; reader.readAsDataURL(file); };
     input.click();
   };
 
-  const saveProfile = async () => {
+  const saveProfile = async (overrides: { photoUrl?: string } = {}, showConfirmation = true) => {
     try {
       setProfileSaving(true);
       const token = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
       if (!token) throw new Error('Session administrateur expirée.');
-      await updateAdminProfile(token, { fullName: name, email, phone, photoUrl, companyName, businessSector, country, city });
+      const result = await updateAdminProfile(token, { fullName: name, email, phone, photoUrl: overrides.photoUrl ?? photoUrl, companyName, businessSector, country, city });
+      if (result?.profile) onProfileUpdated?.(result.profile);
       setEditing(false);
-      Alert.alert('Profil enregistré', 'Les informations personnelles ont été mises à jour dans la base de données.');
+      if (showConfirmation) Alert.alert('Profil enregistré', 'Les informations personnelles ont été mises à jour dans la base de données.');
     } catch (error) {
       Alert.alert('Enregistrement impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
     } finally { setProfileSaving(false); }
