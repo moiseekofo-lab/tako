@@ -586,6 +586,27 @@ async function initDatabase() {
     );
   `);
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_profiles (
+      id TEXT PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL,
+      phone TEXT NOT NULL DEFAULT '',
+      photo_url TEXT NOT NULL DEFAULT '',
+      company_name TEXT NOT NULL DEFAULT 'TaKo Transport',
+      business_sector TEXT NOT NULL DEFAULT 'Transport & Mobilité',
+      country TEXT NOT NULL DEFAULT 'République Démocratique du Congo',
+      city TEXT NOT NULL DEFAULT 'Kinshasa',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
+    INSERT INTO admin_profiles (id, full_name, email)
+    VALUES ('ADMIN', 'Admin TaKo', $1)
+    ON CONFLICT (id) DO NOTHING;
+  `, [adminEmail]);
+
   const newsSeedMigration = await pool.query(
     'SELECT id FROM app_migrations WHERE id = $1 LIMIT 1;',
     ['seed-initial-news-v1'],
@@ -1139,6 +1160,56 @@ async function handleRequest(request, response) {
         events: events.rows,
       },
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/profile') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const result = await query(`
+      SELECT id, full_name AS "fullName", email, phone, photo_url AS "photoUrl",
+             company_name AS "companyName", business_sector AS "businessSector",
+             country, city, created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM admin_profiles WHERE id = 'ADMIN' LIMIT 1;
+    `);
+    sendJson(response, 200, { ok: true, profile: result.rows[0] || null });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/profile/update') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const fullName = String(body.fullName || '').trim();
+    const email = normalizeContact(body.email);
+    const phone = String(body.phone || '').trim();
+    const photoUrl = String(body.photoUrl || '').trim();
+    const companyName = String(body.companyName || '').trim();
+    const businessSector = String(body.businessSector || '').trim();
+    const country = String(body.country || '').trim();
+    const city = String(body.city || '').trim();
+    if (!fullName || !email.includes('@') || !companyName || !businessSector || !country || !city) {
+      sendJson(response, 400, { ok: false, error: 'Complétez correctement les informations obligatoires.' });
+      return;
+    }
+    if (photoUrl.length > 3_000_000) {
+      sendJson(response, 413, { ok: false, error: 'La photo dépasse la taille maximale autorisée.' });
+      return;
+    }
+    const result = await query(`
+      UPDATE admin_profiles SET full_name = $1, email = $2, phone = $3, photo_url = $4,
+        company_name = $5, business_sector = $6, country = $7, city = $8, updated_at = NOW()
+      WHERE id = 'ADMIN'
+      RETURNING id, full_name AS "fullName", email, phone, photo_url AS "photoUrl",
+                company_name AS "companyName", business_sector AS "businessSector",
+                country, city, created_at AS "createdAt", updated_at AS "updatedAt";
+    `, [fullName, email, phone, photoUrl, companyName, businessSector, country, city]);
+    sendJson(response, 200, { ok: true, profile: result.rows[0] });
     return;
   }
 

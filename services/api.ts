@@ -111,6 +111,17 @@ export function getAdminSecurity(sessionToken: string) {
   return postJson('/admin/security', { sessionToken });
 }
 
+export function getAdminProfile(sessionToken: string) {
+  return postJson('/admin/profile', { sessionToken });
+}
+
+export function updateAdminProfile(sessionToken: string, profile: {
+  fullName: string; email: string; phone: string; photoUrl: string;
+  companyName: string; businessSector: string; country: string; city: string;
+}) {
+  return postJson('/admin/profile/update', { sessionToken, ...profile });
+}
+
 export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' | 'month') {
   return postJson('/admin/dashboard', {
     sessionToken,

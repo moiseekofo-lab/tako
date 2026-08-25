@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { getAdminSecurity } from '../services/api';
+import { ActivityIndicator, Alert, Image, Platform, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { getAdminProfile, getAdminSecurity, updateAdminProfile } from '../services/api';
 
 const BLUE = '#061F68';
 const ACTION = '#1268E8';
@@ -20,9 +20,32 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
   const [name, setName] = useState(user?.fullName || 'Admin TaKo');
   const [email, setEmail] = useState(user?.email || 'contact@takotransport.online');
   const [phone, setPhone] = useState(user?.phone || '+243 000 000 000');
+  const [photoUrl, setPhotoUrl] = useState('');
+  const [companyName, setCompanyName] = useState('TaKo Transport');
+  const [businessSector, setBusinessSector] = useState('Transport & Mobilité');
+  const [country, setCountry] = useState('République Démocratique du Congo');
+  const [city, setCity] = useState('Kinshasa');
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
   const browser = Platform.OS === 'web' && typeof navigator !== 'undefined' ? navigator.userAgent.split(' ').slice(-2).join(' ') : 'Application TaKo';
 
   useEffect(() => setTab(initialTab), [initialTab]);
+  useEffect(() => {
+    if (tab !== 'personal') return;
+    setProfileLoading(true);
+    AsyncStorage.getItem(ADMIN_SESSION_KEY)
+      .then((token) => token ? getAdminProfile(token) : null)
+      .then((result) => {
+        const profile = result?.profile;
+        if (!profile) return;
+        setName(profile.fullName || 'Admin TaKo'); setEmail(profile.email || ''); setPhone(profile.phone || '');
+        setPhotoUrl(profile.photoUrl || ''); setCompanyName(profile.companyName || ''); setBusinessSector(profile.businessSector || '');
+        setCountry(profile.country || ''); setCity(profile.city || ''); setCreatedAt(profile.createdAt || null);
+      })
+      .catch(() => Alert.alert('Profil indisponible', 'Impossible de charger les informations administrateur.'))
+      .finally(() => setProfileLoading(false));
+  }, [tab]);
   useEffect(() => {
     if (tab !== 'security') return;
     AsyncStorage.getItem(ADMIN_SESSION_KEY)
@@ -46,6 +69,29 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
     setChangingPassword(false);
   };
 
+  const choosePhoto = () => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') {
+      Alert.alert('Photo', 'La modification de la photo administrateur est disponible depuis l’administration Web.');
+      return;
+    }
+    const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/jpeg,image/png,image/webp';
+    input.onchange = () => { const file = input.files?.[0]; if (!file) return; if (file.size > 2 * 1024 * 1024) { Alert.alert('Photo trop lourde', 'Choisissez une photo de 2 Mo maximum.'); return; } const reader = new FileReader(); reader.onload = () => setPhotoUrl(String(reader.result || '')); reader.readAsDataURL(file); };
+    input.click();
+  };
+
+  const saveProfile = async () => {
+    try {
+      setProfileSaving(true);
+      const token = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!token) throw new Error('Session administrateur expirée.');
+      await updateAdminProfile(token, { fullName: name, email, phone, photoUrl, companyName, businessSector, country, city });
+      setEditing(false);
+      Alert.alert('Profil enregistré', 'Les informations personnelles ont été mises à jour dans la base de données.');
+    } catch (error) {
+      Alert.alert('Enregistrement impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally { setProfileSaving(false); }
+  };
+
   return (
     <View style={styles.page}>
       <View style={styles.tabs}>
@@ -59,22 +105,23 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
           <View style={styles.mainColumn}>
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Informations personnelles</Text>
+              {profileLoading ? <ActivityIndicator size="large" color={ACTION} /> : null}
               <View style={styles.personalLayout}>
-                <View style={styles.photoColumn}><View style={styles.avatar}><Ionicons name="person" size={72} color="white" /></View><TouchableOpacity style={styles.outlineButton}><Ionicons name="camera-outline" size={18} color={BLUE} /><Text style={styles.outlineText}>Changer la photo</Text></TouchableOpacity></View>
+                <View style={styles.photoColumn}><View style={styles.avatar}>{photoUrl ? <Image source={{ uri: photoUrl }} style={styles.avatarImage} resizeMode="cover" /> : <Ionicons name="person" size={72} color="white" />}</View><TouchableOpacity style={styles.outlineButton} onPress={choosePhoto}><Ionicons name="camera-outline" size={18} color={BLUE} /><Text style={styles.outlineText}>Changer la photo</Text></TouchableOpacity></View>
                 <View style={styles.details}>
                   <ProfileField label="Nom complet" value={name} editing={editing} onChange={setName} />
                   <ProfileField label="E-mail" value={email} editing={editing} onChange={setEmail} />
                   <ProfileField label="Téléphone" value={phone} editing={editing} onChange={setPhone} />
                   <View><Text style={styles.fieldLabel}>Rôle</Text><View style={styles.roleBadge}><Text style={styles.roleText}>Super administrateur</Text></View></View>
-                  <View><Text style={styles.fieldLabel}>Date de création du compte</Text><Text style={styles.fieldValue}>10/08/2026 à 14:35</Text></View>
-                  <TouchableOpacity style={styles.primaryButton} onPress={() => setEditing((value) => !value)}><Text style={styles.primaryText}>{editing ? 'Enregistrer les informations' : 'Modifier les informations'}</Text></TouchableOpacity>
+                  <View><Text style={styles.fieldLabel}>Date de création du compte</Text><Text style={styles.fieldValue}>{createdAt ? new Date(createdAt).toLocaleString('fr-FR') : 'Indisponible'}</Text></View>
+                  <TouchableOpacity style={styles.primaryButton} disabled={profileSaving} onPress={() => editing ? saveProfile() : setEditing(true)}><Text style={styles.primaryText}>{profileSaving ? 'Enregistrement…' : editing ? 'Enregistrer les informations' : 'Modifier les informations'}</Text></TouchableOpacity>
                 </View>
               </View>
             </View>
 
             <View style={styles.card}>
               <Text style={styles.cardTitle}>Informations sur l’entreprise</Text>
-              <View style={styles.companyGrid}><Info label="Nom de l’entreprise" value="TaKo Transport" /><Info label="Secteur d’activité" value="Transport & Mobilité" /><Info label="Pays" value="République Démocratique du Congo" /><Info label="Ville" value="Kinshasa" /></View>
+              <View style={styles.companyGrid}><View style={styles.companyItem}><ProfileField label="Nom de l’entreprise" value={companyName} editing={editing} onChange={setCompanyName} /></View><View style={styles.companyItem}><ProfileField label="Secteur d’activité" value={businessSector} editing={editing} onChange={setBusinessSector} /></View><View style={styles.companyItem}><ProfileField label="Pays" value={country} editing={editing} onChange={setCountry} /></View><View style={styles.companyItem}><ProfileField label="Ville" value={city} editing={editing} onChange={setCity} /></View></View>
             </View>
           </View>
 
@@ -106,11 +153,11 @@ export function AdminProfile({ user, initialTab = 'personal' }: { user: any; ini
 function ProfileField({ label, value, editing, onChange }: { label: string; value: string; editing: boolean; onChange: (value: string) => void }) {
   return <View><Text style={styles.fieldLabel}>{label}</Text>{editing ? <TextInput style={styles.input} value={value} onChangeText={onChange} /> : <Text style={styles.fieldValue}>{value}</Text>}</View>;
 }
-function Info({ label, value }: { label: string; value: string }) { return <View style={styles.companyItem}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue}>{value}</Text></View>; }
 function InfoRow({ label, value, success }: { label: string; value: string; success?: boolean }) { return <View style={styles.infoRow}><Text style={styles.infoLabel}>{label}</Text>{success ? <View style={styles.activeBadge}><Text style={styles.activeText}>{value}</Text></View> : <Text style={styles.infoValue}>{value}</Text>}</View>; }
 function SecuritySection({ icon, tone, title, description, badge, children }: { icon: keyof typeof Ionicons.glyphMap; tone: string; title: string; description: string; badge?: string; children: ReactNode }) { return <View style={styles.securitySection}><View style={[styles.sectionIcon, { backgroundColor: tone }]}><Ionicons name={icon} size={25} color={ACTION} /></View><View style={styles.sectionBody}><View style={styles.sectionTitleRow}><Text style={styles.sectionTitle}>{title}</Text>{badge ? <View style={styles.activeBadge}><Text style={styles.activeText}>{badge}</Text></View> : null}</View><Text style={styles.sectionDescription}>{description}</Text><View style={styles.sectionContent}>{children}</View></View></View>; }
 
 const styles = StyleSheet.create({
+  avatarImage: { width: '100%', height: '100%', borderRadius: 79 },
   securityColumns: { flexDirection: 'row', alignItems: 'flex-start', gap: 18, flexWrap: 'wrap' },
   securityMain: { flex: 2, minWidth: 520, gap: 14 },
   securitySide: { flex: 1, minWidth: 300, gap: 14 },
