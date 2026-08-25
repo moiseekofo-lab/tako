@@ -3424,7 +3424,7 @@ const styles = StyleSheet.create({
   navScrollerVisible: Platform.OS === 'web' ? ({
     overflowY: 'scroll',
     scrollbarWidth: 'thin',
-    scrollbarColor: '#8EC5FF #061F68',
+    scrollbarColor: '#FFFFFF #061F68',
   } as any) : {},
   mobileNavList: {
     flexDirection: 'row',
