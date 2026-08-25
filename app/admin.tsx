@@ -5,6 +5,7 @@ import { useEffect, useState, type ComponentProps, type ReactNode } from 'react'
 import { ActivityIndicator, Alert, Image, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { AdminNewsManager } from '../components/admin-news-manager';
+import { AdminProfile } from '../components/admin-profile';
 import {
   activatePrepaidCard,
   approveUser,
@@ -515,6 +516,7 @@ type NfcTag = { id?: string; type?: string } | null;
 
 type AdminSection =
   | 'dashboard'
+  | 'profile'
   | 'clients'
   | 'drivers'
   | 'agents'
@@ -553,16 +555,16 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
 ];
 
 const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, string>> = {
-  fr: Object.fromEntries(navItems.map((item) => [item.key, item.label])) as Record<AdminSection, string>,
+  fr: { ...Object.fromEntries(navItems.map((item) => [item.key, item.label])), profile: 'Mon profil' } as Record<AdminSection, string>,
   en: {
-    dashboard: 'Dashboard', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
+    dashboard: 'Dashboard', profile: 'My profile', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
     nfcCards: 'NFC cards', transactions: 'Transactions', recharges: 'Top-ups',
     payouts: 'Payouts', treasury: 'Treasury', reconciliation: 'Reconciliation',
     claims: 'Claims', news: 'News', notifications: 'Notifications', reports: 'Reports',
     roles: 'Administrators and roles', audit: 'Activity log', settings: 'Settings',
   },
   pt: {
-    dashboard: 'Painel', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
+    dashboard: 'Painel', profile: 'Meu perfil', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
     nfcCards: 'Cartões NFC', transactions: 'Transações', recharges: 'Recargas',
     payouts: 'Pagamentos', treasury: 'Tesouraria', reconciliation: 'Reconciliação',
     claims: 'Reclamações', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
@@ -1655,7 +1657,7 @@ export default function Admin() {
               <Text style={styles.kicker}>Administration TaKo</Text>
               <Text style={styles.title}>{adminNavTranslations[language][activeSection]}</Text>
               <Text style={styles.subtitle}>
-                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : 'Gestion et suivi des opérations.'}
+                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : activeSection === 'profile' ? 'Consultez et gérez vos informations personnelles.' : 'Gestion et suivi des opérations.'}
               </Text>
             </View>
 
@@ -1671,7 +1673,7 @@ export default function Admin() {
 
               {isAdminMenuOpen ? (
                 <View style={styles.adminMenu}>
-                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('settings'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
+                  <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('profile'); setIsAdminMenuOpen(false); }}><Ionicons name="person-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Mon profil</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('settings'); setIsAdminMenuOpen(false); }}><Ionicons name="key-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Changer le mot de passe</Text></TouchableOpacity>
                   <TouchableOpacity style={styles.adminMenuItem} onPress={() => { setActiveSection('audit'); setIsAdminMenuOpen(false); }}><Ionicons name="time-outline" size={19} color={TAKO_BLUE} /><Text style={styles.adminMenuText}>Journal d’activité</Text></TouchableOpacity>
                   <View style={styles.adminMenuDivider} />
@@ -2030,6 +2032,8 @@ export default function Admin() {
           ) : null}
 
           {activeSection === 'news' ? <AdminNewsManager /> : null}
+
+          {activeSection === 'profile' ? <AdminProfile user={currentUser} onOpenSecurity={() => setActiveSection('settings')} /> : null}
 
           {activeSection === 'nfcCards' ? (
             <>
