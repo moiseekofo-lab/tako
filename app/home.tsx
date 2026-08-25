@@ -15,10 +15,6 @@ const NFC_CARD_BLOCKED_KEY = 'tako:nfcCardBlocked';
 const HERO_REFRESH_THRESHOLD = 32;
 const NEWS_AUTO_SCROLL_INTERVAL_MS = 5000;
 const WHATSAPP_CHAT_URL = 'https://wa.me/message/XI2NHEELHNTDM1';
-const takoTrajetsNews = require('../assets/images/news-tako-trajets.jpeg');
-const takoPetitTransportNews = require('../assets/images/news-tako-petit-transport.jpeg');
-const takoPublicTransportNews = require('../assets/images/news-tako-public-transport.jpeg');
-const takoEgliseNews = require('../assets/images/news-tako-eglise.jpeg');
 const clientPhysicalCardImage = require('../assets/images/client-physical-card.png');
 
 export default function Home() {
@@ -39,7 +35,7 @@ export default function Home() {
   const webHeroTouchStartY = useRef<number | null>(null);
   const newsTouchStartX = useRef<number | null>(null);
   const isNewsTouched = useRef(false);
-  const newsCountRef = useRef(4);
+  const newsCountRef = useRef(1);
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
   const [publishedNews, setPublishedNews] = useState<NewsItem[]>([]);
   const balance = useStore((state: any) => state.balance);
@@ -64,10 +60,11 @@ export default function Home() {
       const result = await getPublishedNews();
       const nextNews = (result?.news || []) as NewsItem[];
       setPublishedNews(nextNews);
-      newsCountRef.current = Math.max(1, nextNews.length || 4);
+      newsCountRef.current = Math.max(1, nextNews.length);
       setActiveNewsIndex(0);
     } catch {
-      newsCountRef.current = 4;
+      setPublishedNews([]);
+      newsCountRef.current = 1;
     }
   };
 
@@ -489,9 +486,10 @@ export default function Home() {
     }
   };
 
-  const newsCards: { source: any; title?: string }[] = publishedNews.length
-    ? publishedNews.map((item) => ({ source: { uri: item.imageUrl }, title: item.title }))
-    : [takoTrajetsNews, takoPetitTransportNews, takoPublicTransportNews, takoEgliseNews].map((source) => ({ source }));
+  const newsCards: { source: any; title?: string }[] = publishedNews.map((item) => ({
+    source: { uri: item.imageUrl },
+    title: item.title,
+  }));
 
   const renderNewsCardContent = (index: number) => {
     const card = newsCards[index % newsCards.length];
@@ -617,23 +615,25 @@ export default function Home() {
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
           </View>
 
-          <View
-            style={styles.newsCarousel3d}
-            onTouchStart={startNewsTouch}
-            onTouchMove={moveNewsTouch}
-            onTouchEnd={endNewsTouch}
-            onTouchCancel={endNewsTouch}
-            {...newsPanResponder.panHandlers}>
-            <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
-              {renderNewsCardContent((activeNewsIndex + newsCards.length - 1) % newsCards.length)}
-            </Animated.View>
-            <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
-              {renderNewsCardContent((activeNewsIndex + 1) % newsCards.length)}
-            </Animated.View>
-            <Animated.View style={[styles.news3dCard, styles.news3dMain, { transform: [{ translateX: newsDragX }] }]}>
-              {renderNewsCardContent(activeNewsIndex)}
-            </Animated.View>
-          </View>
+          {newsCards.length > 0 ? (
+            <View
+              style={styles.newsCarousel3d}
+              onTouchStart={startNewsTouch}
+              onTouchMove={moveNewsTouch}
+              onTouchEnd={endNewsTouch}
+              onTouchCancel={endNewsTouch}
+              {...newsPanResponder.panHandlers}>
+              <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dLeft]}>
+                {renderNewsCardContent((activeNewsIndex + newsCards.length - 1) % newsCards.length)}
+              </Animated.View>
+              <Animated.View style={[styles.news3dCard, styles.news3dSide, styles.news3dRight]}>
+                {renderNewsCardContent((activeNewsIndex + 1) % newsCards.length)}
+              </Animated.View>
+              <Animated.View style={[styles.news3dCard, styles.news3dMain, { transform: [{ translateX: newsDragX }] }]}>
+                {renderNewsCardContent(activeNewsIndex)}
+              </Animated.View>
+            </View>
+          ) : null}
 
         </ScrollView>
 
