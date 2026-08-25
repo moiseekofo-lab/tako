@@ -7,6 +7,7 @@ import { TakoLogo } from '../components/tako-logo';
 import { AdminNewsManager } from '../components/admin-news-manager';
 import { AdminProfile } from '../components/admin-profile';
 import { AdminRolesManager } from '../components/admin-roles-manager';
+import { AdminTicketing } from '../components/admin-ticketing';
 import {
   activatePrepaidCard,
   approveUser,
@@ -527,6 +528,7 @@ type AdminSection =
   | 'treasury'
   | 'reconciliation'
   | 'claims'
+  | 'ticketing'
   | 'news'
   | 'notifications'
   | 'reports'
@@ -546,6 +548,7 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
   { key: 'treasury', label: 'Trésorerie', icon: 'wallet-outline' },
   { key: 'reconciliation', label: 'Rapprochement', icon: 'git-compare-outline' },
   { key: 'claims', label: 'Réclamations', icon: 'chatbox-ellipses-outline' },
+  { key: 'ticketing', label: 'Billetterie', icon: 'ticket-outline' },
   { key: 'news', label: 'Actualités', icon: 'megaphone-outline' },
   { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
   { key: 'reports', label: 'Rapports', icon: 'bar-chart-outline' },
@@ -560,14 +563,14 @@ const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, stri
     dashboard: 'Dashboard', profile: 'My profile', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
     nfcCards: 'NFC cards', transactions: 'Transactions', recharges: 'Top-ups',
     payouts: 'Payouts', treasury: 'Treasury', reconciliation: 'Reconciliation',
-    claims: 'Claims', news: 'News', notifications: 'Notifications', reports: 'Reports',
+    claims: 'Claims', ticketing: 'Ticketing', news: 'News', notifications: 'Notifications', reports: 'Reports',
     roles: 'Administrators and roles', audit: 'Activity log', settings: 'Settings',
   },
   pt: {
     dashboard: 'Painel', profile: 'Meu perfil', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
     nfcCards: 'Cartões NFC', transactions: 'Transações', recharges: 'Recargas',
     payouts: 'Pagamentos', treasury: 'Tesouraria', reconciliation: 'Reconciliação',
-    claims: 'Reclamações', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
+    claims: 'Reclamações', ticketing: 'Bilheteira', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
     roles: 'Administradores e funções', audit: 'Registo de atividades', settings: 'Definições',
   },
 };
@@ -2039,6 +2042,8 @@ export default function Admin() {
           {activeSection === 'profile' ? <AdminProfile user={currentUser} initialTab={profileInitialTab} onProfileUpdated={setAdminProfile} onTabChange={setProfileCurrentTab} /> : null}
 
           {activeSection === 'roles' ? <AdminRolesManager currentAdmin={adminProfile || currentUser} /> : null}
+
+          {activeSection === 'ticketing' ? <AdminTicketing trips={trips} /> : null}
 
           {activeSection === 'nfcCards' ? (
             <>
