@@ -9,7 +9,7 @@ const ACTION = '#1268E8';
 const ADMIN_SESSION_KEY = 'tako:adminSession';
 const defaultPreferences = { theme: 'light', primaryColor: '#1268E8', language: 'fr', timezone: 'Africa/Kinshasa', dateFormat: 'DD/MM/YYYY', timeFormat: '24h', rowsPerPage: 10, density: 'comfortable', animations: true, defaultPage: 'dashboard', reportPeriod: '30d', emailLanguage: 'fr', communications: true, emailNotifications: true, pushNotifications: true, smsNotifications: false };
 
-type ProfileTab = 'personal' | 'security' | 'preferences' | 'activity';
+type ProfileTab = 'personal' | 'security' | 'preferences';
 
 export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, onTabChange }: { user: any; initialTab?: ProfileTab; onProfileUpdated?: (profile: any) => void; onTabChange?: (tab: ProfileTab) => void }) {
   const [tab, setTab] = useState<ProfileTab>(initialTab);
@@ -128,7 +128,7 @@ export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, 
   return (
     <View style={styles.page}>
       <View style={styles.tabs}>
-        {([['personal', 'Informations personnelles'], ['security', 'Sécurité'], ['preferences', 'Préférences'], ['activity', 'Activité récente']] as const).map(([key, label]) => (
+        {([['personal', 'Informations personnelles'], ['security', 'Sécurité'], ['preferences', 'Préférences']] as const).map(([key, label]) => (
           <TouchableOpacity key={key} style={[styles.tab, tab === key && styles.tabActive]} onPress={() => setTab(key)}><Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text></TouchableOpacity>
         ))}
       </View>
@@ -185,9 +185,7 @@ export function AdminProfile({ user, initialTab = 'personal', onProfileUpdated, 
           </View>
           <View style={styles.preferencesSide}><View style={styles.card}><Text style={styles.cardTitle}>Langue de communication</Text><PreferenceChoice label="Langue des e-mails" value={preferences.emailLanguage} options={[['fr', 'Français'], ['en', 'English'], ['pt', 'Português']]} onChange={(emailLanguage) => setPreferences({ ...preferences, emailLanguage })} /><SettingToggle label="Communications importantes" description="Mises à jour et annonces." value={preferences.communications} onChange={(communications) => setPreferences({ ...preferences, communications })} /></View><View style={styles.card}><Text style={styles.cardTitle}>Notifications</Text><SettingToggle label="Notifications par e-mail" value={preferences.emailNotifications} onChange={(emailNotifications) => setPreferences({ ...preferences, emailNotifications })} /><SettingToggle label="Notifications push" value={preferences.pushNotifications} onChange={(pushNotifications) => setPreferences({ ...preferences, pushNotifications })} /><SettingToggle label="Notifications SMS" value={preferences.smsNotifications} onChange={(smsNotifications) => setPreferences({ ...preferences, smsNotifications })} /></View><View style={styles.preferenceActions}><TouchableOpacity style={styles.outlineButton} onPress={() => setPreferences(defaultPreferences)}><Ionicons name="refresh-outline" size={18} color={BLUE} /><Text style={styles.outlineText}>Réinitialiser</Text></TouchableOpacity><TouchableOpacity style={styles.primaryButton} disabled={preferencesSaving} onPress={savePreferences}><Text style={styles.primaryText}>{preferencesSaving ? 'Enregistrement…' : 'Enregistrer les préférences'}</Text></TouchableOpacity></View></View>
         </View>
-      ) : (
-        <View style={styles.card}><Ionicons name="time-outline" size={42} color={ACTION} /><Text style={[styles.cardTitle, { marginTop: 12 }]}>Activité récente</Text><Text style={styles.placeholder}>Consultez les dernières actions réalisées avec votre compte administrateur.</Text></View>
-      )}
+      ) : null}
     </View>
   );
 }

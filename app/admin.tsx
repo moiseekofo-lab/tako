@@ -679,7 +679,7 @@ export default function Admin() {
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [profileInitialTab, setProfileInitialTab] = useState<'personal' | 'security'>('personal');
-  const [profileCurrentTab, setProfileCurrentTab] = useState<'personal' | 'security' | 'preferences' | 'activity'>('personal');
+  const [profileCurrentTab, setProfileCurrentTab] = useState<'personal' | 'security' | 'preferences'>('personal');
   const [adminProfile, setAdminProfile] = useState<any>(null);
 
   useEffect(() => {
@@ -1662,9 +1662,9 @@ export default function Admin() {
           <View style={[styles.topBar, isNarrow && styles.mobileTopBar]}>
             <View>
               <Text style={styles.kicker}>Administration TaKo</Text>
-              <Text style={styles.title}>{activeSection === 'profile' ? (profileCurrentTab === 'security' ? 'Sécurité' : profileCurrentTab === 'preferences' ? 'Préférences' : profileCurrentTab === 'activity' ? 'Activité récente' : 'Mon profil') : adminNavTranslations[language][activeSection]}</Text>
+              <Text style={styles.title}>{activeSection === 'profile' ? (profileCurrentTab === 'security' ? 'Sécurité' : profileCurrentTab === 'preferences' ? 'Préférences' : 'Mon profil') : adminNavTranslations[language][activeSection]}</Text>
               <Text style={styles.subtitle}>
-                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : activeSection === 'profile' ? (profileCurrentTab === 'security' ? 'Gérez la sécurité de votre compte et protégez vos données.' : profileCurrentTab === 'preferences' ? 'Personnalisez votre expérience sur la plateforme TaKo.' : profileCurrentTab === 'activity' ? 'Consultez les actions récentes de votre compte.' : 'Consultez et gérez vos informations personnelles.') : 'Gestion et suivi des opérations.'}
+                {activeSection === 'dashboard' ? 'Vue générale de l’activité TaKo.' : activeSection === 'profile' ? (profileCurrentTab === 'security' ? 'Gérez la sécurité de votre compte et protégez vos données.' : profileCurrentTab === 'preferences' ? 'Personnalisez votre expérience sur la plateforme TaKo.' : 'Consultez et gérez vos informations personnelles.') : 'Gestion et suivi des opérations.'}
               </Text>
             </View>
 
