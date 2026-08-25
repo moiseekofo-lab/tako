@@ -55,6 +55,8 @@ services:
         value: contact@takotransport.online
       - key: INFOBIP_EMAIL_FROM_NAME
         value: TaKo
+      - key: PUBLIC_API_URL
+        value: https://tako-8whp.onrender.com
       - key: INFOBIP_WHATSAPP_SENDER
         sync: false
       - key: INFOBIP_WHATSAPP_TEMPLATE

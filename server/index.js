@@ -22,6 +22,7 @@ const infobipWhatsAppTemplate = String(
   process.env.INFOBIP_WHATSAPP_TEMPLATE || 'tako'
 ).trim();
 const infobipWhatsAppLanguage = String(process.env.INFOBIP_WHATSAPP_LANGUAGE || 'fr').trim();
+const publicApiUrl = String(process.env.PUBLIC_API_URL || 'https://tako-8whp.onrender.com').trim().replace(/\/+$/, '');
 const ADMIN_SESSION_DURATION_MS = 12 * 60 * 60 * 1000;
 const adminTwoFactorEnabled = String(process.env.ADMIN_2FA_ENABLED || '').toLowerCase() === 'true';
 const adminLoginEmailAlertsEnabled = String(process.env.ADMIN_LOGIN_EMAIL_ALERTS || '').toLowerCase() === 'true';
@@ -312,24 +313,39 @@ async function isEmailAlreadyUsed(contact) {
 }
 
 async function sendInfobipVerificationEmail(contact, code, purpose) {
-  const subject =
-    purpose === 'reset'
-      ? 'Code de récupération TaKo'
-      : 'Code de confirmation TaKo';
-  const title =
-    purpose === 'reset'
-      ? 'Récupération de votre compte TaKo'
-      : 'Confirmation de votre compte TaKo';
-  const text = `${title}\n\nVotre code est : ${code}\n\nCe code expire dans 10 minutes.`;
-  const html = `
-    <div style="font-family:Arial,sans-serif;color:#202836;line-height:1.5">
-      <h2 style="color:#061F68">${title}</h2>
-      <p>Votre code est :</p>
-      <p style="font-size:28px;font-weight:700;letter-spacing:4px;color:#139DFF">${code}</p>
-      <p>Ce code expire dans 10 minutes.</p>
-      <p style="color:#6b7280">Si vous n’avez pas demandé ce code, ignorez cet email.</p>
-    </div>
-  `;
+  const isReset = purpose === 'reset';
+  const isAdmin = String(purpose).startsWith('admin-2fa');
+  const subject = isReset ? 'Votre code de récupération TaKo' : isAdmin ? 'Votre code de sécurité administrateur TaKo' : 'Confirmez votre compte TaKo';
+  const title = isReset ? 'Récupération de votre compte TaKo' : isAdmin ? 'Vérification de votre accès TaKo' : 'Confirmation de votre compte TaKo';
+  const instruction = isReset ? 'Utilisez le code ci-dessous pour réinitialiser votre mot de passe.' : isAdmin ? 'Utilisez ce code pour confirmer votre connexion sécurisée à l’administration.' : 'Utilisez le code ci-dessous pour confirmer votre compte.';
+  const safeCode = String(code).replace(/[^0-9]/g, '').slice(0, 6);
+  const logoUrl = `${publicApiUrl}/assets/tako-logo.jpeg?v=1`;
+  const text = `${title}\n\n${instruction}\n\nCode : ${safeCode}\n\nCe code expire dans 10 minutes.\n\nSi vous n’avez pas demandé ce code, ignorez cet e-mail.\n\nTaKo Transport`;
+  const html = `<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
+<body style="margin:0;padding:0;background:#F3F6FC;font-family:Inter,Arial,sans-serif;color:#061F68">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F3F6FC"><tr><td align="center" style="padding:32px 12px">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 12px 35px rgba(6,31,104,.10)">
+      <tr><td align="center" style="background:#061F68;padding:26px 24px;border-bottom:5px solid #139DFF">
+        <img src="${logoUrl}" width="176" alt="TaKo Transport" style="display:block;width:176px;max-width:70%;height:auto;border:0;border-radius:8px">
+      </td></tr>
+      <tr><td style="padding:42px 54px 24px">
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="background:#EEF6FF;border-radius:24px;padding:9px 16px;color:#0879E8;font-size:13px;font-weight:700;letter-spacing:.4px">🛡 CODE DE CONFIRMATION</td></tr></table>
+        <h1 style="margin:25px 0 18px;color:#061F68;font-size:34px;line-height:1.18;font-weight:700">${title}</h1>
+        <div style="height:1px;background:#DCE3EE;margin:0 0 28px"></div>
+        <p style="margin:0 0 14px;font-size:17px;line-height:1.6;color:#202B45;font-weight:600">Bonjour,</p>
+        <p style="margin:0 0 28px;font-size:16px;line-height:1.65;color:#3F4B63">${instruction}</p>
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"><tr><td align="center" style="background:#F4F8FF;border:1px solid #CFE0F8;border-radius:14px;padding:25px 12px;color:#0879E8;font-size:42px;font-weight:700;letter-spacing:12px">${safeCode}</td></tr></table>
+        <p style="margin:23px 0 0;text-align:center;font-size:15px;color:#3F4B63">◷ &nbsp;Ce code expire dans <strong style="color:#0879E8">10 minutes</strong>.</p>
+        <div style="height:1px;background:#E3E8F0;margin:31px 0 23px"></div>
+        <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="color:#0879E8;font-size:21px;padding-right:12px">♢</td><td style="font-size:14px;line-height:1.55;color:#556176">Si vous n’avez pas demandé ce code, ignorez cet e-mail. Ne partagez jamais ce code avec une autre personne.</td></tr></table>
+      </td></tr>
+      <tr><td align="center" style="padding:25px 30px 31px;border-top:1px solid #E3E8F0;color:#7A8497;font-size:12px;line-height:1.7">
+        Av. Kwango, Immeuble 130B, 5e niveau, Gombe, Kinshasa<br>© ${new Date().getFullYear()} TaKo Transport · Message automatique
+      </td></tr>
+    </table>
+  </td></tr></table>
+</body></html>`;
 
   const baseUrl = /^https?:\/\//i.test(infobipBaseUrl)
     ? infobipBaseUrl
@@ -834,6 +850,22 @@ async function handleRequest(request, response) {
 
   if (request.method === 'GET' && url.pathname === '/health') {
     sendJson(response, 200, { ok: true });
+    return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/assets/tako-logo.jpeg') {
+    try {
+      const logo = fs.readFileSync(new URL('../assets/images/tako-logo.jpeg', import.meta.url));
+      response.writeHead(200, {
+        'Content-Type': 'image/jpeg',
+        'Content-Length': logo.length,
+        'Cache-Control': 'public, max-age=86400, immutable',
+        'Access-Control-Allow-Origin': '*',
+      });
+      response.end(logo);
+    } catch {
+      sendJson(response, 404, { ok: false, error: 'Logo indisponible' });
+    }
     return;
   }
 
