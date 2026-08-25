@@ -47,23 +47,24 @@ function bundledNewsImage(fileName) {
   }
 }
 
-function adminPublicUser() {
+function adminPublicUser(account = {}) {
   return {
-    id: 'ADMIN',
-    fullName: 'Administrateur TaKo',
-    email: adminEmail,
-    phone: '',
+    id: account.id || 'ADMIN',
+    fullName: account.full_name || account.fullName || 'Administrateur TaKo',
+    email: account.email || adminEmail,
+    phone: account.phone || '',
     birthDate: '',
     role: 'admin',
     status: 'active',
     balance: 0,
+    adminRole: account.admin_role || account.adminRole || 'Super administrateur',
   };
 }
 
-function createAdminSessionToken() {
+function createAdminSessionToken(adminId = 'ADMIN') {
   const issuedAt = Date.now();
   const payload = Buffer.from(
-    JSON.stringify({ role: 'admin', issuedAt, expiresAt: issuedAt + ADMIN_SESSION_DURATION_MS, sessionId: crypto.randomUUID() }),
+    JSON.stringify({ role: 'admin', adminId, issuedAt, expiresAt: issuedAt + ADMIN_SESSION_DURATION_MS, sessionId: crypto.randomUUID() }),
   ).toString('base64url');
   const signature = crypto.createHmac('sha256', adminPassword).update(payload).digest('base64url');
   return `${payload}.${signature}`;
@@ -609,6 +610,30 @@ async function initDatabase() {
   `, [adminEmail]);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS admin_accounts (
+      id TEXT PRIMARY KEY,
+      full_name TEXT NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      phone TEXT NOT NULL DEFAULT '',
+      password_hash TEXT NOT NULL,
+      admin_role TEXT NOT NULL DEFAULT 'Administrateur',
+      status TEXT NOT NULL DEFAULT 'active',
+      must_change_password BOOLEAN NOT NULL DEFAULT TRUE,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  const rootAdmin = await pool.query('SELECT id FROM admin_accounts WHERE id = $1 LIMIT 1;', ['ADMIN']);
+  if (!rootAdmin.rowCount) {
+    await pool.query(`
+      INSERT INTO admin_accounts (id, full_name, email, phone, password_hash, admin_role, status, must_change_password)
+      VALUES ('ADMIN', 'Admin TaKo', $1, '', $2, 'Super administrateur', 'active', FALSE);
+    `, [adminEmail, hashPassword(adminPassword)]);
+  } else {
+    await pool.query('UPDATE admin_accounts SET email = $1, updated_at = NOW() WHERE id = $2;', [adminEmail, 'ADMIN']);
+  }
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_preferences (
       admin_id TEXT PRIMARY KEY,
       preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
@@ -1117,12 +1142,21 @@ async function handleRequest(request, response) {
       return;
     }
 
-    if (login.toLowerCase() !== adminEmail || password !== adminPassword) {
+    const accountResult = await query(`SELECT * FROM admin_accounts
+      WHERE LOWER(email) = $1 OR phone = $2 LIMIT 1;`, [login.toLowerCase(), login]);
+    const adminAccount = accountResult.rows[0];
+    if (!adminAccount || !verifyPassword(password, adminAccount.password_hash)) {
       sendJson(response, 401, { ok: false, error: 'Accès administrateur refusé' });
       return;
     }
+    if (adminAccount.status !== 'active') {
+      sendJson(response, 403, { ok: false, error: 'Ce compte administrateur est désactivé.' });
+      return;
+    }
 
-    const adminProfileResult = await query('SELECT email, two_factor_enabled FROM admin_profiles WHERE id = $1;', ['ADMIN']);
+    const adminProfileResult = adminAccount.id === 'ADMIN'
+      ? await query('SELECT email, two_factor_enabled FROM admin_profiles WHERE id = $1;', ['ADMIN'])
+      : { rows: [] };
     const adminProfile = adminProfileResult.rows[0] || { email: adminEmail, two_factor_enabled: false };
     if (adminProfile.two_factor_enabled || adminTwoFactorEnabled) {
       if (!isInfobipEmailEnabled()) {
@@ -1146,8 +1180,8 @@ async function handleRequest(request, response) {
 
     sendJson(response, 200, {
       ok: true,
-      user: adminPublicUser(),
-      sessionToken: createAdminSessionToken(),
+      user: adminPublicUser(adminAccount),
+      sessionToken: createAdminSessionToken(adminAccount.id),
     });
     return;
   }
@@ -1169,10 +1203,62 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const session = readAdminSessionToken(body.sessionToken) || {};
+    const accountResult = await query('SELECT * FROM admin_accounts WHERE id = $1 AND status = $2 LIMIT 1;', [session.adminId || 'ADMIN', 'active']);
+    if (!accountResult.rows[0]) {
+      sendJson(response, 401, { ok: false, error: 'Compte administrateur indisponible' });
+      return;
+    }
     sendJson(response, 200, {
       ok: true,
-      user: adminPublicUser(),
+      user: adminPublicUser(accountResult.rows[0]),
     });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/accounts/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const result = await query(`SELECT id, full_name AS "fullName", email, phone, admin_role AS role,
+      status, must_change_password AS "mustChangePassword", created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM admin_accounts ORDER BY created_at ASC;`);
+    sendJson(response, 200, { ok: true, accounts: result.rows });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/accounts/create') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const fullName = String(body.fullName || '').trim();
+    const email = normalizeContact(body.email);
+    const phone = String(body.phone || '').trim();
+    const password = String(body.password || '');
+    const role = String(body.role || 'Administrateur').trim();
+    const status = body.status === 'Désactivé' ? 'disabled' : 'active';
+    if (!fullName || !email.includes('@') || password.length < 8) {
+      sendJson(response, 400, { ok: false, error: 'Nom, e-mail valide et mot de passe de 8 caractères minimum obligatoires.' });
+      return;
+    }
+    const duplicate = await query(`SELECT id FROM admin_accounts
+      WHERE LOWER(email) = $1 OR ($2 <> '' AND phone = $2) LIMIT 1;`, [email, phone]);
+    if (duplicate.rowCount) {
+      sendJson(response, 409, { ok: false, error: 'Cet e-mail ou ce téléphone appartient déjà à un administrateur.' });
+      return;
+    }
+    const id = `ADMIN-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    const result = await query(`INSERT INTO admin_accounts
+      (id, full_name, email, phone, password_hash, admin_role, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      RETURNING id, full_name AS "fullName", email, phone, admin_role AS role, status,
+        must_change_password AS "mustChangePassword", created_at AS "createdAt";`,
+      [id, fullName, email, phone, hashPassword(password), role, status]);
+    sendJson(response, 201, { ok: true, account: result.rows[0] });
     return;
   }
 

@@ -1,9 +1,12 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { useMemo, useState } from 'react';
-import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { createAdminAccount, getAdminAccounts } from '../services/api';
 
 const BLUE = '#061F68';
 const ACTION = '#1268E8';
+const ADMIN_SESSION_KEY = 'tako:adminSession';
 
 type AdminAccount = { id: string; fullName: string; email: string; role: string; status: 'Actif' | 'En attente' | 'Désactivé'; photoUrl?: string; createdAt?: string };
 const roleOptions = ['Super administrateur', 'Administrateur', 'Gestionnaire', 'Agent support', 'Comptable'];
@@ -12,18 +15,42 @@ export function AdminRolesManager({ currentAdmin }: { currentAdmin?: any }) {
   const [tab, setTab] = useState<'admins' | 'roles' | 'permissions'>('admins');
   const [search, setSearch] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ fullName: '', email: '', phone: '', role: 'Administrateur', password: '', status: 'Actif' as 'Actif' | 'Désactivé' });
   const [accounts, setAccounts] = useState<AdminAccount[]>([{ id: 'ADMIN', fullName: currentAdmin?.fullName || 'Admin TaKo', email: currentAdmin?.email || 'contact@takotransport.online', role: 'Super administrateur', status: 'Actif', photoUrl: currentAdmin?.photoUrl, createdAt: currentAdmin?.createdAt }]);
   const filtered = useMemo(() => accounts.filter((item) => `${item.fullName} ${item.email} ${item.role}`.toLowerCase().includes(search.trim().toLowerCase())), [accounts, search]);
   const totals = { all: accounts.length, active: accounts.filter((item) => item.status === 'Actif').length, pending: accounts.filter((item) => item.status === 'En attente').length, disabled: accounts.filter((item) => item.status === 'Désactivé').length };
 
-  const createAdministrator = () => {
+  const loadAccounts = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!token) throw new Error('Session administrateur expirée.');
+      const result = await getAdminAccounts(token);
+      setAccounts((result.accounts || []).map((item: any) => ({ ...item, status: item.status === 'active' ? 'Actif' : item.status === 'disabled' ? 'Désactivé' : 'En attente' })));
+    } catch (error) {
+      Alert.alert('Chargement impossible', error instanceof Error ? error.message : 'Impossible de charger les administrateurs.');
+    } finally { setLoading(false); }
+  };
+
+  useEffect(() => { loadAccounts(); }, []);
+
+  const createAdministrator = async () => {
     const email = form.email.trim().toLowerCase();
     if (!form.fullName.trim() || !/^\S+@\S+\.\S+$/.test(email) || form.password.length < 8) return Alert.alert('Informations incomplètes', 'Entrez le nom complet, un e-mail valide et un mot de passe temporaire d’au moins 8 caractères.');
     if (accounts.some((item) => item.email.toLowerCase() === email)) return Alert.alert('Compte existant', 'Cette adresse e-mail est déjà utilisée.');
-    setAccounts((items) => [...items, { id: `ADMIN-${Date.now()}`, fullName: form.fullName.trim(), email, role: form.role, status: form.status, createdAt: new Date().toISOString() }]);
-    setForm({ fullName: '', email: '', phone: '', role: 'Administrateur', password: '', status: 'Actif' });
-    Alert.alert('Administrateur créé', 'Le nouveau compte administrateur a été ajouté à la liste.');
+    try {
+      setSaving(true);
+      const token = await AsyncStorage.getItem(ADMIN_SESSION_KEY);
+      if (!token) throw new Error('Session administrateur expirée.');
+      await createAdminAccount(token, { fullName: form.fullName.trim(), email, phone: form.phone.trim(), role: form.role, password: form.password, status: form.status });
+      setForm({ fullName: '', email: '', phone: '', role: 'Administrateur', password: '', status: 'Actif' });
+      await loadAccounts();
+      Alert.alert('Administrateur créé', 'Le compte est enregistré et peut maintenant se connecter.');
+    } catch (error) {
+      Alert.alert('Création impossible', error instanceof Error ? error.message : 'Réessayez plus tard.');
+    } finally { setSaving(false); }
   };
 
   return <View style={styles.page}>
@@ -34,8 +61,8 @@ export function AdminRolesManager({ currentAdmin }: { currentAdmin?: any }) {
         <View style={styles.card}>
           <View style={styles.cardHeader}><Text style={styles.cardTitle}>Liste des administrateurs</Text><View style={styles.searchBox}><Ionicons name="search-outline" size={19} color="#667085" /><TextInput value={search} onChangeText={setSearch} placeholder="Rechercher un administrateur…" style={styles.searchInput} /></View></View>
           <View style={[styles.row, styles.tableHead]}><Text style={[styles.headText, styles.adminColumn]}>Administrateur</Text><Text style={[styles.headText, styles.roleColumn]}>Rôle</Text><Text style={[styles.headText, styles.statusColumn]}>Statut</Text><Text style={[styles.headText, styles.dateColumn]}>Créé le</Text><Text style={styles.headText}>Actions</Text></View>
-          {filtered.map((item) => <View key={item.id} style={styles.row}><View style={[styles.identity, styles.adminColumn]}><View style={styles.avatar}>{item.photoUrl ? <Image source={{ uri: item.photoUrl }} style={styles.avatarImage} /> : <Ionicons name="person" size={21} color="white" />}</View><View style={{ flex: 1 }}><Text style={styles.name}>{item.fullName}</Text><Text style={styles.email}>{item.email}</Text></View></View><View style={styles.roleColumn}><View style={styles.roleBadge}><Text style={styles.roleText}>{item.role}</Text></View></View><View style={styles.statusColumn}><View style={[styles.statusBadge, item.status === 'En attente' && styles.pendingBadge, item.status === 'Désactivé' && styles.disabledBadge]}><Text style={[styles.statusText, item.status === 'En attente' && styles.pendingText, item.status === 'Désactivé' && styles.disabledText]}>● {item.status}</Text></View></View><Text style={[styles.cellText, styles.dateColumn]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR') : '—'}</Text><TouchableOpacity style={styles.iconButton}><Ionicons name="ellipsis-vertical" size={18} color={BLUE} /></TouchableOpacity></View>)}
-          {!filtered.length ? <Text style={styles.empty}>Aucun administrateur trouvé.</Text> : null}
+          {loading ? <ActivityIndicator color={ACTION} style={{ marginVertical: 28 }} /> : filtered.map((item) => <View key={item.id} style={styles.row}><View style={[styles.identity, styles.adminColumn]}><View style={styles.avatar}>{item.photoUrl ? <Image source={{ uri: item.photoUrl }} style={styles.avatarImage} /> : <Ionicons name="person" size={21} color="white" />}</View><View style={{ flex: 1 }}><Text style={styles.name}>{item.fullName}</Text><Text style={styles.email}>{item.email}</Text></View></View><View style={styles.roleColumn}><View style={styles.roleBadge}><Text style={styles.roleText}>{item.role}</Text></View></View><View style={styles.statusColumn}><View style={[styles.statusBadge, item.status === 'En attente' && styles.pendingBadge, item.status === 'Désactivé' && styles.disabledBadge]}><Text style={[styles.statusText, item.status === 'En attente' && styles.pendingText, item.status === 'Désactivé' && styles.disabledText]}>● {item.status}</Text></View></View><Text style={[styles.cellText, styles.dateColumn]}>{item.createdAt ? new Date(item.createdAt).toLocaleDateString('fr-FR') : '—'}</Text><TouchableOpacity style={styles.iconButton}><Ionicons name="ellipsis-vertical" size={18} color={BLUE} /></TouchableOpacity></View>)}
+          {!loading && !filtered.length ? <Text style={styles.empty}>Aucun administrateur trouvé.</Text> : null}
         </View>
       </View>
       <View style={styles.side}>
@@ -48,7 +75,7 @@ export function AdminRolesManager({ currentAdmin }: { currentAdmin?: any }) {
           <Text style={styles.label}>Mot de passe temporaire *</Text><View style={styles.passwordField}><TextInput style={styles.passwordInput} value={form.password} placeholder="Entrez un mot de passe temporaire" onChangeText={(password) => setForm({ ...form, password })} secureTextEntry={!showPassword} /><TouchableOpacity onPress={() => setShowPassword((visible) => !visible)}><Ionicons name={showPassword ? 'eye-off-outline' : 'eye-outline'} size={20} color="#667085" /></TouchableOpacity></View>
           <Text style={styles.label}>Statut *</Text><View style={styles.roleChoices}>{(['Actif', 'Désactivé'] as const).map((status) => <TouchableOpacity key={status} style={[styles.roleChoice, form.status === status && styles.roleChoiceActive]} onPress={() => setForm({ ...form, status })}><Text style={[styles.choiceText, form.status === status && styles.choiceTextActive]}>{status}</Text></TouchableOpacity>)}</View>
           <View style={styles.infoBox}><Ionicons name="information-circle-outline" size={22} color={ACTION} /><Text style={styles.infoText}>Le compte sera créé directement. L’administrateur pourra changer son mot de passe après sa première connexion.</Text></View>
-          <View style={styles.formActions}><TouchableOpacity style={styles.cancelButton} onPress={() => setForm({ fullName: '', email: '', phone: '', role: 'Administrateur', password: '', status: 'Actif' })}><Text style={styles.cancelText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={[styles.primaryButton, { flex: 1 }]} onPress={createAdministrator}><Ionicons name="person-add-outline" size={18} color="white" /><Text style={styles.primaryText}>Créer l’administrateur</Text></TouchableOpacity></View>
+          <View style={styles.formActions}><TouchableOpacity style={styles.cancelButton} disabled={saving} onPress={() => setForm({ fullName: '', email: '', phone: '', role: 'Administrateur', password: '', status: 'Actif' })}><Text style={styles.cancelText}>Annuler</Text></TouchableOpacity><TouchableOpacity style={[styles.primaryButton, { flex: 1 }]} disabled={saving} onPress={createAdministrator}>{saving ? <ActivityIndicator color="white" /> : <Ionicons name="person-add-outline" size={18} color="white" />}<Text style={styles.primaryText}>{saving ? 'Création…' : 'Créer l’administrateur'}</Text></TouchableOpacity></View>
         </View>
       </View>
     </View> : <RolePanel permissions={tab === 'permissions'} />}
