@@ -1635,10 +1635,9 @@ export default function Admin() {
           </View>
 
           <ScrollView
-            style={!isNarrow ? [styles.navScroller, styles.navScrollerVisible] : undefined}
+            style={!isNarrow ? styles.navScroller : undefined}
             contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}
-            showsVerticalScrollIndicator
-            persistentScrollbar>
+            showsVerticalScrollIndicator={false}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -3421,11 +3420,6 @@ const styles = StyleSheet.create({
   navScroller: {
     flex: 1,
   },
-  navScrollerVisible: Platform.OS === 'web' ? ({
-    overflowY: 'scroll',
-    scrollbarWidth: 'thin',
-    scrollbarColor: '#FFFFFF #061F68',
-  } as any) : {},
   mobileNavList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
