@@ -323,15 +323,17 @@ async function sendInfobipVerificationEmail(contact, code, purpose) {
   const text = `${title}\n\n${instruction}\n\nCode : ${safeCode}\n\nCe code expire dans 10 minutes.\n\nSi vous n’avez pas demandé ce code, ignorez cet e-mail.\n\nTaKo Transport`;
   const html = `<!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
-<body style="margin:0;padding:0;background:#F3F6FC;font-family:Inter,Arial,sans-serif;color:#061F68">
+<body style="margin:0;padding:0;background:#F3F6FC;font-family:Inter,'Segoe UI',Arial,sans-serif;color:#061F68">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#F3F6FC"><tr><td align="center" style="padding:32px 12px">
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:640px;background:#FFFFFF;border-radius:18px;overflow:hidden;box-shadow:0 12px 35px rgba(6,31,104,.10)">
-      <tr><td align="center" style="background:#061F68;padding:26px 24px;border-bottom:5px solid #139DFF">
-        <img src="${logoUrl}" width="176" alt="TaKo Transport" style="display:block;width:176px;max-width:70%;height:auto;border:0;border-radius:8px">
+      <tr><td align="center" height="92" style="background:#061F68;height:92px;padding:0 24px">
+        <div style="width:190px;height:58px;overflow:hidden;margin:0 auto">
+          <img src="${logoUrl}" width="190" height="190" alt="TaKo Transport" style="display:block;width:190px;height:190px;max-width:none;border:0;margin-top:-63px">
+        </div>
       </td></tr>
       <tr><td style="padding:42px 54px 24px">
         <table role="presentation" cellspacing="0" cellpadding="0" border="0"><tr><td style="background:#EEF6FF;border-radius:24px;padding:9px 16px;color:#0879E8;font-size:13px;font-weight:700;letter-spacing:.4px">🛡 CODE DE CONFIRMATION</td></tr></table>
-        <h1 style="margin:25px 0 18px;color:#061F68;font-size:34px;line-height:1.18;font-weight:700">${title}</h1>
+        <h1 style="margin:25px 0 18px;color:#061F68;font-size:30px;line-height:1.2;font-weight:700">${title}</h1>
         <div style="height:1px;background:#DCE3EE;margin:0 0 28px"></div>
         <p style="margin:0 0 14px;font-size:17px;line-height:1.6;color:#202B45;font-weight:600">Bonjour,</p>
         <p style="margin:0 0 28px;font-size:16px;line-height:1.65;color:#3F4B63">${instruction}</p>
