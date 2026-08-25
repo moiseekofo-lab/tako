@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Image, Modal, Platform, RefreshControl, Scrol
 import { TakoLogo } from '../components/tako-logo';
 import { AdminNewsManager } from '../components/admin-news-manager';
 import { AdminProfile } from '../components/admin-profile';
+import { AdminRolesManager } from '../components/admin-roles-manager';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2040,6 +2041,8 @@ export default function Admin() {
 
           {activeSection === 'profile' ? <AdminProfile user={currentUser} initialTab={profileInitialTab} onProfileUpdated={setAdminProfile} onTabChange={setProfileCurrentTab} /> : null}
 
+          {activeSection === 'roles' ? <AdminRolesManager currentAdmin={adminProfile || currentUser} /> : null}
+
           {activeSection === 'nfcCards' ? (
             <>
               <NfcCardsScreen
@@ -2088,7 +2091,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
     </View>
