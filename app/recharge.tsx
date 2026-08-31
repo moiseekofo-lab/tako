@@ -289,6 +289,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     color: '#061F68',
+    fontFamily: 'Inter_700Bold',
     fontSize: 23,
     fontWeight: '900',
   },
@@ -300,6 +301,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     color: '#061F68',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 14,
     fontWeight: '800',
     marginBottom: 7,
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
   },
   currency: {
     color: '#061F68',
+    fontFamily: 'Inter_700Bold',
     fontSize: 17,
     fontWeight: '900',
     marginRight: 12,
@@ -336,6 +339,7 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     color: '#202836',
+    fontFamily: 'Inter_500Medium',
     fontSize: 17,
     fontWeight: '700',
   },
@@ -394,11 +398,13 @@ const styles = StyleSheet.create({
   },
   continueText: {
     color: 'white',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 16,
     fontWeight: '900',
   },
   orText: {
     color: '#666C80',
+    fontFamily: 'Inter_500Medium',
     fontSize: 12,
     fontWeight: '700',
     textAlign: 'center',
@@ -431,11 +437,13 @@ const styles = StyleSheet.create({
   },
   internalTitle: {
     color: '#061F68',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
     fontWeight: '900',
   },
   internalHint: {
     color: '#667085',
+    fontFamily: 'Inter_400Regular',
     fontSize: 11,
     lineHeight: 14,
     fontWeight: '500',
@@ -455,6 +463,7 @@ const styles = StyleSheet.create({
   },
   qrButtonText: {
     color: '#0877EA',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 13,
     fontWeight: '900',
   },
@@ -463,6 +472,7 @@ const styles = StyleSheet.create({
   },
   providerText: {
     color: '#061F68',
+    fontFamily: 'Inter_600SemiBold',
     fontSize: 15,
     fontWeight: '900',
   },

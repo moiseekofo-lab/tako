@@ -1,4 +1,5 @@
 import { useFonts } from 'expo-font';
+import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold } from '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -261,7 +262,7 @@ function SessionIdleGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
 
-    const events: Array<keyof DocumentEventMap> = [
+    const events: (keyof DocumentEventMap)[] = [
       'pointerdown',
       'keydown',
       'mousemove',
@@ -295,6 +296,10 @@ function SessionIdleGuard({ children }: { children: ReactNode }) {
 export default function Layout() {
   const [fontsLoaded] = useFonts({
     Alkatra: require('../assets/fonts/Alkatra.ttf'),
+    Inter_400Regular,
+    Inter_500Medium,
+    Inter_600SemiBold,
+    Inter_700Bold,
   });
 
   if (!fontsLoaded) {
