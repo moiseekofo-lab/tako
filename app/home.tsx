@@ -580,7 +580,7 @@ export default function Home() {
             <Ionicons name="arrow-down" size={25} color="#8C8C8C" />
           </View>
 
-          <Text style={styles.clientSectionTitle}>{text.physicalCard}</Text>
+          {role === 'passager' ? <Text style={styles.clientSectionTitle}>{text.physicalCard}</Text> : null}
 
           {role === 'passager' ? <View style={styles.physicalCardBox}>
             <View style={styles.cardStatusLine}>
@@ -615,12 +615,12 @@ export default function Home() {
                 <Ionicons name="card-outline" size={30} color="white" />
               </TouchableOpacity>
             </View>
-          </View> : <View style={styles.driverEmptySection} />}
+          </View> : null}
 
-          <View style={styles.newsHeader}>
+          {role === 'passager' ? <View style={styles.newsHeader}>
             <Text style={styles.newsTitle}>{text.news}</Text>
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
-          </View>
+          </View> : null}
 
           {role === 'passager' && newsCards.length > 0 ? (
             <View
@@ -640,7 +640,7 @@ export default function Home() {
                 {renderNewsCardContent(activeNewsIndex)}
               </Animated.View>
             </View>
-          ) : role === 'chauffeur' ? <View style={styles.driverEmptyNewsSection} /> : null}
+          ) : null}
 
         </ScrollView>
 
@@ -657,7 +657,7 @@ export default function Home() {
             style={styles.bottomNavItem}
             activeOpacity={0.85}
             onPress={() => role === 'chauffeur'
-              ? Alert.alert('Retirer', 'Le retrait de votre solde chauffeur sera disponible ici.')
+              ? router.push('/driver-withdraw' as any)
               : router.push({ pathname: '/recharge' } as any)}>
             <MaterialCommunityIcons name={role === 'chauffeur' ? 'cash-minus' : 'cash-plus'} size={31} color="#061F68" />
             <Text style={styles.bottomNavText}>{role === 'chauffeur' ? 'Retirer' : text.recharge}</Text>
@@ -667,7 +667,7 @@ export default function Home() {
             <View style={styles.payButtonHalo} />
             <TouchableOpacity style={styles.payButton} activeOpacity={0.9} onPress={() => role === 'chauffeur' ? openDriverPayment('/scan') : router.push('/qr')}>
               <Ionicons name="qr-code" size={34} color="white" />
-              <Text style={styles.payButtonText}>{role === 'chauffeur' ? 'Recevoir' : text.pay}</Text>
+              <Text style={[styles.payButtonText, role === 'chauffeur' && styles.receiveButtonText]}>{role === 'chauffeur' ? 'Recevoir' : text.pay}</Text>
             </TouchableOpacity>
           </View>
 
@@ -1015,12 +1015,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#061F68',
     overflow: 'hidden',
   },
-  driverEmptySection: {
-    minHeight: 150,
-  },
-  driverEmptyNewsSection: {
-    minHeight: 150,
-  },
   miniCardImage: {
     width: '100%',
     height: '100%',
@@ -1256,6 +1250,13 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     marginTop: 3,
+  },
+  receiveButtonText: {
+    fontFamily: Platform.select({ android: 'Roboto', ios: 'System', web: 'Inter', default: 'Arial' }),
+    fontSize: 13,
+    lineHeight: 16,
+    maxWidth: 78,
+    textAlign: 'center',
   },
   menuLayer: {
     ...StyleSheet.absoluteFillObject,
