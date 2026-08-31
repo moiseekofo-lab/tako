@@ -2,8 +2,9 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions, type BarcodeScanningResult } from 'expo-camera';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as Speech from 'expo-speech';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import NfcManager, { NfcEvents, type TagEvent } from 'react-native-nfc-manager';
 import { TakoLogo } from '../components/tako-logo';
 import { savePayment } from '../services/api';
 import { translations, type Language } from './i18n';
@@ -17,6 +18,8 @@ export default function Scan() {
   const [amount, setAmount] = useState(params.montant ?? '');
   const [lastQrData, setLastQrData] = useState('');
   const [acceptedAmount, setAcceptedAmount] = useState<number | null>(null);
+  const paymentInProgress = useRef(false);
+  const [nfcSupported, setNfcSupported] = useState(false);
 
   const balance = useStore((state: any) => state.balance);
   const increaseBalance = useStore((state: any) => state.increaseBalance);
@@ -40,7 +43,32 @@ export default function Scan() {
     return () => clearTimeout(timeout);
   }, [acceptedAmount, router]);
 
-  const validatePayment = (rawAmount: string) => {
+  useEffect(() => {
+    let active = true;
+    const startParallelNfc = async () => {
+      try {
+        const supported = await NfcManager.isSupported();
+        if (!active || !supported) return;
+        setNfcSupported(true);
+        await NfcManager.start();
+        NfcManager.setEventListener(NfcEvents.DiscoverTag, (tag: TagEvent) => {
+          validatePayment(amount, 'nfc', tag.id || tag.type || 'Carte NFC TaKo');
+        });
+        await NfcManager.registerTagEvent({ alertMessage: 'Approchez la carte NFC TaKo' });
+      } catch {
+        setNfcSupported(false);
+      }
+    };
+    startParallelNfc();
+    return () => {
+      active = false;
+      NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
+      NfcManager.unregisterTagEvent().catch(() => {});
+    };
+  }, [amount]);
+
+  const validatePayment = (rawAmount: string, paymentType: 'qr' | 'nfc' = 'qr', cardId?: string) => {
+    if (paymentInProgress.current) return;
     const value = Number.parseInt(rawAmount, 10);
 
     if (!Number.isFinite(value) || value <= 0) {
@@ -48,24 +76,27 @@ export default function Scan() {
       return;
     }
 
+    paymentInProgress.current = true;
     increaseBalance(value);
     addNotification({
-      title: text.qrAccepted,
-      message: text.qrMessage(value),
+      title: paymentType === 'nfc' ? text.nfcAccepted : text.qrAccepted,
+      message: paymentType === 'nfc' ? text.nfcMessage(value) : text.qrMessage(value),
       amount: value,
-      type: 'qr',
+      type: paymentType,
     });
     addTrip({
       bus: params.bus || 'Bus non renseigné',
       route: params.trajet || 'Trajet non renseigné',
       amount: value,
-      paymentType: 'qr',
+      paymentType,
     });
-    savePayment(value, 'qr', undefined, {
+    savePayment(value, paymentType, undefined, {
+      cardId,
       bus: params.bus,
       route: params.trajet,
     }).catch(() => {});
     Speech.speak('Paiement accepté');
+    NfcManager.unregisterTagEvent().catch(() => {});
     setAcceptedAmount(value);
 
     setScanned(true);
@@ -82,9 +113,9 @@ export default function Scan() {
 
     try {
       const qrData = JSON.parse(data);
-      validatePayment(amount || String(qrData.amount ?? ''));
+      validatePayment(amount || String(qrData.amount ?? ''), 'qr');
     } catch {
-      validatePayment(amount);
+      validatePayment(amount, 'qr');
     }
   };
 
@@ -133,13 +164,13 @@ export default function Scan() {
         </TouchableOpacity>
       </View>
 
-      <Text style={styles.title}>Scanner QR</Text>
+      <Text style={styles.title}>Recevoir un paiement</Text>
       <Text style={styles.balance}>Montant : {amount || '0'} FC</Text>
 
       <View style={styles.scannerBox}>
         {!scanned && acceptedAmount === null ? (
           <CameraView
-            facing="back"
+            facing="front"
             barcodeScannerSettings={{ barcodeTypes: ['qr'] }}
             onBarcodeScanned={handleBarCodeScanned}
             style={StyleSheet.absoluteFillObject}
@@ -160,8 +191,8 @@ export default function Scan() {
       {!!lastQrData && <Text style={styles.qrData}>QR lu</Text>}
 
       <View style={styles.successBox}>
-        <MaterialCommunityIcons name="steering" size={24} color="#09D457" />
-        <Text style={styles.successText}>Paiement automatique après lecture QR</Text>
+        <MaterialCommunityIcons name="contactless-payment" size={24} color="#09D457" />
+        <Text style={styles.successText}>QR actif · NFC {nfcSupported ? 'actif' : 'indisponible'}</Text>
       </View>
     </ScrollView>
   );

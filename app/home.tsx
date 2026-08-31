@@ -409,14 +409,21 @@ export default function Home() {
     });
   };
 
-  const menuItems = [
-    { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
-    { icon: 'car-key', title: text.carRental, subtitle: text.carRentalSubtitle, route: '/car-rental' },
-    { icon: 'ticket-confirmation-outline', title: text.travelTickets, subtitle: text.travelTicketsSubtitle, route: '/travel-tickets' },
-    { icon: 'calendar-check-outline', title: text.myReservations, subtitle: text.myReservationsSubtitle, route: '/my-reservations' },
-    { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
-    { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
-  ];
+  const menuItems = role === 'chauffeur'
+    ? [
+        { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
+        { icon: 'map-marker-path', title: 'Trajets', subtitle: 'Consulter mes trajets effectués', route: '/history' },
+        { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
+        { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
+      ]
+    : [
+        { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
+        { icon: 'car-key', title: text.carRental, subtitle: text.carRentalSubtitle, route: '/car-rental' },
+        { icon: 'ticket-confirmation-outline', title: text.travelTickets, subtitle: text.travelTicketsSubtitle, route: '/travel-tickets' },
+        { icon: 'calendar-check-outline', title: text.myReservations, subtitle: text.myReservationsSubtitle, route: '/my-reservations' },
+        { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
+        { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
+      ];
 
   const openClientMenu = () => {
     setIsMenuOpen(true);
@@ -497,7 +504,7 @@ export default function Home() {
     return <Image source={card.source} style={styles.newsImage} resizeMode="cover" accessibilityLabel={card.title || text.news} />;
   };
 
-  if (role === 'passager') {
+  if (role === 'passager' || role === 'chauffeur') {
     return (
       <View style={styles.clientScreen}>
         <View style={styles.clientHero}>
@@ -540,7 +547,7 @@ export default function Home() {
               </View>
             </View>
 
-            <Text style={styles.transportTitle}>{text.transportAccount}</Text>
+            <Text style={styles.transportTitle}>{role === 'chauffeur' ? 'Compte chauffeur' : text.transportAccount}</Text>
 
           <View style={styles.balanceLine}>
             <Text style={styles.clientBalanceLabel}>{text.balance}</Text>
@@ -575,7 +582,7 @@ export default function Home() {
 
           <Text style={styles.clientSectionTitle}>{text.physicalCard}</Text>
 
-          <View style={styles.physicalCardBox}>
+          {role === 'passager' ? <View style={styles.physicalCardBox}>
             <View style={styles.cardStatusLine}>
               <Ionicons
                 name={nfcCardBlocked ? 'lock-closed-outline' : 'happy-outline'}
@@ -608,14 +615,14 @@ export default function Home() {
                 <Ionicons name="card-outline" size={30} color="white" />
               </TouchableOpacity>
             </View>
-          </View>
+          </View> : <View style={styles.driverEmptySection} />}
 
           <View style={styles.newsHeader}>
             <Text style={styles.newsTitle}>{text.news}</Text>
             <Ionicons name="chevron-forward" size={31} color="#061F68" />
           </View>
 
-          {newsCards.length > 0 ? (
+          {role === 'passager' && newsCards.length > 0 ? (
             <View
               style={styles.newsCarousel3d}
               onTouchStart={startNewsTouch}
@@ -633,7 +640,7 @@ export default function Home() {
                 {renderNewsCardContent(activeNewsIndex)}
               </Animated.View>
             </View>
-          ) : null}
+          ) : role === 'chauffeur' ? <View style={styles.driverEmptyNewsSection} /> : null}
 
         </ScrollView>
 
@@ -649,20 +656,18 @@ export default function Home() {
           <TouchableOpacity
             style={styles.bottomNavItem}
             activeOpacity={0.85}
-            onPress={() =>
-              router.push({
-                pathname: '/recharge',
-              } as any)
-            }>
-            <MaterialCommunityIcons name="cash-plus" size={31} color="#061F68" />
-            <Text style={styles.bottomNavText}>{text.recharge}</Text>
+            onPress={() => role === 'chauffeur'
+              ? Alert.alert('Retirer', 'Le retrait de votre solde chauffeur sera disponible ici.')
+              : router.push({ pathname: '/recharge' } as any)}>
+            <MaterialCommunityIcons name={role === 'chauffeur' ? 'cash-minus' : 'cash-plus'} size={31} color="#061F68" />
+            <Text style={styles.bottomNavText}>{role === 'chauffeur' ? 'Retirer' : text.recharge}</Text>
           </TouchableOpacity>
 
           <View style={styles.payButtonDepth}>
             <View style={styles.payButtonHalo} />
-            <TouchableOpacity style={styles.payButton} activeOpacity={0.9} onPress={() => router.push('/qr')}>
+            <TouchableOpacity style={styles.payButton} activeOpacity={0.9} onPress={() => role === 'chauffeur' ? openDriverPayment('/scan') : router.push('/qr')}>
               <Ionicons name="qr-code" size={34} color="white" />
-              <Text style={styles.payButtonText}>{text.pay}</Text>
+              <Text style={styles.payButtonText}>{role === 'chauffeur' ? 'Recevoir' : text.pay}</Text>
             </TouchableOpacity>
           </View>
 
@@ -717,7 +722,7 @@ export default function Home() {
                   activeOpacity={0.78}
                   onPress={() => {
                     clearSession();
-                    router.replace('/login' as any);
+                    router.replace((role === 'chauffeur' ? '/driver-login' : '/login') as any);
                   }}>
                   <MaterialCommunityIcons name="logout" size={30} color="#139DFF" />
                   <View style={styles.menuTextBox}>
@@ -1009,6 +1014,12 @@ const styles = StyleSheet.create({
     borderRadius: 9,
     backgroundColor: '#061F68',
     overflow: 'hidden',
+  },
+  driverEmptySection: {
+    minHeight: 150,
+  },
+  driverEmptyNewsSection: {
+    minHeight: 150,
   },
   miniCardImage: {
     width: '100%',
