@@ -16,7 +16,7 @@ export type TripHistoryItem = {
   bus: string;
   route: string;
   amount: number;
-  paymentType: 'qr' | 'nfc';
+  paymentType: 'qr' | 'nfc' | 'balance';
   createdAt: string;
 };
 

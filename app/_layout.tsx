@@ -317,6 +317,7 @@ export default function Layout() {
           <Stack.Screen name="nfc" />
           <Stack.Screen name="recharge" />
           <Stack.Screen name="driver-withdraw" />
+          <Stack.Screen name="driver-trips" />
           <Stack.Screen name="car-rental" />
           <Stack.Screen name="internal-recharge-scan" />
           <Stack.Screen name="client-nfc-qr" />

@@ -412,7 +412,7 @@ export default function Home() {
   const menuItems = role === 'chauffeur'
     ? [
         { icon: 'account-box-outline', title: text.myData, subtitle: text.myDataSubtitle, route: '/my-data' },
-        { icon: 'map-marker-path', title: 'Trajets', subtitle: 'Consulter mes trajets effectués', route: '/history' },
+        { icon: 'map-marker-path', title: 'Trajets', subtitle: 'Enregistrer et consulter mes trajets', route: '/driver-trips' },
         { icon: 'shield-check-outline', title: text.privacyTerms, subtitle: text.privacyTermsSubtitle, route: '/privacy' },
         { icon: 'cog-outline', title: text.settings, subtitle: text.settingsSubtitle },
       ]
