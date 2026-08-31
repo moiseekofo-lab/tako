@@ -82,13 +82,13 @@ function ReservationCard({ item, onOpen, onCancel, compact }: { item: Reservatio
     <TouchableOpacity style={styles.card} activeOpacity={0.86} onPress={onOpen}>
       <View style={[styles.cardMain, compact && styles.cardMainCompact]}>
         <View style={[styles.dateColumn, compact && styles.dateColumnCompact]}><Text style={styles.date}>{item.day} {item.month}</Text><Text style={styles.time}>{item.time}</Text></View>
-        <View style={styles.routeLine}><View style={styles.routeCircle} /><View style={styles.routeVertical} /><Ionicons name="location-outline" size={25} color="#6B7280" /></View>
+        <View style={styles.routeLine}><View style={styles.routeCircle} /><View style={styles.routeVertical} /><Ionicons name="location-outline" size={21} color="#6B7280" /></View>
         <View style={styles.routeCopy}>
           <Text style={styles.city}>{item.departureCity}</Text><Text style={[styles.place, compact && styles.placeCompact]}>{item.departurePlace}</Text>
           <View style={styles.routeGap} />
           <Text style={styles.city}>{item.arrivalCity}</Text><Text style={[styles.place, compact && styles.placeCompact]}>{item.arrivalPlace}</Text>
         </View>
-        <Ionicons name="chevron-forward" size={31} color={ACTION} />
+        <Ionicons name="chevron-forward" size={26} color={ACTION} />
       </View>
       <View style={styles.cardFooter}>
         <View><Text style={styles.footerLabel}>Classe</Text><Text style={styles.footerValue}>{item.seatClass}</Text>{item.seat ? <Text style={styles.seat}>{item.seat}</Text> : null}</View>
@@ -113,29 +113,29 @@ const styles = StyleSheet.create({
   scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 28 },
   scrollCompact: { paddingHorizontal: 12 },
   card: { borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 17, backgroundColor: 'white', marginBottom: 13, overflow: 'hidden' },
-  cardMain: { minHeight: 145, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 15, paddingVertical: 10 },
-  cardMainCompact: { paddingHorizontal: 9, minHeight: 142 },
-  dateColumn: { width: 78 },
-  dateColumnCompact: { width: 66 },
-  date: { color: '#252A32', fontFamily: APP_FONT, fontSize: 16, fontWeight: '900' },
-  time: { color: '#252A32', fontFamily: APP_FONT, fontSize: 16, fontWeight: '900', marginTop: 8 },
-  routeLine: { width: 29, height: 94, alignItems: 'center', justifyContent: 'space-between' },
-  routeCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#6B7280', backgroundColor: 'white' },
-  routeVertical: { position: 'absolute', top: 17, width: 1.5, height: 53, backgroundColor: '#6B7280' },
+  cardMain: { minHeight: 128, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6 },
+  cardMainCompact: { paddingHorizontal: 7, minHeight: 124 },
+  dateColumn: { width: 72 },
+  dateColumnCompact: { width: 61 },
+  date: { color: '#252A32', fontFamily: APP_FONT, fontSize: 14, fontWeight: '900' },
+  time: { color: '#252A32', fontFamily: APP_FONT, fontSize: 15, fontWeight: '900', marginTop: 5 },
+  routeLine: { width: 27, height: 82, alignItems: 'center', justifyContent: 'space-between' },
+  routeCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: '#6B7280', backgroundColor: 'white' },
+  routeVertical: { position: 'absolute', top: 15, width: 1.5, height: 43, backgroundColor: '#6B7280' },
   routeCopy: { flex: 1, minWidth: 0, paddingLeft: 8 },
-  city: { color: '#313640', fontFamily: APP_FONT, fontSize: 14, fontWeight: '600' },
-  place: { color: '#282D35', fontFamily: APP_FONT, fontSize: 17, lineHeight: 23, fontWeight: '900', marginTop: 3 },
-  placeCompact: { fontSize: 17, lineHeight: 22 },
-  routeGap: { height: 4 },
-  cardFooter: { minHeight: 58, borderTopWidth: 1, borderTopColor: '#D8DCE3', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 15, paddingVertical: 7 },
-  footerLabel: { color: '#6B707A', fontFamily: APP_FONT, fontSize: 13 },
-  footerLabelStrong: { color: '#626771', fontFamily: APP_FONT, fontSize: 13, fontWeight: '900' },
-  footerValue: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 16, marginTop: 3 },
-  reservationNumber: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 15, marginTop: 3 },
-  seat: { color: ACTION, fontFamily: APP_FONT, fontSize: 14, fontWeight: '700', marginTop: 2 },
+  city: { color: '#313640', fontFamily: APP_FONT, fontSize: 12, fontWeight: '600' },
+  place: { color: '#282D35', fontFamily: APP_FONT, fontSize: 15, lineHeight: 18, fontWeight: '900', marginTop: 1 },
+  placeCompact: { fontSize: 14, lineHeight: 17 },
+  routeGap: { height: 2 },
+  cardFooter: { minHeight: 50, borderTopWidth: 1, borderTopColor: '#D8DCE3', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 5 },
+  footerLabel: { color: '#6B707A', fontFamily: APP_FONT, fontSize: 12 },
+  footerLabelStrong: { color: '#626771', fontFamily: APP_FONT, fontSize: 12, fontWeight: '900' },
+  footerValue: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 14, marginTop: 1 },
+  reservationNumber: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 14, marginTop: 1 },
+  seat: { color: ACTION, fontFamily: APP_FONT, fontSize: 13, fontWeight: '700', marginTop: 1 },
   reference: { alignItems: 'flex-end' },
-  cancelButton: { height: 34, borderTopWidth: 1, borderTopColor: '#EEF0F4', alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: '#D64545', fontFamily: APP_FONT, fontSize: 14, fontWeight: '800' },
+  cancelButton: { height: 30, borderTopWidth: 1, borderTopColor: '#EEF0F4', alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#D64545', fontFamily: APP_FONT, fontSize: 12, fontWeight: '800' },
   empty: { minHeight: 330, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: NAVY, fontFamily: APP_FONT, fontSize: 20, fontWeight: '900', marginTop: 14 },
   emptyText: { color: '#7A8495', fontFamily: APP_FONT, fontSize: 14, textAlign: 'center', marginTop: 7 },
