@@ -150,7 +150,7 @@ export default function Recharge() {
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingTop: Math.max(insets.top + 28, 52) }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
         }>
@@ -266,7 +266,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: 'white',
     paddingHorizontal: 0,
-    paddingTop: 30,
     paddingBottom: 0,
   },
   header: {
@@ -274,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginHorizontal: 18,
-    marginBottom: 8,
+    marginBottom: 16,
   },
   backButton: {
     width: 40,
