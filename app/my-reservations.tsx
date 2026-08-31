@@ -4,73 +4,128 @@ import { useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const NAVY = '#061F68';
-const BLUE = '#0877EA';
-type Filter = 'all' | 'upcoming' | 'completed';
+const ACTION = '#0877EA';
+type Tab = 'upcoming' | 'completed' | 'cancelled';
 type Reservation = {
-  id: string; type: 'trip' | 'car'; title: string; date: string; meta: string; status: 'confirmed' | 'pending' | 'completed'; price: string;
+  id: string;
+  day: string;
+  month: string;
+  time: string;
+  departureCity: string;
+  departurePlace: string;
+  arrivalCity: string;
+  arrivalPlace: string;
+  seatClass: string;
+  seat?: string;
+  reference: string;
+  status: Tab;
 };
 
 const initialReservations: Reservation[] = [
-  { id: '1', type: 'trip', title: 'Kinshasa  →  Matadi', date: '21/08/2026 à 08:00', meta: '1 passager  •  Aller simple', status: 'confirmed', price: '90 000 FC' },
-  { id: '2', type: 'trip', title: 'Matadi  →  Kinshasa', date: '25/08/2026 à 14:00', meta: '1 passager  •  Aller simple', status: 'confirmed', price: '90 000 FC' },
-  { id: '3', type: 'trip', title: 'Kinshasa  →  Muanda', date: '03/09/2026 à 07:30', meta: '1 passager  •  Aller simple', status: 'pending', price: '95 000 FC' },
-  { id: '4', type: 'car', title: 'Location de voiture', date: 'Du 28/08/2026 à 09:00 au 30/08/2026 à 09:00', meta: 'Toyota RAV4  •  Sans chauffeur', status: 'confirmed', price: '250 USD/jour' },
-  { id: '5', type: 'trip', title: 'Kinshasa  →  Boma', date: '10/08/2026 à 09:00', meta: '1 passager  •  Aller simple', status: 'completed', price: '85 000 FC' },
+  { id: '1', day: '03', month: 'sept.', time: '07:30', departureCity: 'Kinshasa', departurePlace: 'Gare Centrale', arrivalCity: 'Muanda', arrivalPlace: 'Agence Express Muanda', seatClass: 'Confort', seat: 'Siège 2', reference: 'TK9F2A', status: 'upcoming' },
+  { id: '2', day: '12', month: 'sept.', time: '09:00', departureCity: 'Kinshasa', departurePlace: 'Gombe', arrivalCity: 'Matadi', arrivalPlace: 'Agence Centrale Matadi', seatClass: 'Standard', seat: 'Siège 8', reference: 'TK4B7M', status: 'upcoming' },
+  { id: '3', day: '25', month: 'août', time: '14:00', departureCity: 'Matadi', departurePlace: 'Agence Matadi', arrivalCity: 'Kinshasa', arrivalPlace: 'Gare Centrale', seatClass: 'Confort', seat: 'Siège 5', reference: 'TK8D3P', status: 'completed' },
+  { id: '4', day: '10', month: 'août', time: '09:00', departureCity: 'Kinshasa', departurePlace: 'Gare Centrale', arrivalCity: 'Boma', arrivalPlace: 'Agence Boma', seatClass: 'Standard', reference: 'TK2C6R', status: 'completed' },
+  { id: '5', day: '18', month: 'août', time: '06:30', departureCity: 'Kinshasa', departurePlace: 'Limete', arrivalCity: 'Matadi', arrivalPlace: 'Agence Centrale Matadi', seatClass: 'Standard', seat: 'Siège 11', reference: 'TK5N1Q', status: 'cancelled' },
 ];
 
 export default function MyReservations() {
   const router = useRouter();
-  const [filter, setFilter] = useState<Filter>('all');
+  const [tab, setTab] = useState<Tab>('upcoming');
   const [reservations, setReservations] = useState(initialReservations);
-  const upcoming = reservations.filter((item) => item.status !== 'completed');
-  const completed = reservations.filter((item) => item.status === 'completed');
-  const showUpcoming = filter !== 'completed';
-  const showCompleted = filter !== 'upcoming';
-  const cancel = (id: string) => Alert.alert('Annuler la réservation ?', 'Cette action retirera la réservation de votre liste.', [
-    { text: 'Retour', style: 'cancel' },
-    { text: 'Annuler la réservation', style: 'destructive', onPress: () => setReservations((items) => items.filter((item) => item.id !== id)) },
-  ]);
+  const visible = reservations.filter((item) => item.status === tab);
 
-  return <SafeAreaView style={styles.page}>
-    <View style={styles.header}><TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={26} color={NAVY} /></TouchableOpacity><Text style={styles.title}>Mes réservations</Text><View style={styles.spacer} /></View>
-    <View style={styles.filters}>
-      <FilterButton icon="ticket-outline" label="Toutes" active={filter === 'all'} onPress={() => setFilter('all')} />
-      <FilterButton icon="time-outline" label="À venir" active={filter === 'upcoming'} onPress={() => setFilter('upcoming')} />
-      <FilterButton icon="checkmark-circle-outline" label="Terminées" active={filter === 'completed'} onPress={() => setFilter('completed')} />
-    </View>
-    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-      {showUpcoming && <><Text style={styles.section}>Prochaines réservations</Text>{upcoming.map((item) => <ReservationCard key={item.id} item={item} onCancel={() => cancel(item.id)} />)}</>}
-      {showCompleted && <><Text style={styles.section}>Réservations terminées</Text>{completed.map((item) => <ReservationCard key={item.id} item={item} />)}</>}
-      <TouchableOpacity style={styles.help} onPress={() => Alert.alert('Besoin d’aide ?', 'Contactez le service client TaKo depuis le menu Aide.')}>
-        <View style={styles.helpIcon}><Ionicons name="headset-outline" size={27} color={BLUE} /></View><View style={styles.grow}><Text style={styles.helpTitle}>Besoin d’aide ?</Text><Text style={styles.helpText}>Contactez notre service client pour toute question concernant vos réservations.</Text></View><Ionicons name="chevron-forward" size={23} color={NAVY} />
-      </TouchableOpacity>
-    </ScrollView>
-  </SafeAreaView>;
+  const openReservation = (item: Reservation) => {
+    Alert.alert('Réservation TaKo', `${item.departureCity} → ${item.arrivalCity}\n${item.day} ${item.month} à ${item.time}\nRéférence : ${item.reference}`);
+  };
+
+  const cancelReservation = (item: Reservation) => {
+    Alert.alert('Annuler la réservation ?', `Référence ${item.reference}`, [
+      { text: 'Retour', style: 'cancel' },
+      { text: 'Annuler la réservation', style: 'destructive', onPress: () => setReservations((items) => items.map((current) => current.id === item.id ? { ...current, status: 'cancelled' } : current)) },
+    ]);
+  };
+
+  return (
+    <SafeAreaView style={styles.page}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={30} color={ACTION} /></TouchableOpacity>
+        <Text style={styles.title}>Mes réservations</Text><View style={styles.back} />
+      </View>
+
+      <View style={styles.tabs}>
+        <TabButton label="À venir" active={tab === 'upcoming'} onPress={() => setTab('upcoming')} />
+        <TabButton label="Terminées" active={tab === 'completed'} onPress={() => setTab('completed')} />
+        <TabButton label="Annulées" active={tab === 'cancelled'} onPress={() => setTab('cancelled')} />
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+        {visible.length ? visible.map((item) => <ReservationCard key={item.id} item={item} onOpen={() => openReservation(item)} onCancel={item.status === 'upcoming' ? () => cancelReservation(item) : undefined} />) : (
+          <View style={styles.empty}><Ionicons name="ticket-outline" size={56} color="#B6C4DB" /><Text style={styles.emptyTitle}>Aucune réservation</Text><Text style={styles.emptyText}>Vos voyages de cette catégorie apparaîtront ici.</Text></View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
-function FilterButton({ icon, label, active, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; active: boolean; onPress: () => void }) {
-  return <TouchableOpacity style={[styles.filter, active && styles.filterActive]} onPress={onPress}><Ionicons name={icon} size={20} color={active ? '#fff' : NAVY} /><Text style={[styles.filterText, active && styles.filterTextActive]}>{label}</Text></TouchableOpacity>;
+function TabButton({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return <TouchableOpacity style={[styles.tab, active && styles.tabActive]} onPress={onPress}><Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text></TouchableOpacity>;
 }
 
-function ReservationCard({ item, onCancel }: { item: Reservation; onCancel?: () => void }) {
-  const status = item.status === 'confirmed' ? 'Confirmé' : item.status === 'pending' ? 'En attente' : 'Terminée';
-  return <View style={styles.card}>
-    <View style={styles.cardTop}>
-      <View style={styles.transportIcon}><Ionicons name={item.type === 'car' ? 'car' : 'bus'} size={27} color={NAVY} /></View>
-      <View style={styles.cardCopy}><Text style={styles.cardTitle}>{item.title}</Text><View style={styles.metaRow}><Ionicons name="calendar-outline" size={15} color="#687184" /><Text style={styles.cardMeta}>{item.date}</Text></View><View style={styles.metaRow}><Ionicons name={item.type === 'car' ? 'car-outline' : 'person-outline'} size={15} color="#687184" /><Text style={styles.cardMeta}>{item.meta}</Text></View></View>
-      <View style={styles.cardRight}><View style={[styles.status, item.status === 'confirmed' ? styles.confirmed : item.status === 'pending' ? styles.pending : styles.finished]}><Text style={[styles.statusText, item.status === 'confirmed' ? styles.confirmedText : item.status === 'pending' ? styles.pendingText : styles.finishedText]}>{status}</Text></View><Text style={styles.price}>{item.price}</Text><Ionicons name="chevron-forward" size={23} color={NAVY} /></View>
-    </View>
-    <View style={styles.actions}>
-      <TouchableOpacity style={styles.outlineButton} onPress={() => Alert.alert('Détails', `${item.title}\n${item.date}\n${item.meta}\n${item.price}`)}><Ionicons name="information-circle-outline" size={17} color={BLUE} /><Text style={styles.outlineText}>Détails</Text></TouchableOpacity>
-      {item.status === 'completed' ? null : item.status === 'pending' ? <TouchableOpacity style={styles.outlineButton} onPress={onCancel}><Ionicons name="close" size={18} color={BLUE} /><Text style={styles.outlineText}>Annuler</Text></TouchableOpacity> : <TouchableOpacity style={styles.primaryButton} onPress={() => Alert.alert(item.type === 'car' ? 'Réservation de voiture' : 'Billet TaKo', 'Votre réservation est confirmée.')}><Ionicons name={item.type === 'car' ? 'calendar-outline' : 'ticket-outline'} size={18} color="#fff" /><Text style={styles.primaryText}>{item.type === 'car' ? 'Voir la réservation' : 'Voir le billet'}</Text></TouchableOpacity>}
-    </View>
-  </View>;
+function ReservationCard({ item, onOpen, onCancel }: { item: Reservation; onOpen: () => void; onCancel?: () => void }) {
+  return (
+    <TouchableOpacity style={styles.card} activeOpacity={0.86} onPress={onOpen}>
+      <View style={styles.cardMain}>
+        <View style={styles.dateColumn}><Text style={styles.date}>{item.day} {item.month}</Text><Text style={styles.time}>{item.time}</Text></View>
+        <View style={styles.routeLine}><View style={styles.routeCircle} /><View style={styles.routeVertical} /><Ionicons name="location-outline" size={25} color="#6B7280" /></View>
+        <View style={styles.routeCopy}>
+          <Text style={styles.city}>{item.departureCity}</Text><Text style={styles.place}>{item.departurePlace}</Text>
+          <View style={styles.routeGap} />
+          <Text style={styles.city}>{item.arrivalCity}</Text><Text style={styles.place}>{item.arrivalPlace}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={31} color={ACTION} />
+      </View>
+      <View style={styles.cardFooter}>
+        <View><Text style={styles.footerLabel}>Classe</Text><Text style={styles.footerValue}>{item.seatClass}</Text>{item.seat ? <Text style={styles.seat}>{item.seat}</Text> : null}</View>
+        <View style={styles.reference}><Text style={styles.footerLabelStrong}>Réservation :</Text><Text style={styles.footerValue}>{item.reference}</Text></View>
+      </View>
+      {onCancel ? <TouchableOpacity style={styles.cancelButton} onPress={onCancel}><Text style={styles.cancelText}>Annuler la réservation</Text></TouchableOpacity> : null}
+    </TouchableOpacity>
+  );
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#fff' }, grow: { flex: 1 }, header: { height: 76, paddingHorizontal: 22, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, back: { width: 46, height: 46, borderRadius: 23, borderWidth: 1, borderColor: '#E1E5EC', alignItems: 'center', justifyContent: 'center' }, title: { color: NAVY, fontSize: 24, fontWeight: '900' }, spacer: { width: 46 },
-  filters: { flexDirection: 'row', gap: 12, paddingHorizontal: 22, paddingBottom: 14 }, filter: { flex: 1, height: 50, borderWidth: 1, borderColor: '#E2E6ED', borderRadius: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 }, filterActive: { backgroundColor: NAVY, borderColor: NAVY }, filterText: { color: NAVY, fontSize: 14, fontWeight: '800' }, filterTextActive: { color: '#fff' },
-  scroll: { paddingHorizontal: 22, paddingBottom: 20 }, section: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 14, marginBottom: 11 }, card: { borderWidth: 1, borderColor: '#E8EBF1', borderRadius: 13, padding: 13, marginBottom: 12, backgroundColor: '#fff', shadowColor: NAVY, shadowOpacity: .035, shadowRadius: 8, elevation: 1 }, cardTop: { flexDirection: 'row', alignItems: 'flex-start' }, transportIcon: { width: 54, height: 54, borderRadius: 10, backgroundColor: '#F1F6FF', alignItems: 'center', justifyContent: 'center', marginRight: 11 }, cardCopy: { flex: 1, minWidth: 0 }, cardTitle: { color: NAVY, fontSize: 16, fontWeight: '900', marginBottom: 6 }, metaRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 3 }, cardMeta: { flex: 1, color: '#687184', fontSize: 14 }, cardRight: { minWidth: 100, alignItems: 'flex-end', gap: 7 }, status: { borderRadius: 14, paddingHorizontal: 11, paddingVertical: 6 }, confirmed: { backgroundColor: '#E5F8EF' }, pending: { backgroundColor: '#FFF4DF' }, finished: { backgroundColor: '#F1F3F8' }, statusText: { fontSize: 14, fontWeight: '800' }, confirmedText: { color: '#139760' }, pendingText: { color: '#E09A22' }, finishedText: { color: '#788096' }, price: { color: NAVY, fontSize: 16, fontWeight: '900' },
-  actions: { flexDirection: 'row', gap: 10, marginTop: 13 }, outlineButton: { flex: 1, height: 39, borderWidth: 1, borderColor: BLUE, borderRadius: 7, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, outlineText: { color: BLUE, fontSize: 14, fontWeight: '800' }, primaryButton: { flex: 1, height: 39, borderRadius: 7, backgroundColor: BLUE, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }, primaryText: { color: '#fff', fontSize: 14, fontWeight: '800' },
-  help: { minHeight: 88, marginTop: 5, borderRadius: 13, backgroundColor: '#F1F5FF', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 }, helpIcon: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#fff', alignItems: 'center', justifyContent: 'center' }, helpTitle: { color: NAVY, fontSize: 16, fontWeight: '900' }, helpText: { color: '#596274', fontSize: 14, lineHeight: 19, marginTop: 3 },
+  page: { flex: 1, backgroundColor: '#FAFBFD' },
+  header: { height: 86, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
+  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  title: { color: '#20242C', fontSize: 22, fontWeight: '800' },
+  tabs: { height: 66, flexDirection: 'row', alignItems: 'center', marginHorizontal: 20, marginBottom: 22, padding: 5, borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 34, backgroundColor: 'white' },
+  tab: { flex: 1, height: 54, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  tabActive: { backgroundColor: NAVY },
+  tabText: { color: ACTION, fontSize: 15, fontWeight: '800' },
+  tabTextActive: { color: 'white' },
+  scroll: { paddingHorizontal: 20, paddingBottom: 28 },
+  card: { borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 20, backgroundColor: 'white', marginBottom: 18, overflow: 'hidden' },
+  cardMain: { minHeight: 214, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 22 },
+  dateColumn: { width: 92 },
+  date: { color: '#252A32', fontSize: 19, fontWeight: '900' },
+  time: { color: '#252A32', fontSize: 20, fontWeight: '900', marginTop: 8 },
+  routeLine: { width: 34, height: 130, alignItems: 'center', justifyContent: 'space-between' },
+  routeCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#6B7280', backgroundColor: 'white' },
+  routeVertical: { position: 'absolute', top: 17, width: 1.5, height: 88, backgroundColor: '#6B7280' },
+  routeCopy: { flex: 1, minWidth: 0, paddingLeft: 8 },
+  city: { color: '#313640', fontSize: 15, fontWeight: '600' },
+  place: { color: '#282D35', fontSize: 19, lineHeight: 25, fontWeight: '900', marginTop: 3 },
+  routeGap: { height: 20 },
+  cardFooter: { minHeight: 92, borderTopWidth: 1, borderTopColor: '#D8DCE3', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+  footerLabel: { color: '#6B707A', fontSize: 14 },
+  footerLabelStrong: { color: '#626771', fontSize: 14, fontWeight: '900' },
+  footerValue: { color: '#3B4049', fontSize: 17, marginTop: 3 },
+  seat: { color: ACTION, fontSize: 15, fontWeight: '700', marginTop: 2 },
+  reference: { alignItems: 'flex-end' },
+  cancelButton: { height: 46, borderTopWidth: 1, borderTopColor: '#EEF0F4', alignItems: 'center', justifyContent: 'center' },
+  cancelText: { color: '#D64545', fontSize: 13, fontWeight: '800' },
+  empty: { minHeight: 330, alignItems: 'center', justifyContent: 'center' },
+  emptyTitle: { color: NAVY, fontSize: 20, fontWeight: '900', marginTop: 14 },
+  emptyText: { color: '#7A8495', fontSize: 14, textAlign: 'center', marginTop: 7 },
 });
