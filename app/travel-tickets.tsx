@@ -34,7 +34,7 @@ export default function TravelTickets() {
           <View style={styles.heroHeader}>
             <TouchableOpacity style={styles.heroAction} onPress={() => router.back()}><Ionicons name="chevron-back" size={27} color="white" /></TouchableOpacity>
             <TakoLogo color="#ffffff" />
-            <TouchableOpacity style={styles.heroAction} onPress={() => router.push('/my-reservations')}><Ionicons name="ticket-outline" size={27} color="white" /></TouchableOpacity>
+            <View style={styles.heroAction} />
           </View>
           <Image source={require('../assets/images/news-tako-public-transport.jpeg')} style={styles.heroBanner} resizeMode="cover" />
         </View>
