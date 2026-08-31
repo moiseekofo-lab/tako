@@ -1,12 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NAVY = '#061F68';
 const ACTION = '#0877EA';
-const APP_FONT = Platform.select({ android: 'Roboto', ios: 'System', web: 'Inter', default: 'Arial' });
 type Tab = 'upcoming' | 'completed' | 'cancelled';
 type Reservation = {
   id: string;
@@ -103,12 +102,12 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#FAFBFD' },
   header: { minHeight: 112, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, paddingBottom: 12 },
   back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#20242C', fontFamily: APP_FONT, fontSize: 20, fontWeight: '800' },
+  title: { color: '#20242C', fontFamily: 'Inter_700Bold', fontSize: 20, fontWeight: '700' },
   tabs: { width: '88%', maxWidth: 680, alignSelf: 'center', height: 54, flexDirection: 'row', alignItems: 'center', marginBottom: 24, padding: 4, borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 28, backgroundColor: 'white' },
   tabsCompact: { width: '92%', height: 50 },
   tab: { flex: 1, height: '100%', borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   tabActive: { backgroundColor: NAVY },
-  tabText: { color: ACTION, fontFamily: APP_FONT, fontSize: 14, fontWeight: '800' },
+  tabText: { color: ACTION, fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '600' },
   tabTextActive: { color: 'white' },
   scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 28 },
   scrollCompact: { paddingHorizontal: 12 },
@@ -117,26 +116,26 @@ const styles = StyleSheet.create({
   cardMainCompact: { paddingHorizontal: 7, minHeight: 124 },
   dateColumn: { width: 72 },
   dateColumnCompact: { width: 61 },
-  date: { color: '#252A32', fontFamily: APP_FONT, fontSize: 14, fontWeight: '900' },
-  time: { color: '#252A32', fontFamily: APP_FONT, fontSize: 15, fontWeight: '900', marginTop: 5 },
+  date: { color: '#252A32', fontFamily: 'Inter_700Bold', fontSize: 14, fontWeight: '700' },
+  time: { color: '#252A32', fontFamily: 'Inter_700Bold', fontSize: 15, fontWeight: '700', marginTop: 5 },
   routeLine: { width: 27, height: 82, alignItems: 'center', justifyContent: 'space-between' },
   routeCircle: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: '#6B7280', backgroundColor: 'white' },
   routeVertical: { position: 'absolute', top: 15, width: 1.5, height: 43, backgroundColor: '#6B7280' },
   routeCopy: { flex: 1, minWidth: 0, paddingLeft: 8 },
-  city: { color: '#313640', fontFamily: APP_FONT, fontSize: 12, fontWeight: '600' },
-  place: { color: '#282D35', fontFamily: APP_FONT, fontSize: 15, lineHeight: 18, fontWeight: '900', marginTop: 1 },
+  city: { color: '#313640', fontFamily: 'Inter_400Regular', fontSize: 12, fontWeight: '400' },
+  place: { color: '#282D35', fontFamily: 'Inter_700Bold', fontSize: 15, lineHeight: 18, fontWeight: '700', marginTop: 1 },
   placeCompact: { fontSize: 14, lineHeight: 17 },
   routeGap: { height: 2 },
   cardFooter: { minHeight: 50, borderTopWidth: 1, borderTopColor: '#D8DCE3', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 5 },
-  footerLabel: { color: '#6B707A', fontFamily: APP_FONT, fontSize: 12 },
-  footerLabelStrong: { color: '#626771', fontFamily: APP_FONT, fontSize: 12, fontWeight: '900' },
-  footerValue: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 14, marginTop: 1 },
-  reservationNumber: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 14, marginTop: 1 },
-  seat: { color: ACTION, fontFamily: APP_FONT, fontSize: 13, fontWeight: '700', marginTop: 1 },
+  footerLabel: { color: '#6B707A', fontFamily: 'Inter_400Regular', fontSize: 12 },
+  footerLabelStrong: { color: '#626771', fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '600' },
+  footerValue: { color: '#3B4049', fontFamily: 'Inter_500Medium', fontSize: 14, fontWeight: '500', marginTop: 1 },
+  reservationNumber: { color: '#3B4049', fontFamily: 'Inter_500Medium', fontSize: 14, fontWeight: '500', marginTop: 1 },
+  seat: { color: ACTION, fontFamily: 'Inter_600SemiBold', fontSize: 13, fontWeight: '600', marginTop: 1 },
   reference: { alignItems: 'flex-end' },
   cancelButton: { height: 30, borderTopWidth: 1, borderTopColor: '#EEF0F4', alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: '#D64545', fontFamily: APP_FONT, fontSize: 12, fontWeight: '800' },
+  cancelText: { color: '#D64545', fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '600' },
   empty: { minHeight: 330, alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { color: NAVY, fontFamily: APP_FONT, fontSize: 20, fontWeight: '900', marginTop: 14 },
-  emptyText: { color: '#7A8495', fontFamily: APP_FONT, fontSize: 14, textAlign: 'center', marginTop: 7 },
+  emptyTitle: { color: NAVY, fontFamily: 'Inter_700Bold', fontSize: 20, fontWeight: '700', marginTop: 14 },
+  emptyText: { color: '#7A8495', fontFamily: 'Inter_400Regular', fontSize: 14, textAlign: 'center', marginTop: 7 },
 });
