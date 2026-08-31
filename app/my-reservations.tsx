@@ -90,7 +90,7 @@ function ReservationCard({ item, onOpen, onCancel, compact }: { item: Reservatio
       </View>
       <View style={styles.cardFooter}>
         <View><Text style={styles.footerLabel}>Classe</Text><Text style={styles.footerValue}>{item.seatClass}</Text>{item.seat ? <Text style={styles.seat}>{item.seat}</Text> : null}</View>
-        <View style={styles.reference}><Text style={styles.footerLabelStrong}>Réservation :</Text><Text style={styles.footerValue}>{item.reference}</Text></View>
+        <View style={styles.reference}><Text style={styles.footerLabelStrong}>Réservation :</Text><Text style={styles.reservationNumber}>{item.reference}</Text></View>
       </View>
       {onCancel ? <TouchableOpacity style={styles.cancelButton} onPress={onCancel}><Text style={styles.cancelText}>Annuler la réservation</Text></TouchableOpacity> : null}
     </TouchableOpacity>
@@ -116,23 +116,24 @@ const styles = StyleSheet.create({
   dateColumn: { width: 92 },
   dateColumnCompact: { width: 76 },
   date: { color: '#252A32', fontFamily: APP_FONT, fontSize: 16, fontWeight: '900' },
-  time: { color: '#252A32', fontFamily: APP_FONT, fontSize: 18, fontWeight: '900', marginTop: 8 },
+  time: { color: '#252A32', fontFamily: APP_FONT, fontSize: 16, fontWeight: '900', marginTop: 8 },
   routeLine: { width: 34, height: 130, alignItems: 'center', justifyContent: 'space-between' },
   routeCircle: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: '#6B7280', backgroundColor: 'white' },
   routeVertical: { position: 'absolute', top: 17, width: 1.5, height: 88, backgroundColor: '#6B7280' },
   routeCopy: { flex: 1, minWidth: 0, paddingLeft: 8 },
   city: { color: '#313640', fontFamily: APP_FONT, fontSize: 14, fontWeight: '600' },
-  place: { color: '#282D35', fontFamily: APP_FONT, fontSize: 18, lineHeight: 24, fontWeight: '900', marginTop: 3 },
-  placeCompact: { fontSize: 16, lineHeight: 21 },
+  place: { color: '#282D35', fontFamily: APP_FONT, fontSize: 17, lineHeight: 23, fontWeight: '900', marginTop: 3 },
+  placeCompact: { fontSize: 17, lineHeight: 22 },
   routeGap: { height: 20 },
   cardFooter: { minHeight: 92, borderTopWidth: 1, borderTopColor: '#D8DCE3', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
   footerLabel: { color: '#6B707A', fontFamily: APP_FONT, fontSize: 13 },
   footerLabelStrong: { color: '#626771', fontFamily: APP_FONT, fontSize: 13, fontWeight: '900' },
   footerValue: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 16, marginTop: 3 },
+  reservationNumber: { color: '#3B4049', fontFamily: APP_FONT, fontSize: 15, marginTop: 3 },
   seat: { color: ACTION, fontFamily: APP_FONT, fontSize: 14, fontWeight: '700', marginTop: 2 },
   reference: { alignItems: 'flex-end' },
   cancelButton: { height: 46, borderTopWidth: 1, borderTopColor: '#EEF0F4', alignItems: 'center', justifyContent: 'center' },
-  cancelText: { color: '#D64545', fontFamily: APP_FONT, fontSize: 13, fontWeight: '800' },
+  cancelText: { color: '#D64545', fontFamily: APP_FONT, fontSize: 14, fontWeight: '800' },
   empty: { minHeight: 330, alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: NAVY, fontFamily: APP_FONT, fontSize: 20, fontWeight: '900', marginTop: 14 },
   emptyText: { color: '#7A8495', fontFamily: APP_FONT, fontSize: 14, textAlign: 'center', marginTop: 7 },
