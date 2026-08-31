@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Alert, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { Alert, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const NAVY = '#061F68';
 const ACTION = '#0877EA';
@@ -33,6 +34,7 @@ const initialReservations: Reservation[] = [
 export default function MyReservations() {
   const router = useRouter();
   const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const compact = width < 390;
   const [tab, setTab] = useState<Tab>('upcoming');
   const [reservations, setReservations] = useState(initialReservations);
@@ -50,9 +52,9 @@ export default function MyReservations() {
   };
 
   return (
-    <SafeAreaView style={styles.page}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={30} color={ACTION} /></TouchableOpacity>
+    <View style={styles.page}>
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 18) + 12 }]}>
+        <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={26} color={ACTION} /></TouchableOpacity>
         <Text style={styles.title}>Mes réservations</Text><View style={styles.back} />
       </View>
 
@@ -67,7 +69,7 @@ export default function MyReservations() {
           <View style={styles.empty}><Ionicons name="ticket-outline" size={56} color="#B6C4DB" /><Text style={styles.emptyTitle}>Aucune réservation</Text><Text style={styles.emptyText}>Vos voyages de cette catégorie apparaîtront ici.</Text></View>
         )}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -99,14 +101,14 @@ function ReservationCard({ item, onOpen, onCancel, compact }: { item: Reservatio
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: '#FAFBFD' },
-  header: { height: 86, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22 },
-  back: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  title: { color: '#20242C', fontFamily: APP_FONT, fontSize: 22, fontWeight: '800' },
-  tabs: { width: '92%', maxWidth: 720, alignSelf: 'center', height: 66, flexDirection: 'row', alignItems: 'center', marginBottom: 22, padding: 5, borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 34, backgroundColor: 'white' },
-  tabsCompact: { width: '94%', height: 58 },
+  header: { minHeight: 112, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 22, paddingBottom: 12 },
+  back: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  title: { color: '#20242C', fontFamily: APP_FONT, fontSize: 20, fontWeight: '800' },
+  tabs: { width: '88%', maxWidth: 680, alignSelf: 'center', height: 54, flexDirection: 'row', alignItems: 'center', marginBottom: 24, padding: 4, borderWidth: 1, borderColor: '#D8DCE3', borderRadius: 28, backgroundColor: 'white' },
+  tabsCompact: { width: '92%', height: 50 },
   tab: { flex: 1, height: '100%', borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
   tabActive: { backgroundColor: NAVY },
-  tabText: { color: ACTION, fontFamily: APP_FONT, fontSize: 15, fontWeight: '800' },
+  tabText: { color: ACTION, fontFamily: APP_FONT, fontSize: 14, fontWeight: '800' },
   tabTextActive: { color: 'white' },
   scroll: { width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: 20, paddingBottom: 28 },
   scrollCompact: { paddingHorizontal: 12 },
