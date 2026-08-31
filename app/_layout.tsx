@@ -1,10 +1,4 @@
 import { useFonts } from 'expo-font';
-import {
-  Inter_400Regular,
-  Inter_500Medium,
-  Inter_600SemiBold,
-  Inter_700Bold,
-} from '@expo-google-fonts/inter';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Stack, usePathname, useRouter } from 'expo-router';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
@@ -15,13 +9,12 @@ const LAST_ACTIVITY_KEY = 'tako:lastActivityAt';
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const ACTIVITY_WRITE_THROTTLE_MS = 10 * 1000;
 
-const interFamilyForWeight = (weight: unknown) => {
-  const numericWeight = Number.parseInt(String(weight || '400'), 10);
-  if (numericWeight >= 700) return 'Inter_700Bold';
-  if (numericWeight >= 600) return 'Inter_600SemiBold';
-  if (numericWeight >= 500) return 'Inter_500Medium';
-  return 'Inter_400Regular';
-};
+const APP_FONT_FAMILY = Platform.select({
+  android: 'Roboto',
+  ios: 'System',
+  web: 'Inter',
+  default: 'Arial',
+});
 
 type FontPatchGlobal = typeof globalThis & {
   __takoFontPatchApplied?: boolean;
@@ -68,10 +61,11 @@ const patchFontSizes = (value: unknown, styleName = ''): unknown => {
   });
 
   if (
+    APP_FONT_FAMILY &&
     typeof nextStyle.fontSize === 'number' &&
     typeof nextStyle.fontFamily !== 'string'
   ) {
-    nextStyle.fontFamily = interFamilyForWeight(nextStyle.fontWeight);
+    nextStyle.fontFamily = APP_FONT_FAMILY;
   }
 
   return nextStyle;
@@ -90,12 +84,10 @@ if (!globalState.__takoFontPatchApplied) {
 
   PatchedText.defaultProps = {
     ...PatchedText.defaultProps,
-    style: { fontFamily: 'Inter_400Regular' },
     maxFontSizeMultiplier: 1.2,
   };
   PatchedTextInput.defaultProps = {
     ...PatchedTextInput.defaultProps,
-    style: { fontFamily: 'Inter_400Regular' },
     maxFontSizeMultiplier: 1.2,
   };
 
@@ -269,7 +261,7 @@ function SessionIdleGuard({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (Platform.OS !== 'web' || typeof document === 'undefined') return;
 
-    const events: (keyof DocumentEventMap)[] = [
+    const events: Array<keyof DocumentEventMap> = [
       'pointerdown',
       'keydown',
       'mousemove',
@@ -303,10 +295,6 @@ function SessionIdleGuard({ children }: { children: ReactNode }) {
 export default function Layout() {
   const [fontsLoaded] = useFonts({
     Alkatra: require('../assets/fonts/Alkatra.ttf'),
-    Inter_400Regular,
-    Inter_500Medium,
-    Inter_600SemiBold,
-    Inter_700Bold,
   });
 
   if (!fontsLoaded) {

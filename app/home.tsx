@@ -134,7 +134,7 @@ export default function Home() {
       mounted = false;
       clearInterval(interval);
     };
-  }, [currentUser?.email, currentUser?.id, currentUser?.phone, isAuthenticated, role, setCurrentUser, setNfcCardBlocked, setNfcCardId]);
+  }, [currentUser?.id, isAuthenticated, role, setCurrentUser, setNfcCardBlocked, setNfcCardId]);
 
   useEffect(() => {
     const remoteCardId = String(currentUser?.nfcCardId || '').trim() || null;
@@ -1252,7 +1252,7 @@ const styles = StyleSheet.create({
     marginTop: 3,
   },
   receiveButtonText: {
-    fontFamily: 'Inter_600SemiBold',
+    fontFamily: Platform.select({ android: 'Roboto', ios: 'System', web: 'Inter', default: 'Arial' }),
     fontSize: 13,
     lineHeight: 16,
     maxWidth: 78,
