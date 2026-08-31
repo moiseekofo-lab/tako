@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Image, Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TakoLogo } from '../components/tako-logo';
 
@@ -19,7 +19,6 @@ export default function TravelTickets() {
   const [dateChoice, setDateChoice] = useState<DateChoice>(null);
   const [choice, setChoice] = useState<ChoiceKey>(null);
 
-  const choices = choice === 'departure' ? cities.filter((city) => city !== destination) : cities.filter((city) => city !== departure);
   const choose = (value: string) => {
     if (choice === 'departure') setDeparture(value);
     if (choice === 'destination') setDestination(value);
@@ -68,12 +67,50 @@ export default function TravelTickets() {
         </View>
       </ScrollView>
 
-      <Modal transparent visible={choice !== null} animationType="fade" onRequestClose={() => setChoice(null)}>
-        <TouchableOpacity style={styles.modalBackdrop} activeOpacity={1} onPress={() => setChoice(null)}><View style={styles.choiceCard}>{choices.map((item) => <TouchableOpacity key={item} style={styles.choiceRow} onPress={() => choose(item)}><Text style={styles.choiceText}>{item}</Text><Ionicons name="chevron-forward" size={20} color="#082B85" /></TouchableOpacity>)}</View></TouchableOpacity>
-      </Modal>
+      <CityPicker
+        visible={choice !== null}
+        selected={choice === 'departure' ? departure : destination}
+        excluded={choice === 'departure' ? destination : departure}
+        onSelect={choose}
+        onClose={() => setChoice(null)}
+      />
       <CalendarModal visible={dateChoice !== null} value={dateChoice === 'return' ? returnDate || travelDate : travelDate} minimumDate={dateChoice === 'return' ? travelDate : undefined} onSelect={(date) => { if (dateChoice === 'return') setReturnDate(date); else setTravelDate(date); setDateChoice(null); }} onClose={() => setDateChoice(null)} />
     </View>
   );
+}
+
+function CityPicker({ visible, selected, excluded, onSelect, onClose }: { visible: boolean; selected: string; excluded: string; onSelect: (city: string) => void; onClose: () => void }) {
+  const [query, setQuery] = useState('');
+  useEffect(() => { if (visible) setQuery(selected); }, [visible, selected]);
+  const filteredCities = cities.filter((city) => city !== excluded && city.toLocaleLowerCase('fr').includes(query.trim().toLocaleLowerCase('fr')));
+
+  return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}>
+    <KeyboardAvoidingView style={styles.cityModal} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <TouchableOpacity style={styles.cityBackdrop} activeOpacity={1} onPress={onClose} />
+      <View style={styles.cityPickerCard}>
+        <View style={styles.citySearchBox}>
+          <Ionicons name="location-outline" size={22} color="#0877EA" />
+          <TextInput
+            autoFocus
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Rechercher une ville"
+            placeholderTextColor="#8A93A3"
+            selectionColor="#0877EA"
+            style={styles.cityInput}
+          />
+          {query.length > 0 ? <TouchableOpacity onPress={() => setQuery('')}><Ionicons name="close" size={20} color="#687386" /></TouchableOpacity> : null}
+        </View>
+        <ScrollView style={styles.cityList} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator>
+          {filteredCities.map((city) => <TouchableOpacity key={city} style={styles.cityRow} onPress={() => onSelect(city)}>
+            <Ionicons name="checkmark" size={22} color={city === selected ? '#0877EA' : 'transparent'} />
+            <Text style={styles.cityText}>{city}</Text>
+          </TouchableOpacity>)}
+          {filteredCities.length === 0 ? <Text style={styles.noCity}>Aucune ville trouvée</Text> : null}
+        </ScrollView>
+      </View>
+    </KeyboardAvoidingView>
+  </Modal>;
 }
 
 function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { visible: boolean; value: Date; minimumDate?: Date; onSelect: (date: Date) => void; onClose: () => void }) {
@@ -104,6 +141,9 @@ const styles = StyleSheet.create({
   searchButton: { height: 56, borderRadius: 12, backgroundColor: '#0877EA', marginTop: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }, searchText: { color: 'white', fontSize: 17, fontWeight: '800' },
   benefits: { flexDirection: 'row', justifyContent: 'center', gap: 28, paddingVertical: 22 }, benefit: { flexDirection: 'row', alignItems: 'center', gap: 6 }, benefitText: { color: '#475064', fontSize: 12, fontWeight: '600' },
   promoCard: { height: 250, marginHorizontal: 20, borderRadius: 18, overflow: 'hidden', backgroundColor: '#061F68' }, promoImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' }, promoShade: { flex: 1, justifyContent: 'flex-end', padding: 18, backgroundColor: 'rgba(6,31,104,.55)' }, promoKicker: { color: '#9ED8FF', fontSize: 13, fontWeight: '800' }, promoTitle: { color: 'white', fontSize: 22, lineHeight: 27, fontWeight: '900', marginTop: 5, maxWidth: 290 }, promoButton: { height: 46, borderRadius: 9, backgroundColor: '#0877EA', alignItems: 'center', justifyContent: 'center', marginTop: 14 }, promoButtonText: { color: 'white', fontSize: 14, fontWeight: '800' },
-  modalBackdrop: { flex: 1, backgroundColor: 'rgba(1,15,50,.45)', justifyContent: 'flex-end' }, choiceCard: { backgroundColor: 'white', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 24, paddingTop: 12, paddingBottom: 30 }, choiceRow: { minHeight: 58, borderBottomWidth: 1, borderBottomColor: '#EDF0F5', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, choiceText: { color: '#071D59', fontSize: 17, fontWeight: '700' },
+  cityModal: { flex: 1, justifyContent: 'flex-start' }, cityBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(1,15,50,.25)' },
+  cityPickerCard: { marginTop: 335, marginHorizontal: 40, maxHeight: 290, borderRadius: 10, backgroundColor: 'white', shadowColor: '#061F68', shadowOpacity: .24, shadowRadius: 14, elevation: 12, overflow: 'hidden' },
+  citySearchBox: { height: 57, borderWidth: 1.5, borderColor: '#20A9E8', paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 10 }, cityInput: { flex: 1, height: '100%', color: '#202733', fontSize: 16, fontWeight: '500' },
+  cityList: { maxHeight: 232 }, cityRow: { height: 58, flexDirection: 'row', alignItems: 'center', gap: 16, paddingHorizontal: 18, borderBottomWidth: 1, borderBottomColor: '#F0F2F5' }, cityText: { color: '#303642', fontSize: 17, fontWeight: '500' }, noCity: { color: '#7A8393', fontSize: 15, textAlign: 'center', paddingVertical: 28 },
   calendarBackdrop: { flex: 1, backgroundColor: 'rgba(1,15,50,.48)', alignItems: 'center', justifyContent: 'center', padding: 22 }, calendarCard: { width: '100%', maxWidth: 390, backgroundColor: 'white', borderRadius: 18, padding: 18 }, calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }, calendarTitle: { color: '#061F68', fontSize: 18, fontWeight: '900', textTransform: 'capitalize' }, weekRow: { flexDirection: 'row' }, weekDay: { width: '14.285%', color: '#748094', fontSize: 14, fontWeight: '800', textAlign: 'center' }, dayGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 }, dayCell: { width: '14.285%', height: 43, alignItems: 'center', justifyContent: 'center' }, dayCircle: { width: 36, height: 36, borderRadius: 18, alignItems: 'center', justifyContent: 'center' }, daySelected: { backgroundColor: '#0877EA' }, dayText: { color: '#061F68', fontSize: 16, fontWeight: '700' }, dayDisabled: { color: '#C2C7D0' }, dayTextSelected: { color: 'white', fontWeight: '900' }, closeCalendar: { alignSelf: 'flex-end', marginTop: 10, paddingHorizontal: 8, paddingVertical: 6 }, closeCalendarText: { color: '#0877EA', fontSize: 16, fontWeight: '800' },
 });
