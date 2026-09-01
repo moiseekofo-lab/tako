@@ -15,9 +15,10 @@ export default function Scan() {
   const params = useLocalSearchParams<{ montant?: string; trajet?: string; bus?: string }>();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
-  const [amount, setAmount] = useState(params.montant ?? '');
+  const [amount] = useState(params.montant ?? '');
   const [lastQrData, setLastQrData] = useState('');
   const [acceptedAmount, setAcceptedAmount] = useState<number | null>(null);
+  const [scanSession, setScanSession] = useState(0);
   const paymentInProgress = useRef(false);
   const [nfcSupported, setNfcSupported] = useState(false);
 
@@ -34,14 +35,15 @@ export default function Scan() {
     }
 
     const timeout = setTimeout(() => {
-      router.replace({
-        pathname: '/home',
-        params: { role: 'chauffeur' },
-      } as any);
+      paymentInProgress.current = false;
+      setAcceptedAmount(null);
+      setLastQrData('');
+      setScanned(false);
+      setScanSession((current) => current + 1);
     }, 1800);
 
     return () => clearTimeout(timeout);
-  }, [acceptedAmount, router]);
+  }, [acceptedAmount]);
 
   useEffect(() => {
     let active = true;
@@ -65,7 +67,7 @@ export default function Scan() {
       NfcManager.setEventListener(NfcEvents.DiscoverTag, null);
       NfcManager.unregisterTagEvent().catch(() => {});
     };
-  }, [amount]);
+  }, [amount, scanSession]);
 
   const validatePayment = (rawAmount: string, paymentType: 'qr' | 'nfc' = 'qr', cardId?: string) => {
     if (paymentInProgress.current) return;
@@ -100,7 +102,6 @@ export default function Scan() {
     setAcceptedAmount(value);
 
     setScanned(true);
-    setAmount('');
   };
 
   const handleBarCodeScanned = ({ data }: BarcodeScanningResult) => {
@@ -128,7 +129,7 @@ export default function Scan() {
         <Text style={styles.acceptedTitle}>Paiement accepté</Text>
         <Text style={styles.acceptedAmount}>{acceptedAmount} FC</Text>
         <Text style={styles.acceptedSubtitle}>Transaction confirmée</Text>
-        <Text style={styles.acceptedReturnText}>Retour automatique...</Text>
+        <Text style={styles.acceptedReturnText}>Préparation du client suivant...</Text>
       </View>
     );
   }
