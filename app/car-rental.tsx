@@ -1,12 +1,28 @@
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { useEffect, useMemo, useState, type ComponentProps } from 'react';
+import { Alert, Image, Modal, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from './store';
 
 const NAVY = '#061F68';
 const BLUE = '#0877EA';
+
+const interFamily = (style: unknown) => {
+  const weight = String(StyleSheet.flatten(style as any)?.fontWeight ?? '400');
+  if (weight === 'bold' || Number.parseInt(weight, 10) >= 700) return 'Inter_700Bold';
+  if (Number.parseInt(weight, 10) >= 600) return 'Inter_600SemiBold';
+  if (Number.parseInt(weight, 10) >= 500) return 'Inter_500Medium';
+  return 'Inter_400Regular';
+};
+
+function Text(props: ComponentProps<typeof RNText>) {
+  return <RNText {...props} style={[{ fontFamily: interFamily(props.style) }, props.style]} />;
+}
+
+function TextInput(props: ComponentProps<typeof RNTextInput>) {
+  return <RNTextInput {...props} style={[{ fontFamily: interFamily(props.style) }, props.style]} />;
+}
 const vehicles = [
   { key: 'economy', label: 'Économique', model: 'Suzuki Swift', details: '5 places • 2 bagages', image: require('../assets/images/car-suzuki-swift-v3.png'), price: 40 },
   { key: 'suv', label: 'SUV', model: 'Nissan Qashqai', details: '5 places • 3 bagages', image: require('../assets/images/car-nissan-qashqai-v3.png'), price: 70 },
