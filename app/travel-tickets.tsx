@@ -63,7 +63,6 @@ export default function TravelTickets() {
 
         <View style={styles.promoCard}>
           <Image source={require('../assets/images/news-tako-petit-transport.jpeg')} style={styles.promoImage} resizeMode="cover" />
-          <View style={styles.promoShade}><Text style={styles.promoKicker}>Voyagez avec TaKo</Text><Text style={styles.promoTitle}>Réservez votre trajet simplement</Text><TouchableOpacity style={styles.promoButton} onPress={search}><Text style={styles.promoButtonText}>Rechercher un voyage</Text></TouchableOpacity></View>
         </View>
       </ScrollView>
 
@@ -140,7 +139,7 @@ const styles = StyleSheet.create({
   dateRow: { flexDirection: 'row', gap: 10, marginTop: 12 }, dateField: { flex: 1, height: 54, borderWidth: 1, borderColor: '#DDE2EA', borderRadius: 11, flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 14 }, dateText: { flex: 1, color: '#2F3642', fontFamily: 'Inter_600SemiBold', fontSize: 15, fontWeight: '600', textTransform: 'capitalize' }, placeholder: { color: '#7A8393' },
   searchButton: { height: 56, borderRadius: 12, backgroundColor: '#0877EA', marginTop: 13, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }, searchText: { color: 'white', fontFamily: 'Inter_700Bold', fontSize: 17, fontWeight: '700' },
   benefits: { flexDirection: 'row', justifyContent: 'center', gap: 28, paddingVertical: 22 }, benefit: { flexDirection: 'row', alignItems: 'center', gap: 6 }, benefitText: { color: '#475064', fontFamily: 'Inter_400Regular', fontSize: 12, fontWeight: '400' },
-  promoCard: { height: 250, marginHorizontal: 20, borderRadius: 18, overflow: 'hidden', backgroundColor: '#061F68' }, promoImage: { ...StyleSheet.absoluteFillObject, width: '100%', height: '100%' }, promoShade: { flex: 1, justifyContent: 'flex-end', padding: 18, backgroundColor: 'rgba(6,31,104,.55)' }, promoKicker: { color: '#9ED8FF', fontFamily: 'Inter_600SemiBold', fontSize: 13, fontWeight: '600' }, promoTitle: { color: 'white', fontFamily: 'Inter_700Bold', fontSize: 22, lineHeight: 27, fontWeight: '700', marginTop: 5, maxWidth: 290 }, promoButton: { height: 46, borderRadius: 9, backgroundColor: '#0877EA', alignItems: 'center', justifyContent: 'center', marginTop: 14 }, promoButtonText: { color: 'white', fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '600' },
+  promoCard: { height: 250, marginHorizontal: 20, borderRadius: 18, overflow: 'hidden', backgroundColor: '#061F68' }, promoImage: { width: '100%', height: '100%' },
   cityModal: { flex: 1, justifyContent: 'flex-start' }, cityBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(1,15,50,.25)' },
   cityPickerCard: { marginTop: 335, marginHorizontal: 40, maxHeight: 290, borderRadius: 10, backgroundColor: 'white', shadowColor: '#061F68', shadowOpacity: .24, shadowRadius: 14, elevation: 12, overflow: 'hidden' },
   citySearchBox: { height: 57, borderWidth: 1.5, borderColor: '#20A9E8', paddingHorizontal: 15, flexDirection: 'row', alignItems: 'center', gap: 10 }, cityInput: { flex: 1, height: '100%', color: '#202733', fontFamily: 'Inter_500Medium', fontSize: 16, fontWeight: '500' },
