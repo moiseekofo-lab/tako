@@ -75,7 +75,6 @@ export default function CarRental() {
         <TouchableOpacity style={styles.back} onPress={back}><Ionicons name="chevron-back" size={25} color={BLUE} /></TouchableOpacity>
         <Text style={styles.title}>Louer une voiture</Text><View style={styles.spacer} />
       </View>
-      <Stepper step={step} />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollBody} showsVerticalScrollIndicator={false}>
         {step === 1 && <>
           <Text style={styles.section}>Où allez-vous ?</Text>
@@ -183,12 +182,6 @@ function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { vis
   </Modal>;
 }
 
-function Stepper({ step }: { step: Step }) {
-  return <View style={styles.stepper}>{['Trajet & dates', 'Véhicule', 'Confirmation', 'Paiement'].map((label, index) => { const number = (index + 1) as Step; const active = number === step; const done = number < step; return <View key={label} style={styles.stepItem}>
-    {index > 0 && <View style={[styles.line, (active || done) && styles.lineActive]} />}<View style={[styles.circle, (active || done) && styles.circleActive]}>{done ? <Ionicons name="checkmark" size={15} color="white" /> : <Text style={[styles.circleText, active && styles.circleTextActive]}>{number}</Text>}</View><Text style={[styles.stepText, active && styles.stepTextActive]}>{label}</Text>
-  </View>; })}</View>;
-}
-
 function Field({ icon, label, value, onPress, compact }: { icon: keyof typeof Ionicons.glyphMap; label: string; value: string; onPress?: () => void; compact?: boolean }) {
   return <TouchableOpacity style={[styles.field, compact && styles.fieldCompact]} onPress={onPress}><Ionicons name={icon} size={23} color={BLUE} /><View style={styles.grow}><Text style={styles.fieldLabel}>{label}</Text><Text style={styles.fieldValue} numberOfLines={1}>{value}</Text></View><Ionicons name="chevron-down" size={18} color={BLUE} /></TouchableOpacity>;
 }
@@ -200,7 +193,6 @@ function Summary({ icon, label, value }: { icon: keyof typeof Ionicons.glyphMap;
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'white' }, page: { flex: 1, paddingHorizontal: 20 }, scroll: { flex: 1 }, scrollBody: { paddingBottom: 12 }, grow: { flex: 1 },
   header: { height: 54, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, back: { width: 42, height: 42, borderRadius: 21, borderWidth: 1, borderColor: '#B7D9FF', alignItems: 'center', justifyContent: 'center' }, spacer: { width: 42 }, title: { color: NAVY, fontSize: 22, fontWeight: '900' },
-  stepper: { height: 91, flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 3, paddingTop: 12 }, stepItem: { width: '24%', alignItems: 'center' }, line: { position: 'absolute', top: 16, left: '-58%', width: '67%', height: 2, backgroundColor: '#D9DFE9' }, lineActive: { backgroundColor: BLUE }, circle: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: '#ADB6C7', backgroundColor: 'white', alignItems: 'center', justifyContent: 'center' }, circleActive: { borderColor: BLUE, backgroundColor: BLUE }, circleText: { color: '#596274', fontSize: 14, fontWeight: '800' }, circleTextActive: { color: 'white' }, stepText: { color: '#687184', fontSize: 14, fontWeight: '700', textAlign: 'center', marginTop: 7 }, stepTextActive: { color: BLUE, fontWeight: '900' },
   section: { color: NAVY, fontSize: 18, fontWeight: '900', marginTop: 5, marginBottom: 10 }, field: { minHeight: 76, borderWidth: 1, borderColor: '#D9DDE6', borderRadius: 12, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 13 }, fieldCompact: { minHeight: 84, paddingHorizontal: 10, gap: 7 }, fieldLabel: { color: '#667085', fontSize: 14, fontWeight: '700', marginBottom: 5 }, fieldValue: { color: NAVY, fontSize: 16, fontWeight: '900' }, columns: { flexDirection: 'row', gap: 12 }, half: { flex: 1 },
   vehicleList: { gap: 10, paddingBottom: 15 }, vehicle: { width: 158, minHeight: 226, borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, padding: 10, alignItems: 'center', justifyContent: 'center' }, vehicleActive: { borderWidth: 2, borderColor: BLUE, backgroundColor: '#F7FAFF' }, checkBadge: { position: 'absolute', zIndex: 2, top: 7, right: 7, width: 26, height: 26, borderRadius: 13, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' }, vehicleImage: { width: 138, height: 76 }, vehicleName: { color: NAVY, fontSize: 16, fontWeight: '900', marginTop: 3 }, vehicleModel: { color: NAVY, fontSize: 14, fontWeight: '800', marginTop: 3 }, vehicleDetails: { color: '#687184', fontSize: 14, marginTop: 3, textAlign: 'center' }, muted: { color: '#737A89', fontSize: 14, marginTop: 3 }, priceSmall: { color: BLUE, fontSize: 14, fontWeight: '900', marginTop: 3 },
   optionCard: { borderWidth: 1, borderColor: '#DDE1EA', borderRadius: 12, overflow: 'hidden' }, option: { minHeight: 72, paddingHorizontal: 13, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#E7EAF0' }, iconBox: { width: 40, height: 40, borderRadius: 9, backgroundColor: '#F0F6FF', alignItems: 'center', justifyContent: 'center' }, optionTitle: { color: NAVY, fontSize: 16, fontWeight: '800' }, checkbox: { width: 24, height: 24, borderRadius: 5, borderWidth: 1.5, borderColor: '#A8ADB7', alignItems: 'center', justifyContent: 'center' }, checkboxActive: { borderColor: BLUE, backgroundColor: BLUE },
