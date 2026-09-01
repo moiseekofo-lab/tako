@@ -968,6 +968,7 @@ const styles = StyleSheet.create({
     color: '#061F68',
     fontSize: 22,
     fontWeight: '800',
+    marginTop: 12,
     marginBottom: 16,
   },
   physicalCardBox: {
