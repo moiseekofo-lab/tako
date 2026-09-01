@@ -1,155 +1,68 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const trips = [
-  { departureTime: '06:00', arrivalTime: '08:30', duration: '2h 30min', company: 'Express Trans', category: 'Bus VIP', price: 20000 },
-  { departureTime: '08:00', arrivalTime: '10:45', duration: '2h 45min', company: 'Voyage Plus', category: 'Bus Confort', price: 18000 },
-  { departureTime: '10:30', arrivalTime: '13:00', duration: '2h 30min', company: 'Top Voyage', category: 'Bus VIP', price: 22000 },
-  { departureTime: '15:00', arrivalTime: '17:45', duration: '2h 45min', company: 'Congo Transport', category: 'Bus Confort', price: 18000 },
+  { departureTime: '06:00', arrivalTime: '08:30', duration: '2h 30min', company: 'Express Trans', category: 'Bus VIP', price: 20000, remaining: 2 },
+  { departureTime: '08:00', arrivalTime: '10:45', duration: '2h 45min', company: 'Voyage Plus', category: 'Bus Confort', price: 18000, remaining: 4 },
+  { departureTime: '10:30', arrivalTime: '13:00', duration: '2h 30min', company: 'Top Voyage', category: 'Bus VIP', price: 22000, remaining: 3 },
+  { departureTime: '15:00', arrivalTime: '17:45', duration: '2h 45min', company: 'Congo Transport', category: 'Bus Confort', price: 18000, remaining: 5 },
 ];
 
-const first = (value: string | string[] | undefined, fallback: string) =>
-  Array.isArray(value) ? value[0] ?? fallback : value ?? fallback;
+const first = (value: string | string[] | undefined, fallback: string) => Array.isArray(value) ? value[0] ?? fallback : value ?? fallback;
 
 export default function TravelResults() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const params = useLocalSearchParams();
   const departure = first(params.departure, 'Kinshasa');
   const destination = first(params.destination, 'Matadi');
   const date = first(params.date, new Date().toLocaleDateString('fr-FR'));
   const passengers = first(params.passengers, '1 Passager');
 
-  const selectTrip = (trip: (typeof trips)[number]) => {
-    router.push({
-      pathname: '/travel-booking',
-      params: { departure, destination, date, passengers, ...trip, price: String(trip.price) },
-    });
-  };
+  const selectTrip = (trip: (typeof trips)[number]) => router.push({ pathname: '/travel-booking', params: { departure, destination, date, passengers, ...trip, price: String(trip.price) } });
 
-  return (
-    <SafeAreaView style={styles.page}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-        <View style={styles.hero}>
-          <TouchableOpacity style={styles.back} onPress={() => router.back()} activeOpacity={0.8}>
-            <Ionicons name="chevron-back" size={25} color="#fff" />
-          </TouchableOpacity>
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroTitle}>Résultats de recherche</Text>
-            <Text style={styles.heroSubtitle}>Choisissez votre voyage</Text>
-          </View>
-          <View style={styles.heroSide} />
+  return <View style={styles.page}>
+    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      <TouchableOpacity style={styles.headerAction} onPress={() => router.back()}><Ionicons name="arrow-back" size={25} color="#0877EA" /></TouchableOpacity>
+      <View style={styles.headerCopy}><Text style={styles.routeTitle}>{departure} › {destination}</Text><Text style={styles.routeDate}>{date}</Text></View>
+      <TouchableOpacity style={styles.headerAction} onPress={() => router.back()}><Ionicons name="search" size={24} color="#0877EA" /></TouchableOpacity>
+    </View>
+
+    <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+      <Text style={styles.title}>Tous les horaires</Text>
+      <Text style={styles.subtitle}>Voyages disponibles le {date}</Text>
+
+      {trips.map((trip) => <View key={`${trip.departureTime}-${trip.company}`} style={styles.tripCard}>
+        <View style={styles.companyHeader}>
+          <View style={styles.companyLogo}><Ionicons name="bus" size={20} color="white" /></View><Text style={styles.companyName}>{trip.company}</Text>
+          <View style={styles.remaining}><Ionicons name="flame-outline" size={15} color="#D9485F" /><Text style={styles.remainingText}>{trip.remaining} places à ce prix</Text></View>
         </View>
-
-        <View style={styles.content}>
-          <View style={styles.summaryCard}>
-            <View style={styles.routeRow}>
-              <View style={styles.busIcon}><Ionicons name="bus" size={25} color="#fff" /></View>
-              <View style={styles.placeBlock}>
-                <Text style={styles.summaryValue}>{departure}</Text>
-                <Text style={styles.summaryLabel}>Ville de départ</Text>
-              </View>
-              <Ionicons name="arrow-forward" size={22} color="#071F67" />
-              <View style={styles.placeBlock}>
-                <Text style={styles.summaryValue}>{destination}</Text>
-                <Text style={styles.summaryLabel}>Destination</Text>
-              </View>
-              <View style={styles.dateBlock}>
-                <Ionicons name="calendar-outline" size={22} color="#082B85" />
-                <View>
-                  <Text style={styles.summaryValue}>{date}</Text>
-                  <Text style={styles.summaryLabel}>Date du voyage</Text>
-                </View>
-              </View>
-            </View>
-            <View style={styles.summaryBottom}>
-              <View style={styles.passengerRow}><Ionicons name="person-outline" size={21} color="#071F67" /><Text style={styles.passengerText}>{passengers}</Text></View>
-              <TouchableOpacity onPress={() => router.back()} style={styles.editButton}>
-                <Ionicons name="pencil-outline" size={20} color="#0781DF" />
-                <Text style={styles.editText}>Modifier la recherche</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <Text style={styles.sectionTitle}>Voyages disponibles</Text>
-          <Text style={styles.sectionSubtitle}>Sélectionnez un voyage pour continuer</Text>
-
-          {trips.map((trip) => (
-            <View key={`${trip.departureTime}-${trip.company}`} style={styles.tripCard}>
-              <View style={styles.tripInfo}>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.time}>{trip.departureTime}</Text>
-                  <Text style={styles.city}>{departure}</Text>
-                </View>
-                <View style={styles.durationColumn}>
-                  <Ionicons name="arrow-forward" size={22} color="#071F67" />
-                  <Text style={styles.duration}>{trip.duration}</Text>
-                  <Text style={styles.direct}>Direct</Text>
-                </View>
-                <View style={styles.timeColumn}>
-                  <Text style={styles.time}>{trip.arrivalTime}</Text>
-                  <Text style={styles.city}>{destination}</Text>
-                </View>
-                <View style={styles.priceColumn}>
-                  <Text style={styles.price}>{trip.price.toLocaleString('fr-FR')} FC</Text>
-                  <Text style={styles.priceLabel}>Par passager</Text>
-                  <TouchableOpacity style={styles.chooseButton} onPress={() => selectTrip(trip)} activeOpacity={0.85}>
-                    <Text style={styles.chooseText} numberOfLines={1}>Choisir</Text>
-                  </TouchableOpacity>
-                </View>
-              </View>
-              <View style={styles.companyRow}>
-                <Ionicons name="bus-outline" size={17} color="#5D626D" />
-                <Text style={styles.company}>{trip.company}</Text>
-                <Text style={styles.separator}>|</Text>
-                <Text style={styles.company}>{trip.category}</Text>
-              </View>
-            </View>
-          ))}
+        <View style={styles.journey}>
+          <View style={styles.timeRail}><Text style={styles.tripDate}>{date.slice(0, 5)}</Text><Text style={styles.departureTime}>{trip.departureTime}</Text><Text style={styles.arrivalTime}>{trip.arrivalTime}</Text></View>
+          <View style={styles.timeline}><View style={styles.startDot} /><View style={styles.line} /><Ionicons name="location-outline" size={19} color="#8B94A3" /></View>
+          <View style={styles.locations}><Text style={styles.locationPrimary}>{departure}</Text><Text style={styles.duration}>{trip.duration} · Direct</Text><Text style={styles.locationPrimary}>{destination}</Text></View>
         </View>
-      </ScrollView>
-    </SafeAreaView>
-  );
+        <View style={styles.offerRow}>
+          <View style={styles.categoryBlock}><Text style={styles.label}>Classe</Text><Text style={styles.category}>{trip.category}</Text></View>
+          <View style={styles.priceBlock}><Text style={styles.price}>{trip.price.toLocaleString('fr-FR')} FC</Text><Text style={styles.priceCaption}>par passager</Text></View>
+          <TouchableOpacity style={styles.selectButton} onPress={() => selectTrip(trip)}><Text style={styles.selectText}>Sélectionner</Text></TouchableOpacity>
+        </View>
+        <View style={styles.detailsRow}><Text style={styles.detailsText}>Voir les détails</Text><Ionicons name="chevron-down" size={18} color="#334155" /></View>
+      </View>)}
+    </ScrollView>
+  </View>;
 }
 
 const styles = StyleSheet.create({
-  page: { flex: 1, backgroundColor: '#F8FAFE' },
-  scroll: { paddingBottom: 24 },
-  hero: { height: 150, backgroundColor: '#072B84', paddingHorizontal: 22, paddingTop: 12, flexDirection: 'row', alignItems: 'center' },
-  back: { width: 48, height: 48, borderRadius: 24, borderWidth: 1.5, borderColor: 'rgba(255,255,255,.55)', alignItems: 'center', justifyContent: 'center' },
-  heroCopy: { flex: 1, alignItems: 'center' },
-  heroTitle: { color: '#fff', fontSize: 23, fontWeight: '800', textAlign: 'center' },
-  heroSubtitle: { color: '#fff', fontSize: 14, marginTop: 4 },
-  heroSide: { width: 48, height: 48 },
-  content: { marginTop: -1, paddingHorizontal: 18, paddingTop: 16, backgroundColor: '#F8FAFE', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  summaryCard: { backgroundColor: '#fff', borderRadius: 15, padding: 16, shadowColor: '#10275C', shadowOpacity: .07, shadowRadius: 14, elevation: 2 },
-  routeRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  busIcon: { width: 47, height: 47, borderRadius: 9, backgroundColor: '#072B84', alignItems: 'center', justifyContent: 'center' },
-  placeBlock: { flex: 1, minWidth: 0 },
-  dateBlock: { borderLeftWidth: 1, borderLeftColor: '#E5E8EF', paddingLeft: 11, flexDirection: 'row', alignItems: 'center', gap: 8 },
-  summaryValue: { color: '#101010', fontSize: 15, fontWeight: '800' },
-  summaryLabel: { color: '#70737B', fontSize: 11, marginTop: 3 },
-  summaryBottom: { marginTop: 15, paddingTop: 13, borderTopWidth: 1, borderTopColor: '#E8EBF1', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  passengerRow: { flexDirection: 'row', alignItems: 'center', gap: 9 },
-  passengerText: { color: '#101010', fontSize: 14, fontWeight: '700' },
-  editButton: { flexDirection: 'row', alignItems: 'center', gap: 7 },
-  editText: { color: '#0781DF', fontSize: 13, fontWeight: '800' },
-  sectionTitle: { color: '#061F68', fontSize: 22, fontWeight: '900', marginTop: 22 },
-  sectionSubtitle: { color: '#6C7078', fontSize: 14, marginTop: 4, marginBottom: 12 },
-  tripCard: { backgroundColor: '#fff', borderRadius: 14, padding: 15, marginBottom: 12, borderWidth: 1, borderColor: '#EBEDF2', shadowColor: '#10275C', shadowOpacity: .04, shadowRadius: 10, elevation: 1 },
-  tripInfo: { flexDirection: 'row', alignItems: 'center' },
-  timeColumn: { flex: 1 },
-  time: { color: '#0A0A0A', fontSize: 19, fontWeight: '900' },
-  city: { color: '#151515', fontSize: 13, marginTop: 3 },
-  durationColumn: { width: 75, alignItems: 'center' },
-  duration: { color: '#40434A', fontSize: 12, marginTop: 2 },
-  direct: { color: '#4F535B', fontSize: 11, borderWidth: 1, borderColor: '#E1E3E8', borderRadius: 5, paddingHorizontal: 7, paddingVertical: 2, marginTop: 3 },
-  priceColumn: { width: 112, borderLeftWidth: 1, borderLeftColor: '#E6E8EE', paddingLeft: 12, alignItems: 'center' },
-  price: { color: '#0759C7', fontSize: 16, fontWeight: '900' },
-  priceLabel: { color: '#777A81', fontSize: 11, marginTop: 3 },
-  chooseButton: { width: '100%', minHeight: 48, backgroundColor: '#072B84', borderRadius: 8, paddingVertical: 10, paddingHorizontal: 8, marginTop: 9, alignItems: 'center', justifyContent: 'center' },
-  chooseText: { color: '#fff', fontSize: 17, fontWeight: '800', textAlign: 'center' },
-  companyRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 12 },
-  company: { color: '#666A73', fontSize: 12 },
-  separator: { color: '#777A81', fontSize: 13 },
+  page: { flex: 1, backgroundColor: '#F8FAFC' },
+  header: { minHeight: 118, paddingBottom: 12, backgroundColor: 'white', borderBottomWidth: 1, borderBottomColor: '#E7EBF0', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 }, headerAction: { width: 46, height: 46, alignItems: 'center', justifyContent: 'center' }, headerCopy: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  routeTitle: { color: '#1D2532', fontFamily: 'Inter_600SemiBold', fontSize: 15, fontWeight: '600' }, routeDate: { color: '#596273', fontFamily: 'Inter_400Regular', fontSize: 13, marginTop: 3 },
+  scroll: { paddingHorizontal: 20, paddingTop: 28, paddingBottom: 28 }, title: { color: '#172033', fontFamily: 'Inter_700Bold', fontSize: 25, fontWeight: '700' }, subtitle: { color: '#303847', fontFamily: 'Inter_600SemiBold', fontSize: 15, fontWeight: '600', marginTop: 18, marginBottom: 20 },
+  tripCard: { backgroundColor: 'white', borderRadius: 16, marginBottom: 16, borderWidth: 1, borderColor: '#E1E5EB', shadowColor: '#0A1D49', shadowOpacity: .08, shadowRadius: 8, elevation: 3, overflow: 'hidden' },
+  companyHeader: { height: 46, paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center' }, companyLogo: { width: 29, height: 29, borderRadius: 7, backgroundColor: '#061F68', alignItems: 'center', justifyContent: 'center' }, companyName: { color: '#061F68', fontFamily: 'Inter_700Bold', fontSize: 14, fontWeight: '700', marginLeft: 8 }, remaining: { marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 3 }, remainingText: { color: '#D9485F', fontFamily: 'Inter_500Medium', fontSize: 11, fontWeight: '500' },
+  journey: { height: 100, flexDirection: 'row', paddingHorizontal: 12 }, timeRail: { width: 60, paddingTop: 1 }, tripDate: { color: '#697386', fontFamily: 'Inter_400Regular', fontSize: 10 }, departureTime: { color: '#182131', fontFamily: 'Inter_700Bold', fontSize: 15, fontWeight: '700', marginTop: 2 }, arrivalTime: { color: '#182131', fontFamily: 'Inter_700Bold', fontSize: 15, fontWeight: '700', marginTop: 31 }, timeline: { width: 27, alignItems: 'center', paddingTop: 7 }, startDot: { width: 16, height: 16, borderRadius: 8, borderWidth: 1.5, borderColor: '#818A99', backgroundColor: 'white' }, line: { width: 1, flex: 1, backgroundColor: '#AAB1BC' }, locations: { flex: 1, paddingTop: 3 }, locationPrimary: { color: '#242C39', fontFamily: 'Inter_600SemiBold', fontSize: 14, fontWeight: '600' }, duration: { color: '#778090', fontFamily: 'Inter_400Regular', fontSize: 11, marginTop: 14, marginBottom: 14 },
+  offerRow: { height: 62, paddingHorizontal: 12, paddingVertical: 8, borderTopWidth: 1, borderTopColor: '#E5E8ED', flexDirection: 'row', alignItems: 'center' }, categoryBlock: { flex: 1 }, label: { color: '#727B8A', fontFamily: 'Inter_400Regular', fontSize: 10 }, category: { color: '#303847', fontFamily: 'Inter_500Medium', fontSize: 12, fontWeight: '500', marginTop: 2 }, priceBlock: { alignItems: 'flex-end', marginRight: 9 }, price: { color: '#061F68', fontFamily: 'Inter_700Bold', fontSize: 15, fontWeight: '700' }, priceCaption: { color: '#0877EA', fontFamily: 'Inter_400Regular', fontSize: 9, marginTop: 2 }, selectButton: { height: 38, borderRadius: 9, backgroundColor: '#0877EA', paddingHorizontal: 12, alignItems: 'center', justifyContent: 'center' }, selectText: { color: 'white', fontFamily: 'Inter_600SemiBold', fontSize: 12, fontWeight: '600' },
+  detailsRow: { height: 35, paddingHorizontal: 14, borderTopWidth: 1, borderTopColor: '#E8EBEF', flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', gap: 4 }, detailsText: { color: '#334155', fontFamily: 'Inter_500Medium', fontSize: 12, fontWeight: '500' },
 });
