@@ -576,10 +576,6 @@ export default function Home() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={refreshPage} tintColor="#061F68" colors={['#061F68']} />
           }>
-          <View style={styles.pullIcon}>
-            <Ionicons name="arrow-down" size={25} color="#8C8C8C" />
-          </View>
-
           {role === 'passager' ? <Text style={styles.clientSectionTitle}>{text.physicalCard}</Text> : null}
 
           {role === 'passager' ? <View style={styles.physicalCardBox}>
@@ -967,10 +963,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 62,
     marginTop: -18,
-  },
-  pullIcon: {
-    alignItems: 'center',
-    marginBottom: 8,
   },
   clientSectionTitle: {
     color: '#061F68',
