@@ -3,7 +3,6 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TakoLogo } from '../components/tako-logo';
 
 type ChoiceKey = 'departure' | 'destination' | null;
 type DateChoice = 'outbound' | 'return' | null;
@@ -33,7 +32,7 @@ export default function TravelTickets() {
         <View style={[styles.hero, { paddingTop: Math.max(insets.top + 12, 32) }]}>
           <View style={styles.heroHeader}>
             <TouchableOpacity style={styles.heroAction} onPress={() => router.back()}><Ionicons name="chevron-back" size={27} color="white" /></TouchableOpacity>
-            <TakoLogo color="#ffffff" />
+            <View />
             <View style={styles.heroAction} />
           </View>
           <Image source={require('../assets/images/news-tako-public-transport.jpeg')} style={styles.heroBanner} resizeMode="cover" />
