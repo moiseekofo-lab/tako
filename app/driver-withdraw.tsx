@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { recordBusinessEvent } from '../services/api';
 import { useStore } from './store';
 
 const providers = [
@@ -47,6 +48,7 @@ export default function DriverWithdraw() {
     setLoading(true);
     setTimeout(() => {
       setBalance(Number(balance || 0) - value);
+      recordBusinessEvent({ eventType: 'withdrawal', userId: currentUser?.id, userName: currentUser?.fullName, amount: value, details: selectedProvider }).catch(() => {});
       setLoading(false);
       Alert.alert('Retrait demandé', `${value.toLocaleString('fr-FR')} FC seront envoyés par ${selectedProvider}.`, [
         { text: 'OK', onPress: () => router.replace({ pathname: '/home', params: { role: 'chauffeur' } } as any) },

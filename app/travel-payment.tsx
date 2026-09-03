@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Alert, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { recordBusinessEvent } from '../services/api';
+import { useStore } from './store';
 
 const methods = [
   { id: 'mpesa', badge: 'M-PESA', badgeColor: '#fff', textColor: '#18A842', name: 'M-Pesa (Vodacom)' },
@@ -14,6 +16,7 @@ const value = (item: string | string[] | undefined, fallback: string) => Array.i
 
 export default function TravelPayment() {
   const router = useRouter();
+  const currentUser = useStore((state: any) => state.currentUser);
   const params = useLocalSearchParams();
   const price = Number(value(params.price, '20000'));
   const passengers = Number(value(params.passengers, '1'));
@@ -22,9 +25,14 @@ export default function TravelPayment() {
   const [phone, setPhone] = useState('');
   const selected = useMemo(() => methods.find((item) => item.id === method) ?? methods[0], [method]);
   const money = (amount: number) => `${amount.toLocaleString('fr-FR')} FC`;
-  const confirm = () => phone.trim().length >= 8
-    ? Alert.alert('Paiement', `Confirmez le paiement de ${money(total)} avec ${selected.name}.`)
-    : Alert.alert('Numéro requis', `Saisissez le numéro associé à votre compte ${selected.name}.`);
+  const confirm = () => {
+    if (phone.trim().length < 8) {
+      Alert.alert('Numéro requis', `Saisissez le numéro associé à votre compte ${selected.name}.`);
+      return;
+    }
+    recordBusinessEvent({ eventType: 'booking', userId: currentUser?.id, userName: currentUser?.fullName, amount: total, details: `${passengers} passager${passengers > 1 ? 's' : ''} · ${selected.name}` }).catch(() => {});
+    Alert.alert('Paiement', `Confirmez le paiement de ${money(total)} avec ${selected.name}.`);
+  };
 
   return <SafeAreaView style={styles.page}><ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
     <View style={styles.topBar}><TouchableOpacity onPress={() => router.back()} style={styles.back}><Ionicons name="chevron-back" size={24} color="#fff" /></TouchableOpacity><Text style={styles.pageTitle}>Paiement</Text><View style={styles.back} /></View>

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { recordBusinessEvent } from '../services/api';
 import { useStore } from './store';
 
 const NAVY = '#061F68';
@@ -145,6 +146,7 @@ export default function CarRental() {
       <TouchableOpacity style={styles.button} onPress={() => {
         if (step < 4) return setStep((step + 1) as Step);
         if (mobileNumber.replace(/\s/g, '').length < 9) return Alert.alert('Numéro incorrect', 'Entrez un numéro Mobile Money valide.');
+        recordBusinessEvent({ eventType: 'car_rental', userId: user?.id, userName: user?.fullName, details: `${total.toLocaleString('fr-FR')} USD · ${vehicle.model} · ${pickup} vers ${destination} · ${paymentMethods.find((item) => item.key === paymentMethod)?.label}` }).catch(() => {});
         Alert.alert('Paiement envoyé', `Validez la demande ${paymentMethods.find((item) => item.key === paymentMethod)?.label} sur votre téléphone.`, [{ text: 'OK', onPress: () => router.replace('/my-reservations') }]);
       }}>
         {step === 4 && <Ionicons name="lock-closed-outline" size={20} color="white" />}

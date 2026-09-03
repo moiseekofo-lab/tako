@@ -385,6 +385,16 @@ export function savePayment(
   });
 }
 
+export function recordBusinessEvent(params: {
+  eventType: 'booking' | 'car_rental' | 'cancellation' | 'withdrawal';
+  userId?: string;
+  userName?: string;
+  amount?: number;
+  details?: string;
+}) {
+  return postJson('/business-events', params);
+}
+
 export function getPayments(clientId?: string) {
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : '';
   return requestJson(`/payments${query}`);

@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { recordBusinessEvent } from '../services/api';
+import { useStore } from './store';
 
 const NAVY = '#061F68';
 const ACTION = '#0877EA';
@@ -32,6 +34,7 @@ const initialReservations: Reservation[] = [
 
 export default function MyReservations() {
   const router = useRouter();
+  const currentUser = useStore((state: any) => state.currentUser);
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const compact = width < 390;
@@ -46,7 +49,10 @@ export default function MyReservations() {
   const cancelReservation = (item: Reservation) => {
     Alert.alert('Annuler la réservation ?', `Référence ${item.reference}`, [
       { text: 'Retour', style: 'cancel' },
-      { text: 'Annuler la réservation', style: 'destructive', onPress: () => setReservations((items) => items.map((current) => current.id === item.id ? { ...current, status: 'cancelled' } : current)) },
+      { text: 'Annuler la réservation', style: 'destructive', onPress: () => {
+        setReservations((items) => items.map((current) => current.id === item.id ? { ...current, status: 'cancelled' } : current));
+        recordBusinessEvent({ eventType: 'cancellation', userId: currentUser?.id, userName: currentUser?.fullName, details: `${item.reference} · ${item.departureCity} vers ${item.arrivalCity}` }).catch(() => {});
+      } },
     ]);
   };
 

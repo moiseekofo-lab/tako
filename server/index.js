@@ -620,6 +620,11 @@ async function initDatabase() {
     );
   `);
   await pool.query(`CREATE INDEX IF NOT EXISTS server_activity_events_created_at_idx ON server_activity_events (created_at DESC);`);
+  await pool.query(`ALTER TABLE server_activity_events ADD COLUMN IF NOT EXISTS event_type TEXT;`);
+  await pool.query(`ALTER TABLE server_activity_events ADD COLUMN IF NOT EXISTS message TEXT;`);
+  await pool.query(`ALTER TABLE server_activity_events ADD COLUMN IF NOT EXISTS amount NUMERIC;`);
+  await pool.query(`ALTER TABLE server_activity_events ADD COLUMN IF NOT EXISTS user_id TEXT;`);
+  await pool.query(`ALTER TABLE server_activity_events ADD COLUMN IF NOT EXISTS user_name TEXT;`);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS admin_profiles (
@@ -817,6 +822,19 @@ async function createNotification({ clientId, title, message, amount = null, typ
   return result.rows[0];
 }
 
+async function createAdminActivity({ eventType, title, message, amount = null, userId = null, userName = null, statusCode = 200 }) {
+  if (!pool) return null;
+  const result = await query(`INSERT INTO server_activity_events
+    (id, method, path, status_code, title, event_type, message, amount, user_id, user_name)
+    VALUES ($1, 'EVENT', '', $2, $3, $4, $5, $6, $7, $8)
+    RETURNING id, title, event_type AS "eventType", message, amount,
+      user_id AS "userId", user_name AS "userName", status_code AS "statusCode",
+      read, created_at AS "createdAt";`, [
+    crypto.randomUUID(), statusCode, title, eventType, message, amount, userId, userName,
+  ]);
+  return result.rows[0];
+}
+
 async function verifyStoredCode(contact, code, purpose, consume = true) {
   const cleanContact = normalizeContact(contact);
   const result = await query(
@@ -849,24 +867,8 @@ async function verifyCode(contact, code, purpose, consume = true) {
 async function handleRequest(request, response) {
   const url = new URL(request.url ?? '/', `http://${request.headers.host}`);
 
-  const ignoredActivityPaths = ['/', '/health', '/admin/activity/list', '/admin/activity/read'];
-  const shouldTrackActivity = request.method !== 'OPTIONS'
-    && !ignoredActivityPaths.includes(url.pathname)
-    && !url.pathname.startsWith('/assets/');
-  if (shouldTrackActivity && pool) {
-    const context = requestSecurityContext(request);
-    response.once('finish', () => {
-      const method = String(request.method || 'GET').toUpperCase();
-      const action = method === 'POST' ? 'Action' : method === 'DELETE' ? 'Suppression' : method === 'PATCH' || method === 'PUT' ? 'Modification' : 'Consultation';
-      const status = response.statusCode >= 400 ? 'Échec' : 'Succès';
-      pool.query(`INSERT INTO server_activity_events
-        (id, method, path, status_code, title, ip_address, user_agent)
-        VALUES ($1, $2, $3, $4, $5, $6, $7);`, [
-        crypto.randomUUID(), method, url.pathname, response.statusCode,
-        `${status} · ${action} ${url.pathname}`,
-        context.ipAddress, context.userAgent,
-      ]).catch((error) => console.error('Unable to record server activity:', error));
-    });
+  if (request.method !== 'OPTIONS' && url.pathname !== '/health') {
+    response.once('finish', () => console.info(`${request.method} ${url.pathname} - HTTP ${response.statusCode}`));
   }
 
   if (request.method === 'OPTIONS') {
@@ -1176,6 +1178,9 @@ async function handleRequest(request, response) {
       throw error;
     }
     const accountEmailSent = await sendAccountCreatedEmail(result.rows[0]);
+    if (role === 'chauffeur' || role === 'agent') {
+      await createAdminActivity({ eventType: 'account_pending', title: role === 'chauffeur' ? 'Nouveau chauffeur à valider' : 'Nouvel agent à valider', message: `${fullName} vient de créer un compte ${role}.`, userId: id, userName: fullName });
+    }
 
     sendJson(response, 201, {
       ok: true,
@@ -1225,10 +1230,12 @@ async function handleRequest(request, response) {
       WHERE LOWER(email) = $1 OR phone = $2 LIMIT 1;`, [login.toLowerCase(), login]);
     const adminAccount = accountResult.rows[0];
     if (!adminAccount || !verifyPassword(password, adminAccount.password_hash)) {
+      await createAdminActivity({ eventType: 'security_alert', title: 'Tentative de connexion Admin refusée', message: `Échec de connexion pour ${login}.`, userName: login, statusCode: 401 });
       sendJson(response, 401, { ok: false, error: 'Accès administrateur refusé' });
       return;
     }
     if (adminAccount.status !== 'active') {
+      await createAdminActivity({ eventType: 'security_alert', title: 'Compte Admin désactivé utilisé', message: `Tentative de connexion au compte désactivé de ${adminAccount.full_name || login}.`, userId: adminAccount.id, userName: adminAccount.full_name || login, statusCode: 403 });
       sendJson(response, 403, { ok: false, error: 'Ce compte administrateur est désactivé.' });
       return;
     }
@@ -1337,6 +1344,7 @@ async function handleRequest(request, response) {
       RETURNING id, full_name AS "fullName", email, phone, admin_role AS role, status,
         must_change_password AS "mustChangePassword", created_at AS "createdAt";`,
       [id, fullName, email, phone, hashPassword(password), role, status]);
+    await createAdminActivity({ eventType: 'admin_created', title: 'Administrateur créé', message: `Nouveau compte ${role} créé pour ${fullName}.`, userId: id, userName: fullName });
     sendJson(response, 201, { ok: true, account: result.rows[0] });
     return;
   }
@@ -1383,11 +1391,11 @@ async function handleRequest(request, response) {
     const requestedLimit = Number(body.limit || 30);
     const limit = Math.max(1, Math.min(Number.isFinite(requestedLimit) ? requestedLimit : 30, 100));
     const [events, unread] = await Promise.all([
-      query(`SELECT id, method, path, status_code AS "statusCode", title,
-        ip_address AS "ipAddress", user_agent AS "userAgent", read,
+      query(`SELECT id, status_code AS "statusCode", title, event_type AS "eventType",
+        message, amount, user_id AS "userId", user_name AS "userName", read,
         created_at AS "createdAt"
-        FROM server_activity_events ORDER BY created_at DESC LIMIT $1;`, [limit]),
-      query('SELECT COUNT(*)::int AS count FROM server_activity_events WHERE read = FALSE;'),
+        FROM server_activity_events WHERE event_type IS NOT NULL ORDER BY created_at DESC LIMIT $1;`, [limit]),
+      query('SELECT COUNT(*)::int AS count FROM server_activity_events WHERE event_type IS NOT NULL AND read = FALSE;'),
     ]);
     sendJson(response, 200, { ok: true, events: events.rows, unreadCount: unread.rows[0]?.count || 0 });
     return;
@@ -1399,7 +1407,7 @@ async function handleRequest(request, response) {
       sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
       return;
     }
-    await query('UPDATE server_activity_events SET read = TRUE WHERE read = FALSE;');
+    await query('UPDATE server_activity_events SET read = TRUE WHERE event_type IS NOT NULL AND read = FALSE;');
     sendJson(response, 200, { ok: true, unreadCount: 0 });
     return;
   }
@@ -1769,6 +1777,7 @@ async function handleRequest(request, response) {
       return;
     }
     const result = await query(`INSERT INTO nfc_cards (client_id, card_id, blocked, updated_at) VALUES ($1, $2, FALSE, NOW()) ON CONFLICT (client_id) DO UPDATE SET card_id = EXCLUDED.card_id, blocked = FALSE, updated_at = NOW() RETURNING *;`, [clientId, cardId]);
+    await createAdminActivity({ eventType: 'nfc_card', title: 'Carte NFC associée', message: `La carte ${cardId} a été associée au client ${clientId}.`, userId: clientId, userName: clientId });
     sendJson(response, 200, { ok: true, card: result.rows[0] });
     return;
   }
@@ -1786,6 +1795,7 @@ async function handleRequest(request, response) {
       sendJson(response, 404, { ok: false, error: 'Carte introuvable' });
       return;
     }
+    await createAdminActivity({ eventType: 'nfc_card', title: blocked ? 'Carte NFC bloquée' : 'Carte NFC débloquée', message: `La carte ${cardId} a été ${blocked ? 'bloquée' : 'débloquée'}.`, userId: result.rows[0].client_id, userName: result.rows[0].client_id });
     sendJson(response, 200, { ok: true, card: result.rows[0] });
     return;
   }
@@ -2593,6 +2603,7 @@ async function handleRequest(request, response) {
       message: 'Votre carte NFC est prête pour le transport.',
       type: 'nfc',
     });
+    await createAdminActivity({ eventType: 'nfc_card', title: 'Carte NFC activée', message: `La carte ${cardId} a été activée pour le client ${clientId}.`, userId: clientId, userName: clientId });
 
     sendJson(response, 200, { ok: true, card: result.rows[0] });
     return;
@@ -2624,6 +2635,7 @@ async function handleRequest(request, response) {
       message: blocked ? 'Votre carte NFC ne peut plus payer.' : 'Votre carte NFC peut de nouveau payer.',
       type: 'nfc',
     });
+    await createAdminActivity({ eventType: 'nfc_card', title: blocked ? 'Carte NFC bloquée' : 'Carte NFC débloquée', message: `La carte du client ${clientId} a été ${blocked ? 'bloquée' : 'débloquée'}.`, userId: clientId, userName: clientId });
 
     sendJson(response, 200, { ok: true, card: result.rows[0] });
     return;
@@ -2738,6 +2750,7 @@ async function handleRequest(request, response) {
       amount,
       type: 'recharge',
     });
+    await createAdminActivity({ eventType: 'recharge', title: 'Recharge confirmée', message: `${amount} FC crédités au compte de ${client.full_name || clientId} par ${agentId}.`, amount, userId: clientId, userName: client.full_name || clientId });
 
     sendJson(response, 201, {
       ok: true,
@@ -2760,6 +2773,7 @@ async function handleRequest(request, response) {
     const route = String(body.route || '').trim() || null;
 
     if (!Number.isFinite(amount) || amount <= 0 || !method) {
+      await createAdminActivity({ eventType: 'payment_failed', title: 'Échec de paiement', message: `Demande de paiement invalide pour ${clientId || 'un passager non identifié'}.`, amount: Number.isFinite(amount) ? amount : null, userId: clientId, userName: clientId, statusCode: 400 });
       sendJson(response, 400, { ok: false, error: 'amount et method sont obligatoires' });
       return;
     }
@@ -2772,6 +2786,7 @@ async function handleRequest(request, response) {
     if (method === 'nfc' && clientId) {
       const card = await query('SELECT blocked FROM nfc_cards WHERE client_id = $1;', [clientId]);
       if (card.rows[0]?.blocked) {
+        await createAdminActivity({ eventType: 'payment_failed', title: 'Paiement NFC refusé', message: `La carte NFC bloquée du client ${clientId} a été refusée.`, amount, userId: clientId, userName: clientId, statusCode: 403 });
         sendJson(response, 403, { ok: false, error: 'Carte NFC bloquée' });
         return;
       }
@@ -2798,7 +2813,34 @@ async function handleRequest(request, response) {
       });
     }
 
+    const paymentUser = clientId ? await query('SELECT full_name FROM users WHERE id = $1 LIMIT 1;', [clientId]) : null;
+    const paymentUserName = paymentUser?.rows[0]?.full_name || clientId || 'Passager non identifié';
+    await createAdminActivity({ eventType: 'payment', title: `Paiement ${String(method).toUpperCase()} confirmé`, message: `${amount} FC payés par ${paymentUserName}${route ? ` pour ${route}` : ''}.`, amount, userId: clientId, userName: paymentUserName });
+
     sendJson(response, 201, { ok: true, payment: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/business-events') {
+    const body = await readJson(request);
+    const definitions = {
+      booking: 'Réservation de billet',
+      car_rental: 'Location de voiture',
+      cancellation: 'Annulation de réservation',
+      withdrawal: 'Demande de retrait',
+    };
+    const eventType = String(body.eventType || '');
+    const title = definitions[eventType];
+    if (!title) {
+      sendJson(response, 400, { ok: false, error: 'Type d’événement non autorisé' });
+      return;
+    }
+    const amount = body.amount == null ? null : Number(body.amount);
+    const userId = String(body.userId || '').trim() || null;
+    const userName = String(body.userName || '').trim() || userId || 'Utilisateur non identifié';
+    const details = String(body.details || '').trim();
+    const event = await createAdminActivity({ eventType, title, message: `${title} pour ${userName}${details ? ` · ${details}` : ''}.`, amount: Number.isFinite(amount) ? amount : null, userId, userName });
+    sendJson(response, 201, { ok: true, event });
     return;
   }
 
@@ -2942,6 +2984,12 @@ const server = http.createServer(async (request, response) => {
     await handleRequest(request, response);
   } catch (error) {
     console.error(error);
+    await createAdminActivity({
+      eventType: 'system_error',
+      title: 'Erreur importante du système',
+      message: `${request.method || 'REQUÊTE'} ${request.url || '/'} : ${error.publicMessage || error.message || 'Erreur serveur'}`,
+      statusCode: error.statusCode || 500,
+    }).catch((activityError) => console.error('Unable to record important system error:', activityError));
     sendError(response, error);
   }
 });

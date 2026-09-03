@@ -1710,7 +1710,7 @@ export default function Admin() {
                 <TouchableOpacity
                   style={styles.serverNotificationButton}
                   activeOpacity={0.82}
-                  accessibilityLabel="Notifications du serveur"
+                  accessibilityLabel="Notifications administrateur"
                   onPress={() => {
                     setIsAdminMenuOpen(false);
                     setIsServerNotificationsOpen((open) => !open);
@@ -1722,16 +1722,20 @@ export default function Admin() {
                 {isServerNotificationsOpen ? (
                   <View style={styles.serverNotificationsPanel}>
                     <View style={styles.serverNotificationsHeader}>
-                      <View><Text style={styles.serverNotificationsTitle}>Activité du serveur</Text><Text style={styles.serverNotificationsSubtitle}>Mise à jour automatique toutes les 15 secondes</Text></View>
+                      <View><Text style={styles.serverNotificationsTitle}>Notifications Admin</Text><Text style={styles.serverNotificationsSubtitle}>Événements importants · actualisation automatique</Text></View>
                       {serverUnreadCount > 0 ? <TouchableOpacity onPress={markServerActivityAsRead}><Text style={styles.serverNotificationsRead}>Tout lire</Text></TouchableOpacity> : null}
                     </View>
                     <ScrollView style={styles.serverNotificationsList} nestedScrollEnabled>
                       {serverEventsLoading && serverEvents.length === 0 ? <ActivityIndicator color={TAKO_ACTION} style={styles.serverNotificationsLoader} /> : null}
-                      {!serverEventsLoading && serverEvents.length === 0 ? <Text style={styles.serverNotificationsEmpty}>Aucun mouvement du serveur.</Text> : null}
+                      {!serverEventsLoading && serverEvents.length === 0 ? <Text style={styles.serverNotificationsEmpty}>Aucun nouvel événement important.</Text> : null}
                       {serverEvents.map((event) => (
                         <View key={event.id} style={[styles.serverEventRow, !event.read && styles.serverEventUnread]}>
                           <View style={[styles.serverEventIcon, { backgroundColor: event.statusCode >= 400 ? '#FFF0F0' : '#EAFBF1' }]}><Ionicons name={event.statusCode >= 400 ? 'warning-outline' : 'checkmark-circle-outline'} size={18} color={event.statusCode >= 400 ? '#D64545' : '#079447'} /></View>
-                          <View style={styles.serverEventContent}><Text style={styles.serverEventTitle}>{event.title}</Text><Text style={styles.serverEventMeta}>{event.method} · HTTP {event.statusCode} · {formatDate(event.createdAt)}</Text></View>
+                          <View style={styles.serverEventContent}>
+                            <Text style={styles.serverEventTitle}>{event.title}</Text>
+                            <Text style={styles.serverEventMessage}>{event.message}</Text>
+                            <Text style={styles.serverEventMeta}>{event.userName ? `Utilisateur : ${event.userName} · ` : ''}{event.amount != null ? `${Number(event.amount).toLocaleString('fr-FR')} FC · ` : ''}{formatDate(event.createdAt)}</Text>
+                          </View>
                           {!event.read ? <View style={styles.serverEventDot} /> : null}
                         </View>
                       ))}
@@ -3682,6 +3686,7 @@ const styles = StyleSheet.create({
   serverEventIcon: { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
   serverEventContent: { flex: 1 },
   serverEventTitle: { color: '#17213B', fontSize: 12, fontWeight: '600' },
+  serverEventMessage: { color: '#48536A', fontSize: 11, lineHeight: 16, marginTop: 3 },
   serverEventMeta: { color: '#7A8495', fontSize: 10, marginTop: 4 },
   serverEventDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: TAKO_ACTION },
   adminAvatar: {
