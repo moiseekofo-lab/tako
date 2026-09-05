@@ -1349,6 +1349,63 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/accounts/update') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const accountId = String(body.accountId || '').trim();
+    if (!accountId) {
+      sendJson(response, 400, { ok: false, error: 'Compte administrateur invalide.' });
+      return;
+    }
+    const existing = await query('SELECT * FROM admin_accounts WHERE id = $1 LIMIT 1;', [accountId]);
+    if (!existing.rows[0]) {
+      sendJson(response, 404, { ok: false, error: 'Administrateur introuvable.' });
+      return;
+    }
+    const isPrimary = accountId === 'ADMIN';
+    const fullName = body.fullName === undefined ? existing.rows[0].full_name : String(body.fullName).trim();
+    const role = isPrimary ? 'Super administrateur' : (body.role === undefined ? existing.rows[0].admin_role : String(body.role).trim());
+    const status = isPrimary ? 'active' : (body.status === undefined ? existing.rows[0].status : body.status === 'Désactivé' ? 'disabled' : 'active');
+    const password = body.password === undefined ? '' : String(body.password);
+    if (!fullName || !role || (password && password.length < 8)) {
+      sendJson(response, 400, { ok: false, error: 'Nom et rôle obligatoires. Le mot de passe doit contenir au moins 8 caractères.' });
+      return;
+    }
+    const passwordHash = password ? hashPassword(password) : existing.rows[0].password_hash;
+    const result = await query(`UPDATE admin_accounts SET full_name = $2, admin_role = $3, status = $4,
+      password_hash = $5, must_change_password = CASE WHEN $6 THEN TRUE ELSE must_change_password END, updated_at = NOW()
+      WHERE id = $1 RETURNING id, full_name AS "fullName", email, phone, photo_url AS "photoUrl",
+      admin_role AS role, status, created_at AS "createdAt";`,
+      [accountId, fullName, role, status, passwordHash, Boolean(password)]);
+    await createAdminActivity({ eventType: 'admin_updated', title: password ? 'Mot de passe administrateur réinitialisé' : 'Compte administrateur modifié', message: `${fullName} · ${role} · ${status === 'active' ? 'Actif' : 'Désactivé'}.`, userId: accountId, userName: fullName });
+    sendJson(response, 200, { ok: true, account: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/accounts/delete') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const accountId = String(body.accountId || '').trim();
+    if (!accountId || accountId === 'ADMIN') {
+      sendJson(response, 403, { ok: false, error: 'Le super administrateur principal ne peut pas être supprimé.' });
+      return;
+    }
+    const deleted = await query('DELETE FROM admin_accounts WHERE id = $1 RETURNING full_name AS "fullName";', [accountId]);
+    if (!deleted.rows[0]) {
+      sendJson(response, 404, { ok: false, error: 'Administrateur introuvable.' });
+      return;
+    }
+    await createAdminActivity({ eventType: 'admin_deleted', title: 'Compte administrateur supprimé', message: `Le compte de ${deleted.rows[0].fullName} a été supprimé.`, userId: accountId, userName: deleted.rows[0].fullName });
+    sendJson(response, 200, { ok: true });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/admin/security') {
     const body = await readJson(request);
     if (!verifyAdminSessionToken(body.sessionToken)) {

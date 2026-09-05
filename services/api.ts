@@ -149,6 +149,19 @@ export function createAdminAccount(sessionToken: string, account: {
   return postJson('/admin/accounts/create', { sessionToken, ...account });
 }
 
+export function updateAdminAccount(sessionToken: string, accountId: string, changes: {
+  fullName?: string;
+  role?: string;
+  status?: 'Actif' | 'Désactivé';
+  password?: string;
+}) {
+  return postJson('/admin/accounts/update', { sessionToken, accountId, ...changes });
+}
+
+export function deleteAdminAccount(sessionToken: string, accountId: string) {
+  return postJson('/admin/accounts/delete', { sessionToken, accountId });
+}
+
 export function getAdminDashboard(sessionToken: string, period: 'day' | 'week' | 'month') {
   return postJson('/admin/dashboard', {
     sessionToken,
