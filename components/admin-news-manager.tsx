@@ -147,7 +147,7 @@ export function AdminNewsManager() {
           {loading ? <ActivityIndicator size="large" color={BLUE} style={{ marginVertical: 60 }} /> : filteredItems.length === 0 ? (
             <View style={styles.empty}><Ionicons name="megaphone-outline" size={40} color={ACTION} /><Text style={styles.emptyTitle}>Aucune actualité trouvée</Text><Text style={styles.emptyText}>Créez une actualité ou modifiez les filtres.</Text></View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}><Text style={[styles.th, styles.newsColumn]}>Actualité</Text><Text style={[styles.th, styles.categoryColumn]}>Catégorie</Text><Text style={[styles.th, styles.statusColumn]}>Statut</Text><Text style={[styles.th, styles.periodColumn]}>Période de publication</Text><Text style={[styles.th, styles.authorColumn]}>Créée par</Text><Text style={[styles.th, styles.actionColumn]}>Actions</Text></View>
                 {filteredItems.map((item) => (

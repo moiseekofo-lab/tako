@@ -517,6 +517,16 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
       overflowY: 'auto',
     } as any)
   : null;
+const ADMIN_SCROLLBAR_CSS = `
+  .tako-admin-root *::-webkit-scrollbar:horizontal {
+    height: 0 !important;
+  }
+
+  .tako-admin-root *::-webkit-scrollbar-thumb:horizontal,
+  .tako-admin-root *::-webkit-scrollbar-track:horizontal {
+    background: transparent !important;
+  }
+`;
 type NfcTag = { id?: string; type?: string } | null;
 
 type AdminSection =
@@ -1665,7 +1675,11 @@ export default function Admin() {
   }
 
   return (
-    <View style={styles.page}>
+    <>
+      {Platform.OS === 'web' ? <style dangerouslySetInnerHTML={{ __html: ADMIN_SCROLLBAR_CSS }} /> : null}
+      <View
+        {...(Platform.OS === 'web' ? ({ className: 'tako-admin-root' } as any) : {})}
+        style={styles.page}>
       <View style={[styles.shell, isNarrow && styles.mobileShell]}>
         <View style={[styles.sidebar, isNarrow && styles.mobileSidebar]}>
           <View style={styles.brandBlock}>
@@ -2151,7 +2165,8 @@ export default function Admin() {
           {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
-    </View>
+      </View>
+    </>
   );
 }
 
