@@ -124,7 +124,7 @@ export function AdminRolesManager({ currentAdmin }: { currentAdmin?: any }) {
         <Pressable style={styles.actionModal} onPress={(event) => event.stopPropagation()}>
           <View style={styles.modalHeader}><View><Text style={styles.modalTitle}>{actionMode === 'menu' ? selected?.fullName : actionMode === 'edit' ? 'Modifier le compte' : 'Nouveau mot de passe'}</Text><Text style={styles.email}>{selected?.email}</Text></View><TouchableOpacity onPress={() => setSelected(null)}><Ionicons name="close" size={22} color={BLUE} /></TouchableOpacity></View>
           {actionMode === 'menu' ? <View style={styles.actionList}>
-            <Action icon="create-outline" label="Modifier le nom et le rôle" onPress={() => setActionMode('edit')} />
+            <Action icon="create-outline" label="Modifier le nom et le rôle" disabled={selected?.id === 'ADMIN'} onPress={() => setActionMode('edit')} />
             <Action icon={selected?.status === 'Actif' ? 'pause-circle-outline' : 'checkmark-circle-outline'} label={selected?.status === 'Actif' ? 'Désactiver le compte' : 'Activer le compte'} disabled={selected?.id === 'ADMIN'} onPress={() => runUpdate({ status: selected?.status === 'Actif' ? 'Désactivé' : 'Actif' }, 'Le statut du compte a été mis à jour.')} />
             <Action icon="key-outline" label="Réinitialiser le mot de passe" onPress={() => setActionMode('password')} />
             <Action icon="trash-outline" label="Supprimer le compte" danger disabled={selected?.id === 'ADMIN'} onPress={confirmDelete} />

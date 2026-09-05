@@ -1366,6 +1366,10 @@ async function handleRequest(request, response) {
       return;
     }
     const isPrimary = accountId === 'ADMIN';
+    if (isPrimary && (body.fullName !== undefined || body.role !== undefined || body.status !== undefined)) {
+      sendJson(response, 403, { ok: false, error: 'Le nom, le rôle et le statut du super administrateur principal sont protégés.' });
+      return;
+    }
     const fullName = body.fullName === undefined ? existing.rows[0].full_name : String(body.fullName).trim();
     const role = isPrimary ? 'Super administrateur' : (body.role === undefined ? existing.rows[0].admin_role : String(body.role).trim());
     const status = isPrimary ? 'active' : (body.status === undefined ? existing.rows[0].status : body.status === 'Désactivé' ? 'disabled' : 'active');
