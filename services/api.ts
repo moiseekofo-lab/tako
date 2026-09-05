@@ -401,6 +401,21 @@ export function setPartnerAgencyStatus(sessionToken: string, id: string, status:
   return postJson('/admin/partner-agencies/status', { sessionToken, id, status });
 }
 
+export function getAdminSchedules(sessionToken: string) {
+  return postJson('/admin/schedules/list', { sessionToken });
+}
+
+export function saveAdminSchedule(sessionToken: string, schedule: {
+  id?: string; departure: string; arrival: string; departureAt: string; agency: string;
+  duration: string; price: number; vehicle: string; capacity: number; status: string;
+}) {
+  return postJson('/admin/schedules/save', { sessionToken, ...schedule });
+}
+
+export function setAdminScheduleStatus(sessionToken: string, id: string, status: string) {
+  return postJson('/admin/schedules/status', { sessionToken, id, status });
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

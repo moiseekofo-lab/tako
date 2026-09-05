@@ -603,6 +603,23 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS travel_schedules (
+      id TEXT PRIMARY KEY,
+      departure TEXT NOT NULL,
+      arrival TEXT NOT NULL,
+      departure_at TIMESTAMPTZ NOT NULL,
+      agency TEXT NOT NULL DEFAULT '',
+      duration TEXT NOT NULL DEFAULT '',
+      price NUMERIC NOT NULL DEFAULT 0,
+      vehicle TEXT NOT NULL DEFAULT '',
+      capacity INTEGER NOT NULL DEFAULT 0,
+      occupied INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'scheduled',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_migrations (
@@ -2988,6 +3005,49 @@ async function handleRequest(request, response) {
     `);
     sendJson(response, 200, { ok: true, news: result.rows });
     return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/schedules/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) { sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' }); return; }
+    const rows = await query(`SELECT id, departure, arrival, departure_at AS "departureAt", agency, duration,
+      price, vehicle, capacity, occupied, status, created_at AS "createdAt" FROM travel_schedules ORDER BY departure_at ASC;`);
+    const stats = await query(`SELECT COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE departure_at::date = CURRENT_DATE) AS today,
+      COUNT(*) FILTER (WHERE departure_at BETWEEN NOW() AND NOW() + INTERVAL '3 hours') AS upcoming,
+      COALESCE(ROUND(AVG(CASE WHEN capacity > 0 THEN occupied * 100.0 / capacity END)), 0) AS occupancy
+      FROM travel_schedules WHERE status <> 'cancelled';`);
+    sendJson(response, 200, { ok: true, schedules: rows.rows, stats: stats.rows[0] }); return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/schedules/save') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) { sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' }); return; }
+    const id = String(body.id || `SCH-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`).trim();
+    const departure = String(body.departure || '').trim(); const arrival = String(body.arrival || '').trim();
+    const agency = String(body.agency || '').trim(); const duration = String(body.duration || '').trim();
+    const vehicle = String(body.vehicle || '').trim(); const departureAt = new Date(body.departureAt);
+    const price = Number(body.price); const capacity = Number(body.capacity);
+    const status = ['scheduled', 'ongoing', 'completed', 'cancelled'].includes(body.status) ? body.status : 'scheduled';
+    if (!departure || !arrival || !agency || Number.isNaN(departureAt.getTime()) || !Number.isFinite(price) || price < 0 || !Number.isInteger(capacity) || capacity <= 0) {
+      sendJson(response, 400, { ok: false, error: 'Départ, arrivée, date, agence, tarif et capacité valides sont obligatoires.' }); return;
+    }
+    const result = await query(`INSERT INTO travel_schedules (id,departure,arrival,departure_at,agency,duration,price,vehicle,capacity,status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO UPDATE SET departure=$2,arrival=$3,departure_at=$4,
+      agency=$5,duration=$6,price=$7,vehicle=$8,capacity=$9,status=$10,updated_at=NOW()
+      RETURNING id,departure,arrival,departure_at AS "departureAt",agency,duration,price,vehicle,capacity,occupied,status;`,
+      [id,departure,arrival,departureAt.toISOString(),agency,duration,price,vehicle,capacity,status]);
+    sendJson(response, body.id ? 200 : 201, { ok: true, schedule: result.rows[0] }); return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/schedules/status') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) { sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' }); return; }
+    const id = String(body.id || '').trim(); const status = ['scheduled','ongoing','completed','cancelled'].includes(body.status) ? body.status : '';
+    if (!id || !status) { sendJson(response, 400, { ok: false, error: 'Horaire ou statut invalide.' }); return; }
+    const result = await query('UPDATE travel_schedules SET status=$2,updated_at=NOW() WHERE id=$1 RETURNING id,status;', [id,status]);
+    if (!result.rows[0]) { sendJson(response, 404, { ok: false, error: 'Horaire introuvable.' }); return; }
+    sendJson(response, 200, { ok: true, schedule: result.rows[0] }); return;
   }
 
   if (request.method === 'POST' && url.pathname === '/admin/partner-agencies/list') {
