@@ -620,6 +620,23 @@ async function initDatabase() {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
   `);
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS cancellation_requests (
+      id TEXT PRIMARY KEY,
+      booking_reference TEXT NOT NULL,
+      client_id TEXT,
+      client_name TEXT NOT NULL DEFAULT '',
+      client_phone TEXT NOT NULL DEFAULT '',
+      route TEXT NOT NULL DEFAULT '',
+      travel_date TIMESTAMPTZ,
+      amount NUMERIC NOT NULL DEFAULT 0,
+      request_type TEXT NOT NULL DEFAULT 'cancellation',
+      reason TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'pending',
+      requested_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      processed_at TIMESTAMPTZ
+    );
+  `);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS app_migrations (
@@ -2987,6 +3004,12 @@ async function handleRequest(request, response) {
     const userId = String(body.userId || '').trim() || null;
     const userName = String(body.userName || '').trim() || userId || 'Utilisateur non identifié';
     const details = String(body.details || '').trim();
+    if (eventType === 'cancellation') {
+      const [bookingReference = `BIL-${Date.now()}`, route = 'Trajet non renseigné'] = details.split(' · ');
+      await query(`INSERT INTO cancellation_requests (id, booking_reference, client_id, client_name, route, amount, request_type, reason)
+        VALUES ($1,$2,$3,$4,$5,$6,'cancellation','Demande envoyée par le client');`,
+        [`CAN-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`, bookingReference, userId, userName, route, Number.isFinite(amount) ? amount : 0]);
+    }
     const event = await createAdminActivity({ eventType, title, message: `${title} pour ${userName}${details ? ` · ${details}` : ''}.`, amount: Number.isFinite(amount) ? amount : null, userId, userName });
     sendJson(response, 201, { ok: true, event });
     return;
@@ -3005,6 +3028,39 @@ async function handleRequest(request, response) {
     `);
     sendJson(response, 200, { ok: true, news: result.rows });
     return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/cancellations/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) { sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' }); return; }
+    const rows = await query(`SELECT id, booking_reference AS "bookingReference", client_id AS "clientId", client_name AS "clientName",
+      client_phone AS "clientPhone", route, travel_date AS "travelDate", amount, request_type AS "requestType", reason,
+      status, requested_at AS "requestedAt", processed_at AS "processedAt" FROM cancellation_requests ORDER BY requested_at DESC;`);
+    const stats = await query(`SELECT COUNT(*) AS total, COUNT(*) FILTER (WHERE status IN ('approved','refunded')) AS approved,
+      COUNT(*) FILTER (WHERE status='pending') AS pending, COUNT(*) FILTER (WHERE status='refused') AS refused,
+      COALESCE(SUM(amount) FILTER (WHERE status IN ('approved','refunded')),0) AS "refundedAmount" FROM cancellation_requests;`);
+    sendJson(response, 200, { ok: true, requests: rows.rows, stats: stats.rows[0] }); return;
+  }
+  if (request.method === 'POST' && url.pathname === '/admin/cancellations/create') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) { sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' }); return; }
+    const reference=String(body.bookingReference||'').trim(), clientName=String(body.clientName||'').trim(), clientPhone=String(body.clientPhone||'').trim(), route=String(body.route||'').trim(), reason=String(body.reason||'').trim();
+    const amount=Number(body.amount), travelDate=body.travelDate?new Date(body.travelDate):null, requestType=body.requestType==='refund'?'refund':'cancellation';
+    if(!reference||!clientName||!route||!Number.isFinite(amount)||amount<0||(travelDate&&Number.isNaN(travelDate.getTime()))){sendJson(response,400,{ok:false,error:'Référence, client, trajet, date et montant valides sont obligatoires.'});return;}
+    const id=`CAN-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`;
+    const result=await query(`INSERT INTO cancellation_requests(id,booking_reference,client_name,client_phone,route,travel_date,amount,request_type,reason)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id;`,[id,reference,clientName,clientPhone,route,travelDate?travelDate.toISOString():null,amount,requestType,reason]);
+    sendJson(response,201,{ok:true,request:result.rows[0]});return;
+  }
+  if (request.method === 'POST' && url.pathname === '/admin/cancellations/decision') {
+    const body=await readJson(request);if(!verifyAdminSessionToken(body.sessionToken)){sendJson(response,401,{ok:false,error:'Session administrateur expirée'});return;}
+    const id=String(body.id||'').trim(), decision=body.decision==='approved'?'refunded':body.decision==='refused'?'refused':'';
+    if(!id||!decision){sendJson(response,400,{ok:false,error:'Décision invalide.'});return;}
+    const item=await query(`UPDATE cancellation_requests SET status=$2,processed_at=NOW() WHERE id=$1 AND status='pending' RETURNING *;`,[id,decision]);
+    if(!item.rows[0]){sendJson(response,404,{ok:false,error:'Demande introuvable ou déjà traitée.'});return;}
+    if(decision==='refunded'&&item.rows[0].client_id&&Number(item.rows[0].amount)>0){await query('UPDATE users SET balance=balance+$2,updated_at=NOW() WHERE id=$1;',[item.rows[0].client_id,item.rows[0].amount]);}
+    await createAdminActivity({eventType:'cancellation',title:decision==='refunded'?'Annulation remboursée':'Annulation refusée',message:`${item.rows[0].booking_reference} · ${item.rows[0].client_name}.`,amount:Number(item.rows[0].amount),userId:item.rows[0].client_id,userName:item.rows[0].client_name});
+    sendJson(response,200,{ok:true});return;
   }
 
   if (request.method === 'POST' && url.pathname === '/admin/schedules/list') {

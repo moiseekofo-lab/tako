@@ -416,6 +416,21 @@ export function setAdminScheduleStatus(sessionToken: string, id: string, status:
   return postJson('/admin/schedules/status', { sessionToken, id, status });
 }
 
+export function getCancellationRequests(sessionToken: string) {
+  return postJson('/admin/cancellations/list', { sessionToken });
+}
+
+export function createCancellationRequest(sessionToken: string, request: {
+  bookingReference: string; clientName: string; clientPhone: string; route: string;
+  travelDate: string; amount: number; requestType: string; reason: string;
+}) {
+  return postJson('/admin/cancellations/create', { sessionToken, ...request });
+}
+
+export function decideCancellationRequest(sessionToken: string, id: string, decision: 'approved' | 'refused') {
+  return postJson('/admin/cancellations/decision', { sessionToken, id, decision });
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,
