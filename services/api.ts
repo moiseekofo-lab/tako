@@ -382,6 +382,10 @@ export function getAdminRecharges(sessionToken: string) {
   return postJson('/admin/recharges/list', { sessionToken });
 }
 
+export function getAdminTransactions(sessionToken: string) {
+  return postJson('/admin/transactions/list', { sessionToken });
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

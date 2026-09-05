@@ -9,6 +9,7 @@ import { AdminProfile } from '../components/admin-profile';
 import { AdminRolesManager } from '../components/admin-roles-manager';
 import { AdminTicketing } from '../components/admin-ticketing';
 import { AdminRecharges } from '../components/admin-recharges';
+import { AdminTransactions } from '../components/admin-transactions';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2067,28 +2068,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection === 'transactions' ? (
-            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <TransactionSummary qr={qrTransactions} nfc={nfcTransactions} recharge={rechargeTransactions} />
-              <View style={[styles.card, styles.fullCard]}>
-                <View style={styles.cardHeaderRow}>
-                  <View>
-                    <Text style={styles.cardTitle}>Activité récente</Text>
-                    <Text style={styles.cardText}>Dernières opérations connues par l’application.</Text>
-                  </View>
-                  <View style={styles.clientPill}>
-                    <Text style={styles.clientPillText}>{notifications.length} lignes</Text>
-                  </View>
-                </View>
-
-                {notifications.length === 0 ? (
-                  <EmptyState icon="receipt-outline" title="Aucune transaction récente" text="Les paiements QR, NFC et recharges apparaîtront ici." />
-                ) : (
-                  notifications.slice(0, 8).map((item) => <TransactionRow key={item.id} item={item} />)
-                )}
-              </View>
-            </View>
-          ) : null}
+          {activeSection === 'transactions' ? <AdminTransactions /> : null}
 
           {activeSection === 'settings' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>

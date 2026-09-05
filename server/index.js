@@ -2852,6 +2852,32 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/transactions/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const [rowsResult, statsResult] = await Promise.all([
+      query(`SELECT p.id, p.amount, p.method, p.status, p.client_id AS "clientId", p.driver_id AS "driverId",
+        p.bus_plate AS "busPlate", p.route, p.created_at AS "createdAt",
+        COALESCE(u.full_name, p.client_id, p.driver_id, 'Utilisateur TaKo') AS "userName",
+        COALESCE(u.phone, '') AS phone,
+        CASE WHEN p.method = 'internal_recharge' OR p.route = 'Recharge interne' THEN 'recharge'
+          WHEN p.method = 'refund' THEN 'refund' WHEN p.method = 'payout' THEN 'payout' ELSE 'payment' END AS type
+        FROM payments p LEFT JOIN users u ON u.id = p.client_id
+        ORDER BY p.created_at DESC LIMIT 500;`),
+      query(`SELECT COUNT(*) AS total, COALESCE(SUM(amount), 0) AS "totalAmount",
+        COUNT(*) FILTER (WHERE method = 'internal_recharge' OR route = 'Recharge interne') AS recharges,
+        COUNT(*) FILTER (WHERE method = 'payout') AS payouts,
+        COUNT(*) FILTER (WHERE method = 'refund') AS refunds,
+        COUNT(*) FILTER (WHERE method <> 'internal_recharge' AND COALESCE(route, '') <> 'Recharge interne' AND method NOT IN ('payout', 'refund')) AS payments
+        FROM payments;`),
+    ]);
+    sendJson(response, 200, { ok: true, transactions: rowsResult.rows, stats: statsResult.rows[0] });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/payments') {
     const body = await readJson(request);
     const amount = Number(body.amount);
