@@ -2823,6 +2823,35 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (request.method === 'POST' && url.pathname === '/admin/recharges/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const rechargeWhere = `(p.method = 'internal_recharge' OR p.route = 'Recharge interne')`;
+    const [rowsResult, statsResult, trendResult] = await Promise.all([
+      query(`SELECT p.id, p.amount, p.method, p.status, p.client_id AS "clientId", p.driver_id AS "agentId",
+        p.created_at AS "createdAt", COALESCE(u.full_name, p.client_id, 'Client TaKo') AS "clientName",
+        COALESCE(u.phone, '') AS phone
+        FROM payments p LEFT JOIN users u ON u.id = p.client_id
+        WHERE ${rechargeWhere} ORDER BY p.created_at DESC LIMIT 250;`),
+      query(`SELECT COALESCE(SUM(amount) FILTER (WHERE status = 'accepted'), 0) AS "totalAmount",
+        COUNT(*) FILTER (WHERE status = 'accepted') AS successful,
+        COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+        COUNT(*) FILTER (WHERE status NOT IN ('accepted', 'pending')) AS failed,
+        COUNT(*) FILTER (WHERE driver_id = 'ADMIN') AS "mobileMoney",
+        COUNT(*) FILTER (WHERE driver_id <> 'ADMIN') AS agent
+        FROM payments p WHERE ${rechargeWhere};`),
+      query(`SELECT TO_CHAR(day, 'DD/MM') AS label, COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'accepted'), 0) AS amount
+        FROM generate_series(CURRENT_DATE - INTERVAL '6 days', CURRENT_DATE, INTERVAL '1 day') day
+        LEFT JOIN payments p ON p.created_at >= day AND p.created_at < day + INTERVAL '1 day' AND ${rechargeWhere}
+        GROUP BY day ORDER BY day;`),
+    ]);
+    sendJson(response, 200, { ok: true, recharges: rowsResult.rows, stats: statsResult.rows[0], trend: trendResult.rows });
+    return;
+  }
+
   if (request.method === 'POST' && url.pathname === '/payments') {
     const body = await readJson(request);
     const amount = Number(body.amount);

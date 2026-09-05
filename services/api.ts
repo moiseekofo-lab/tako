@@ -378,6 +378,10 @@ export function createInternalRecharge(params: {
   return postJson('/admin/recharges/internal', params);
 }
 
+export function getAdminRecharges(sessionToken: string) {
+  return postJson('/admin/recharges/list', { sessionToken });
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

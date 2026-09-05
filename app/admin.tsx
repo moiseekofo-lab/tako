@@ -8,6 +8,7 @@ import { AdminNewsManager } from '../components/admin-news-manager';
 import { AdminProfile } from '../components/admin-profile';
 import { AdminRolesManager } from '../components/admin-roles-manager';
 import { AdminTicketing } from '../components/admin-ticketing';
+import { AdminRecharges } from '../components/admin-recharges';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2117,6 +2118,8 @@ export default function Admin() {
 
           {activeSection === 'ticketing' ? <AdminTicketing trips={trips} /> : null}
 
+          {activeSection === 'recharges' ? <AdminRecharges /> : null}
+
           {activeSection === 'nfcCards' ? (
             <>
               <NfcCardsScreen
@@ -2165,7 +2168,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && activeSection !== 'roles' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
     </View>
