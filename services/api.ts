@@ -386,6 +386,21 @@ export function getAdminTransactions(sessionToken: string) {
   return postJson('/admin/transactions/list', { sessionToken });
 }
 
+export function getPartnerAgencies(sessionToken: string) {
+  return postJson('/admin/partner-agencies/list', { sessionToken });
+}
+
+export function savePartnerAgency(sessionToken: string, agency: {
+  id?: string; name: string; serviceType: string; cities: string;
+  phone: string; email: string; status: string;
+}) {
+  return postJson('/admin/partner-agencies/save', { sessionToken, ...agency });
+}
+
+export function setPartnerAgencyStatus(sessionToken: string, id: string, status: string) {
+  return postJson('/admin/partner-agencies/status', { sessionToken, id, status });
+}
+
 export function savePayment(
   amount: number,
   method: PaymentMethod,

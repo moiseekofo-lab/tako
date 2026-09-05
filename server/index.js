@@ -590,6 +590,21 @@ async function initDatabase() {
   `);
 
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS partner_agencies (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      service_type TEXT NOT NULL DEFAULT 'Voyage',
+      cities TEXT NOT NULL DEFAULT '',
+      phone TEXT NOT NULL DEFAULT '',
+      email TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'active',
+      sales_count INTEGER NOT NULL DEFAULT 0,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS app_migrations (
       id TEXT PRIMARY KEY,
       applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -2972,6 +2987,67 @@ async function handleRequest(request, response) {
       ORDER BY COALESCE(publish_start, created_at) DESC, created_at DESC;
     `);
     sendJson(response, 200, { ok: true, news: result.rows });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/partner-agencies/list') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const result = await query(`SELECT id, name, service_type AS "serviceType", cities, phone, email, status,
+      sales_count AS "salesCount", created_at AS "createdAt", updated_at AS "updatedAt"
+      FROM partner_agencies ORDER BY created_at DESC;`);
+    const statsResult = await query(`SELECT COUNT(*) AS total,
+      COUNT(*) FILTER (WHERE status = 'active') AS active,
+      COUNT(*) FILTER (WHERE status = 'pending') AS pending,
+      COUNT(*) FILTER (WHERE status = 'inactive') AS inactive
+      FROM partner_agencies;`);
+    sendJson(response, 200, { ok: true, agencies: result.rows, stats: statsResult.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/partner-agencies/save') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const id = String(body.id || `AGY-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`).trim();
+    const name = String(body.name || '').trim();
+    const serviceType = ['Voyage', 'Location', 'Autres'].includes(body.serviceType) ? body.serviceType : 'Voyage';
+    const cities = String(body.cities || '').trim();
+    const phone = String(body.phone || '').trim();
+    const email = normalizeContact(body.email || '');
+    const status = ['active', 'pending', 'inactive'].includes(body.status) ? body.status : 'pending';
+    if (!name || !cities || !phone) {
+      sendJson(response, 400, { ok: false, error: 'Nom, villes desservies et téléphone obligatoires.' });
+      return;
+    }
+    const result = await query(`INSERT INTO partner_agencies (id, name, service_type, cities, phone, email, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7) ON CONFLICT (id) DO UPDATE SET name=$2, service_type=$3, cities=$4,
+      phone=$5, email=$6, status=$7, updated_at=NOW()
+      RETURNING id, name, service_type AS "serviceType", cities, phone, email, status,
+        sales_count AS "salesCount", created_at AS "createdAt";`, [id, name, serviceType, cities, phone, email, status]);
+    await createAdminActivity({ eventType: 'partner_agency', title: body.id ? 'Agence partenaire modifiée' : 'Nouvelle agence partenaire', message: `${name} · ${serviceType} · ${cities}.`, userId: id, userName: name });
+    sendJson(response, body.id ? 200 : 201, { ok: true, agency: result.rows[0] });
+    return;
+  }
+
+  if (request.method === 'POST' && url.pathname === '/admin/partner-agencies/status') {
+    const body = await readJson(request);
+    if (!verifyAdminSessionToken(body.sessionToken)) {
+      sendJson(response, 401, { ok: false, error: 'Session administrateur expirée' });
+      return;
+    }
+    const id = String(body.id || '').trim();
+    const status = ['active', 'pending', 'inactive'].includes(body.status) ? body.status : '';
+    if (!id || !status) { sendJson(response, 400, { ok: false, error: 'Agence ou statut invalide.' }); return; }
+    const result = await query(`UPDATE partner_agencies SET status=$2, updated_at=NOW() WHERE id=$1
+      RETURNING id, name, status;`, [id, status]);
+    if (!result.rows[0]) { sendJson(response, 404, { ok: false, error: 'Agence introuvable.' }); return; }
+    sendJson(response, 200, { ok: true, agency: result.rows[0] });
     return;
   }
 
