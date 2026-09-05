@@ -518,12 +518,24 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
     } as any)
   : null;
 const ADMIN_SCROLLBAR_CSS = `
+  html,
+  body,
+  #root,
+  #root * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
+  }
+
   .tako-admin-root,
   .tako-admin-root * {
     -ms-overflow-style: none !important;
     scrollbar-width: none !important;
   }
 
+  html::-webkit-scrollbar,
+  body::-webkit-scrollbar,
+  #root::-webkit-scrollbar,
+  #root *::-webkit-scrollbar,
   .tako-admin-root::-webkit-scrollbar,
   .tako-admin-root *::-webkit-scrollbar {
     display: none !important;
