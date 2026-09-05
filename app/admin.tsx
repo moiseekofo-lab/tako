@@ -744,7 +744,6 @@ export default function Admin() {
   const [agentRechargeId, setAgentRechargeId] = useState('');
   const [agentRechargeAmount, setAgentRechargeAmount] = useState('');
   const [rechargeLoading, setRechargeLoading] = useState(false);
-  const [rechargeModalVisible, setRechargeModalVisible] = useState(false);
   const [isReadingNfc, setIsReadingNfc] = useState(false);
   const [isReadingPrepaidNfc, setIsReadingPrepaidNfc] = useState(false);
   const [prepaidLoading, setPrepaidLoading] = useState(false);
@@ -1552,8 +1551,7 @@ export default function Admin() {
       setRechargeCardId('');
       setRechargeFeedback({ type: 'success', message: `Recharge confirmée : ${value} FC ajouté au compte ${result.client.id || cleanClientId}.` });
       Alert.alert('Recharge confirmée', `${value} FC ajouté au compte ${result.client.id || cleanClientId}.`);
-      setRechargeModalVisible(false);
-      await loadServerActivity();
+      setActiveSection('clients');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Vérifiez l’ID du client.';
       setRechargeFeedback({ type: 'error', message });
@@ -2091,40 +2089,6 @@ export default function Admin() {
             </View>
           ) : null}
 
-          {activeSection === 'recharges' ? (
-            <>
-              <RechargeAdminScreen
-                dashboard={dashboardData}
-                events={serverEvents.filter((event) => event.eventType === 'recharge')}
-                openRecharge={() => { setRechargeFeedback(null); setRechargeModalVisible(true); }}
-              />
-              <Modal visible={rechargeModalVisible} transparent animationType="fade" onRequestClose={() => setRechargeModalVisible(false)}>
-                <View style={styles.modalBackdrop}>
-                  <View style={[styles.profileModalCard, { maxWidth: 520 }]}>
-                    <View style={styles.modalHeader}>
-                      <Text style={styles.referenceTitle}>Nouvelle recharge</Text>
-                      <TouchableOpacity onPress={() => setRechargeModalVisible(false)}><Ionicons name="close" size={26} color={TAKO_BLUE} /></TouchableOpacity>
-                    </View>
-                    <InternalRechargeCard
-                      clientId={rechargeClientId}
-                      setClientId={setRechargeClientId}
-                      cardId={rechargeCardId}
-                      clearCardId={() => setRechargeCardId('')}
-                      amount={rechargeAmount}
-                      setAmount={setRechargeAmount}
-                      loading={rechargeLoading}
-                      confirm={confirmInternalRecharge}
-                      scan={() => Alert.alert('Scanner le QR client', 'Utilisez l’identifiant du QR client dans le champ ID client.')}
-                      nfcLoading={isReadingNfc}
-                      readNfc={readAdminNfcCard}
-                      feedback={rechargeFeedback}
-                    />
-                  </View>
-                </View>
-              </Modal>
-            </>
-          ) : null}
-
           {activeSection === 'settings' ? (
             <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
               <View style={styles.card}>
@@ -2201,7 +2165,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
     </View>
@@ -2694,34 +2658,6 @@ function DashboardRecentTable({
       )) : (
         <View style={styles.recentEmpty}><Text style={styles.cardText}>Aucune opération enregistrée.</Text></View>
       )}
-    </View>
-  );
-}
-
-function RechargeAdminScreen({ dashboard, events, openRecharge }: { dashboard?: any; events: any[]; openRecharge: () => void }) {
-  const successful = Number(dashboard?.recharges?.successful || 0);
-  const pending = Number(dashboard?.recharges?.pending || 0);
-  const failed = Number(dashboard?.recharges?.failed || 0);
-  const totalAmount = events.reduce((sum, event) => sum + Number(event.amount || 0), 0);
-  return (
-    <View style={styles.referencePage}>
-      <View style={styles.referenceHeader}>
-        <View><Text style={styles.referenceTitle}>Recharges</Text><Text style={styles.cardText}>Suivez les recharges effectuées par les clients et les agents.</Text></View>
-        <TouchableOpacity style={styles.referencePrimary} onPress={openRecharge}><Ionicons name="add-outline" size={19} color="white" /><Text style={styles.referencePrimaryText}>Nouvelle recharge</Text></TouchableOpacity>
-      </View>
-      <View style={styles.clientStats}>
-        <MiniMetric label="Total rechargé" value={`${totalAmount.toLocaleString('fr-FR')} FC`} />
-        <MiniMetric label="Recharges réussies" value={successful.toLocaleString('fr-FR')} />
-        <MiniMetric label="En attente" value={pending.toLocaleString('fr-FR')} />
-        <MiniMetric label="Échecs" value={failed.toLocaleString('fr-FR')} />
-      </View>
-      <View style={styles.referenceSearch}><Ionicons name="search-outline" size={18} color="#64748B" /><Text style={styles.referencePlaceholder}>Rechercher une recharge…</Text></View>
-      <View style={styles.referenceTable}>
-        <View style={styles.referenceTableHeader}>{['Référence', 'Client', 'Montant', 'Type', 'Statut', 'Date et heure'].map((column) => <Text key={column} style={styles.referenceHeaderCell}>{column}</Text>)}</View>
-        {events.length ? events.map((event) => <View key={event.id} style={styles.recentRow}>
-          <Text style={styles.recentCell}>{event.id}</Text><Text style={styles.recentCell}>{event.userName || event.userId || 'Client TaKo'}</Text><Text style={styles.recentCell}>{Number(event.amount || 0).toLocaleString('fr-FR')} FC</Text><Text style={styles.recentCell}>Recharge</Text><Text style={styles.recentStatus}>Réussie</Text><Text style={styles.recentCell}>{formatDate(event.createdAt)}</Text>
-        </View>) : <View style={styles.referenceEmpty}><Ionicons name="wallet-outline" size={30} color="#94A3B8" /><Text style={styles.emptyTitle}>Aucune recharge enregistrée</Text><Text style={styles.emptyText}>Les recharges confirmées apparaîtront ici.</Text></View>}
-      </View>
     </View>
   );
 }
