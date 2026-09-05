@@ -3448,11 +3448,11 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
   },
   sidebar: {
-    width: 250,
+    width: 220,
     backgroundColor: TAKO_BLUE,
-    paddingHorizontal: 20,
-    paddingTop: 34,
-    paddingBottom: 24,
+    paddingHorizontal: 16,
+    paddingTop: 27,
+    paddingBottom: 19,
   },
   mobileSidebar: {
     width: '100%',
@@ -3461,11 +3461,11 @@ const styles = StyleSheet.create({
     paddingBottom: 14,
   },
   brandBlock: {
-    marginBottom: 24,
+    marginBottom: 19,
   },
   brandSubtitle: {
     color: '#BFE4FF',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     marginTop: 8,
     marginLeft: 6,
@@ -3483,12 +3483,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   navItem: {
-    minHeight: 40,
+    minHeight: 34,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     borderRadius: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 11,
   },
   mobileNavItem: {
     width: '48%',
@@ -3501,7 +3501,7 @@ const styles = StyleSheet.create({
   },
   navText: {
     color: 'white',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
   },
   navTextActive: {
@@ -3511,26 +3511,26 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     borderRadius: 8,
     backgroundColor: 'rgba(255,255,255,0.1)',
-    padding: 16,
+    padding: 13,
   },
   mobileHidden: {
     display: 'none',
   },
   privateTitle: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '700',
     marginTop: 8,
   },
   privateText: {
     color: '#BFE4FF',
-    fontSize: 13,
+    fontSize: 10,
     fontWeight: '500',
     lineHeight: 18,
     marginTop: 6,
   },
   sidebarLogout: {
-    minHeight: 48,
+    minHeight: 39,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -3546,12 +3546,12 @@ const styles = StyleSheet.create({
   },
   sidebarLogoutText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   content: {
     flexGrow: 1,
-    padding: 34,
+    padding: 27,
   },
   mobileContent: {
     width: '100%',
@@ -3563,8 +3563,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-between',
-    gap: 20,
-    marginBottom: 24,
+    gap: 16,
+    marginBottom: 19,
     zIndex: 20,
   },
   mobileTopBar: {
@@ -3591,13 +3591,13 @@ const styles = StyleSheet.create({
   },
   title: {
     color: TAKO_BLUE,
-    fontSize: 34,
+    fontSize: 22,
     fontWeight: '700',
     marginBottom: 6,
   },
   subtitle: {
     color: '#5C667A',
-    fontSize: 15,
+    fontSize: 11,
     fontWeight: '500',
   },
   adminBadge: {
@@ -3746,14 +3746,14 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '700',
   },
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 16,
-    marginBottom: 18,
+    gap: 13,
+    marginBottom: 14,
   },
   dashboardToolbar: {
     flexDirection: 'row',
@@ -3793,8 +3793,8 @@ const styles = StyleSheet.create({
   dashboardCharts: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 18,
-    marginBottom: 18,
+    gap: 14,
+    marginBottom: 14,
   },
   dashboardChartCard: {
     minWidth: 260,
@@ -3841,8 +3841,8 @@ const styles = StyleSheet.create({
   dashboardRecentGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 18,
-    marginBottom: 20,
+    gap: 14,
+    marginBottom: 16,
   },
   recentTableCard: {
     minWidth: 440,
@@ -3851,11 +3851,11 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   recentTableTitleRow: {
-    minHeight: 58,
+    minHeight: 47,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: 18,
+    paddingHorizontal: 14,
   },
   moreLink: {
     color: TAKO_ACTION,
@@ -3943,13 +3943,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   lineChart: {
-    minHeight: 190,
+    minHeight: 155,
     flexDirection: 'row',
     alignItems: 'flex-start',
     justifyContent: 'space-around',
     borderBottomWidth: 1,
     borderBottomColor: '#DCE5F2',
-    marginTop: 24,
+    marginTop: 19,
     paddingHorizontal: 12,
   },
   linePoint: {
@@ -3977,7 +3977,7 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     color: '#64748B',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
   statusSuccess: {
@@ -4007,7 +4007,7 @@ const styles = StyleSheet.create({
   alertText: {
     flex: 1,
     color: '#92400E',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '600',
   },
   mobileStatsGrid: {
@@ -4021,7 +4021,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#DCE5F2',
     backgroundColor: 'white',
-    padding: 18,
+    padding: 14,
   },
   statIcon: {
     width: 42,
@@ -4037,13 +4037,13 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     color: '#6B7280',
-    fontSize: 13,
+    fontSize: 11,
     fontWeight: '700',
     marginBottom: 6,
   },
   statValue: {
     color: TAKO_BLUE,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
   },
   statComparison: {
@@ -4066,10 +4066,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   referencePage: {
-    gap: 18,
+    gap: 14,
   },
   clientDirectory: {
-    gap: 18,
+    gap: 14,
   },
   directoryTableScroller: {
     ...(
@@ -4089,12 +4089,12 @@ const styles = StyleSheet.create({
     flexBasis: 0,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 14,
+    gap: 11,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#DCE5F2',
     backgroundColor: '#FFFFFF',
-    padding: 18,
+    padding: 14,
   },
   clientStatIcon: {
     width: 48,
@@ -4111,7 +4111,7 @@ const styles = StyleSheet.create({
   },
   clientStatValue: {
     color: '#111827',
-    fontSize: 23,
+    fontSize: 20,
     fontWeight: '700',
     marginVertical: 3,
   },
@@ -4133,7 +4133,7 @@ const styles = StyleSheet.create({
   },
   clientSearchBox: {
     minWidth: 320,
-    minHeight: 44,
+    minHeight: 38,
     flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
@@ -4146,7 +4146,7 @@ const styles = StyleSheet.create({
   clientSearchInput: {
     flex: 1,
     color: '#111827',
-    fontSize: 13,
+    fontSize: 12,
   },
   filterChoices: {
     flexDirection: 'row',
@@ -4204,15 +4204,15 @@ const styles = StyleSheet.create({
     paddingRight: 10,
   },
   clientTableRow: {
-    minHeight: 68,
+    minHeight: 55,
     flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#EEF2F7',
-    paddingHorizontal: 14,
+    paddingHorizontal: 11,
   },
   clientTableHeader: {
-    minHeight: 48,
+    minHeight: 39,
     backgroundColor: '#F8FAFC',
   },
   clientTableCell: {
