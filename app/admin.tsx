@@ -518,13 +518,17 @@ const WEB_SCROLLBAR_STYLE = Platform.OS === 'web'
     } as any)
   : null;
 const ADMIN_SCROLLBAR_CSS = `
-  .tako-admin-root *::-webkit-scrollbar:horizontal {
-    height: 0 !important;
+  .tako-admin-root,
+  .tako-admin-root * {
+    -ms-overflow-style: none !important;
+    scrollbar-width: none !important;
   }
 
-  .tako-admin-root *::-webkit-scrollbar-thumb:horizontal,
-  .tako-admin-root *::-webkit-scrollbar-track:horizontal {
-    background: transparent !important;
+  .tako-admin-root::-webkit-scrollbar,
+  .tako-admin-root *::-webkit-scrollbar {
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 `;
 type NfcTag = { id?: string; type?: string } | null;
