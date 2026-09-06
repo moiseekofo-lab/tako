@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
+import { AdminActionMenu } from './admin-action-menu';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { deleteAdminNews, getAdminNews, saveAdminNews, type NewsItem } from '../services/api';
@@ -157,7 +158,7 @@ export function AdminNewsManager() {
                     <View style={styles.statusColumn}><View style={[styles.badge, item.status === 'published' ? styles.published : item.status === 'archived' ? styles.archived : styles.draft]}><Text style={styles.badgeText}>● {item.status === 'published' ? 'Publié' : item.status === 'archived' ? 'Archivé' : 'Brouillon'}</Text></View></View>
                     <Text style={[styles.cellText, styles.periodColumn]}>{item.publishStart ? new Date(item.publishStart).toLocaleString('fr-FR') : 'Immédiatement'}{item.publishEnd ? `\nau ${new Date(item.publishEnd).toLocaleString('fr-FR')}` : ''}</Text>
                     <Text style={[styles.cellText, styles.authorColumn]}>{item.createdBy || 'Admin TaKo'}{item.createdAt ? `\n${new Date(item.createdAt).toLocaleDateString('fr-FR')}` : ''}</Text>
-                    <View style={[styles.rowActions, styles.actionColumn]}><TouchableOpacity style={styles.iconButton} onPress={() => edit(item)}><Ionicons name="create-outline" size={18} color={ACTION} /></TouchableOpacity><TouchableOpacity style={styles.iconButton} onPress={() => remove(item)}><Ionicons name="trash-outline" size={18} color="#C92A2A" /></TouchableOpacity></View>
+                    <View style={[styles.rowActions, styles.actionColumn]}><AdminActionMenu actions={[{label:'Modifier',icon:'create-outline',onPress:()=>edit(item)},{label:'Supprimer',icon:'trash-outline',danger:true,onPress:()=>remove(item)}]} /></View>
                   </View>
                 ))}
                 <View style={styles.tableFooter}><Text style={styles.footerText}>Affichage de {filteredItems.length} sur {items.length} actualité(s)</Text></View>

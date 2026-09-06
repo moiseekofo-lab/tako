@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AdminActionMenu } from './admin-action-menu';
 
 const NAVY = '#061F68';
 const BLUE = '#1268E8';
@@ -44,7 +45,7 @@ export function AdminPayouts() {
     <View style={styles.columns}>
       <View style={styles.tableCard}><Text style={styles.sectionTitle}>Liste des versements</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScroll}><View style={styles.table}>
         <View style={[styles.row, styles.head]}>{['Date', 'Bénéficiaire', 'Type', 'Montant (CDF)', 'Méthode', 'Statut', 'Référence', 'Actions'].map((item) => <Text key={item} style={styles.th}>{item}</Text>)}</View>
-        {rows.map((row, index) => <View key={row[7]} style={styles.row}><Text style={styles.cell}>{row[0]}</Text><View style={styles.cell}><Text style={styles.strong}>{row[1]}</Text><Text style={styles.muted}>{row[2]}</Text></View><Text style={styles.cell}>{row[3]}</Text><Text style={[styles.cell, styles.amount]}>{row[4]}</Text><Text style={styles.cell}>{row[5]}</Text><View style={styles.cell}><Text style={row[6] === 'Réussi' ? styles.success : row[6] === 'En attente' ? styles.pending : styles.failed}>● {row[6]}</Text></View><Text style={styles.cell}>{row[7]}</Text><View style={[styles.cell, styles.actions]}><TouchableOpacity><Ionicons name="eye-outline" size={18} color={NAVY} /></TouchableOpacity><TouchableOpacity><Ionicons name="ellipsis-vertical" size={18} color={NAVY} /></TouchableOpacity></View></View>)}
+        {rows.map((row) => <View key={row[7]} style={styles.row}><Text style={styles.cell}>{row[0]}</Text><View style={styles.cell}><Text style={styles.strong}>{row[1]}</Text><Text style={styles.muted}>{row[2]}</Text></View><Text style={styles.cell}>{row[3]}</Text><Text style={[styles.cell, styles.amount]}>{row[4]}</Text><Text style={styles.cell}>{row[5]}</Text><View style={styles.cell}><Text style={row[6] === 'Réussi' ? styles.success : row[6] === 'En attente' ? styles.pending : styles.failed}>● {row[6]}</Text></View><Text style={styles.cell}>{row[7]}</Text><View style={[styles.cell, styles.actions]}><AdminActionMenu actions={[{label:'Voir les détails',icon:'eye-outline',onPress:()=>Alert.alert('Versement',`${row[1]}\n${row[4]} CDF\n${row[7]}`)},{label:'Télécharger le reçu',icon:'download-outline',onPress:()=>Alert.alert('Reçu','Téléchargement du reçu préparé.')},{label:'Relancer le versement',icon:'refresh-outline',onPress:()=>Alert.alert('Versement','Relance enregistrée.'),disabled:row[6]!=='Échoué'}]} /></View></View>)}
       </View></ScrollView><View style={styles.footer}><Text style={styles.muted}>Affichage de 1 à {rows.length} sur 145 versements</Text><Text style={styles.pageNumber}>1</Text></View></View>
       <View style={styles.side}>
         <View style={styles.sideCard}><Text style={styles.sectionTitle}>Répartition des versements</Text><View style={styles.donut}><View style={styles.donutInner}><Text style={styles.donutValue}>12,5M</Text><Text style={styles.muted}>CDF</Text></View></View><Text style={styles.legendBlue}>■ Chauffeurs 5,2M (42%)</Text><Text style={styles.legendPurple}>■ Agences 6,8M (54%)</Text><Text style={styles.muted}>■ Autres 0,5M (4%)</Text></View>
