@@ -148,7 +148,7 @@ export function AdminNewsManager() {
           {loading ? <ActivityIndicator size="large" color={BLUE} style={{ marginVertical: 60 }} /> : filteredItems.length === 0 ? (
             <View style={styles.empty}><Ionicons name="megaphone-outline" size={40} color={ACTION} /><Text style={styles.emptyTitle}>Aucune actualité trouvée</Text><Text style={styles.emptyText}>Créez une actualité ou modifiez les filtres.</Text></View>
           ) : (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tableScrollContent}>
               <View style={styles.table}>
                 <View style={[styles.tableRow, styles.tableHeader]}><Text style={[styles.th, styles.newsColumn]}>Actualité</Text><Text style={[styles.th, styles.categoryColumn]}>Catégorie</Text><Text style={[styles.th, styles.statusColumn]}>Statut</Text><Text style={[styles.th, styles.periodColumn]}>Période de publication</Text><Text style={[styles.th, styles.authorColumn]}>Créée par</Text><Text style={[styles.th, styles.actionColumn]}>Actions</Text></View>
                 {filteredItems.map((item) => (
@@ -206,11 +206,12 @@ const styles = StyleSheet.create({
   filterChipTextActive: { color: ACTION },
   resetButton: { minHeight: 36, marginLeft: 8, flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 12 },
   resetText: { color: BLUE, fontSize: 12, fontWeight: '700' },
-  table: { minWidth: 1050 },
+  tableScrollContent: { flexGrow: 1 },
+  table: { width: '100%', minWidth: 1050 },
   tableRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#EEF2F6', paddingHorizontal: 11 },
   tableHeader: { minHeight: 42, backgroundColor: '#FAFBFD' },
   th: { color: BLUE, fontSize: 12, fontWeight: '700' },
-  newsColumn: { width: 310 }, categoryColumn: { width: 125 }, statusColumn: { width: 115 }, periodColumn: { width: 190 }, authorColumn: { width: 145 }, actionColumn: { width: 105, textAlign: 'center', alignItems: 'center', justifyContent: 'center' },
+  newsColumn: { flex: 2.2, minWidth: 310 }, categoryColumn: { flex: 1, minWidth: 125 }, statusColumn: { flex: 0.9, minWidth: 115 }, periodColumn: { flex: 1.35, minWidth: 190 }, authorColumn: { flex: 1.1, minWidth: 145 }, actionColumn: { flex: 0.75, minWidth: 105, textAlign: 'center', alignItems: 'center', justifyContent: 'center' },
   newsCell: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   thumbnail: { width: 88, height: 58, borderRadius: 7, backgroundColor: '#EAF1FB' },
   newsText: { width: 195 },
