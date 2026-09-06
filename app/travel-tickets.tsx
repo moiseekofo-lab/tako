@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Image, KeyboardAvoidingView, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import type { Language } from './i18n';
+import { useStore } from './store';
 
 type ChoiceKey = 'departure' | 'destination' | null;
 type DateChoice = 'outbound' | 'return' | null;
@@ -10,6 +12,9 @@ const cities = ['Kinshasa', 'Matadi', 'Boma', 'Muanda'];
 
 export default function TravelTickets() {
   const router = useRouter();
+  const language = useStore((state: any) => state.language) as Language;
+  const pt = language === 'pt';
+  const locale = pt ? 'pt-BR' : language === 'en' ? 'en-US' : 'fr-FR';
   const insets = useSafeAreaInsets();
   const [departure, setDeparture] = useState('Kinshasa');
   const [destination, setDestination] = useState('Matadi');
@@ -24,7 +29,7 @@ export default function TravelTickets() {
     setChoice(null);
   };
   const swapCities = () => { setDeparture(destination); setDestination(departure); };
-  const search = () => router.push({ pathname: '/travel-results', params: { departure, destination, date: travelDate.toLocaleDateString('fr-FR'), returnDate: returnDate?.toLocaleDateString('fr-FR') || '', passengers: '1 Passager' } });
+  const search = () => router.push({ pathname: '/travel-results', params: { departure, destination, date: travelDate.toLocaleDateString(locale), returnDate: returnDate?.toLocaleDateString(locale) || '', passengers: pt ? '1 Passageiro' : '1 Passager' } });
 
   return (
     <View style={styles.page}>
@@ -51,14 +56,14 @@ export default function TravelTickets() {
           </View>
 
           <View style={styles.dateRow}>
-            <TouchableOpacity style={styles.dateField} onPress={() => setDateChoice('outbound')}><Ionicons name="calendar" size={22} color="#0877EA" /><Text style={styles.dateText}>{travelDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' })}</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.dateField} onPress={() => setDateChoice('return')}><Ionicons name="calendar-outline" size={22} color="#596273" /><Text style={[styles.dateText, !returnDate && styles.placeholder]}>{returnDate ? returnDate.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' }) : 'Retour'}</Text>{returnDate ? <TouchableOpacity onPress={() => setReturnDate(null)}><Ionicons name="close" size={20} color="#0877EA" /></TouchableOpacity> : null}</TouchableOpacity>
+            <TouchableOpacity style={styles.dateField} onPress={() => setDateChoice('outbound')}><Ionicons name="calendar" size={22} color="#0877EA" /><Text style={styles.dateText}>{travelDate.toLocaleDateString(locale, { day: '2-digit', month: 'short' })}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.dateField} onPress={() => setDateChoice('return')}><Ionicons name="calendar-outline" size={22} color="#596273" /><Text style={[styles.dateText, !returnDate && styles.placeholder]}>{returnDate ? returnDate.toLocaleDateString(locale, { day: '2-digit', month: 'short' }) : pt ? 'Volta' : 'Retour'}</Text>{returnDate ? <TouchableOpacity onPress={() => setReturnDate(null)}><Ionicons name="close" size={20} color="#0877EA" /></TouchableOpacity> : null}</TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.searchButton} onPress={search}><Ionicons name="search" size={22} color="white" /><Text style={styles.searchText}>Rechercher</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.searchButton} onPress={search}><Ionicons name="search" size={22} color="white" /><Text style={styles.searchText}>{pt ? 'Buscar' : 'Rechercher'}</Text></TouchableOpacity>
         </View>
 
-        <View style={styles.benefits}><View style={styles.benefit}><Ionicons name="lock-closed-outline" size={17} color="#061F68" /><Text style={styles.benefitText}>Achat 100% sécurisé</Text></View><View style={styles.benefit}><Ionicons name="headset-outline" size={18} color="#061F68" /><Text style={styles.benefitText}>Support 24h</Text></View></View>
+        <View style={styles.benefits}><View style={styles.benefit}><Ionicons name="lock-closed-outline" size={17} color="#061F68" /><Text style={styles.benefitText}>{pt ? 'Compra 100% segura' : 'Achat 100% sécurisé'}</Text></View><View style={styles.benefit}><Ionicons name="headset-outline" size={18} color="#061F68" /><Text style={styles.benefitText}>{pt ? 'Suporte 24h' : 'Support 24h'}</Text></View></View>
 
         <View style={styles.promoCard}>
           <Image source={require('../assets/images/news-tako-petit-transport.jpeg')} style={styles.promoImage} resizeMode="cover" />
@@ -71,13 +76,14 @@ export default function TravelTickets() {
         excluded={choice === 'departure' ? destination : departure}
         onSelect={choose}
         onClose={() => setChoice(null)}
+        pt={pt}
       />
-      <CalendarModal visible={dateChoice !== null} value={dateChoice === 'return' ? returnDate || travelDate : travelDate} minimumDate={dateChoice === 'return' ? travelDate : undefined} onSelect={(date) => { if (dateChoice === 'return') setReturnDate(date); else setTravelDate(date); setDateChoice(null); }} onClose={() => setDateChoice(null)} />
+      <CalendarModal pt={pt} visible={dateChoice !== null} value={dateChoice === 'return' ? returnDate || travelDate : travelDate} minimumDate={dateChoice === 'return' ? travelDate : undefined} onSelect={(date) => { if (dateChoice === 'return') setReturnDate(date); else setTravelDate(date); setDateChoice(null); }} onClose={() => setDateChoice(null)} />
     </View>
   );
 }
 
-function CityPicker({ visible, selected, excluded, onSelect, onClose }: { visible: boolean; selected: string; excluded: string; onSelect: (city: string) => void; onClose: () => void }) {
+function CityPicker({ visible, selected, excluded, onSelect, onClose, pt }: { visible: boolean; selected: string; excluded: string; onSelect: (city: string) => void; onClose: () => void; pt: boolean }) {
   const [query, setQuery] = useState('');
   useEffect(() => { if (visible) setQuery(selected); }, [visible, selected]);
   const filteredCities = cities.filter((city) => city !== excluded && city.toLocaleLowerCase('fr').includes(query.trim().toLocaleLowerCase('fr')));
@@ -92,7 +98,7 @@ function CityPicker({ visible, selected, excluded, onSelect, onClose }: { visibl
             autoFocus
             value={query}
             onChangeText={setQuery}
-            placeholder="Rechercher une ville"
+            placeholder={pt ? 'Buscar uma cidade' : 'Rechercher une ville'}
             placeholderTextColor="#8A93A3"
             selectionColor="#0877EA"
             style={styles.cityInput}
@@ -104,14 +110,14 @@ function CityPicker({ visible, selected, excluded, onSelect, onClose }: { visibl
             <Ionicons name="checkmark" size={22} color={city === selected ? '#0877EA' : 'transparent'} />
             <Text style={styles.cityText}>{city}</Text>
           </TouchableOpacity>)}
-          {filteredCities.length === 0 ? <Text style={styles.noCity}>Aucune ville trouvée</Text> : null}
+          {filteredCities.length === 0 ? <Text style={styles.noCity}>{pt ? 'Nenhuma cidade encontrada' : 'Aucune ville trouvée'}</Text> : null}
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
   </Modal>;
 }
 
-function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { visible: boolean; value: Date; minimumDate?: Date; onSelect: (date: Date) => void; onClose: () => void }) {
+function CalendarModal({ visible, value, minimumDate, onSelect, onClose, pt }: { visible: boolean; value: Date; minimumDate?: Date; onSelect: (date: Date) => void; onClose: () => void; pt: boolean }) {
   const [month, setMonth] = useState(new Date(value.getFullYear(), value.getMonth(), 1));
   useEffect(() => { if (visible) setMonth(new Date(value.getFullYear(), value.getMonth(), 1)); }, [visible, value]);
   const today = minimumDate || new Date();
@@ -120,10 +126,10 @@ function CalendarModal({ visible, value, minimumDate, onSelect, onClose }: { vis
   const dayCount = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
   const cells = [...Array(firstDay).fill(null), ...Array.from({ length: dayCount }, (_, index) => index + 1)];
   return <Modal transparent visible={visible} animationType="fade" onRequestClose={onClose}><View style={styles.calendarBackdrop}><View style={styles.calendarCard}>
-    <View style={styles.calendarHeader}><TouchableOpacity onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><Ionicons name="chevron-back" size={26} color="#061F68" /></TouchableOpacity><Text style={styles.calendarTitle}>{month.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })}</Text><TouchableOpacity onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><Ionicons name="chevron-forward" size={26} color="#061F68" /></TouchableOpacity></View>
-    <View style={styles.weekRow}>{['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => <Text key={`${day}-${index}`} style={styles.weekDay}>{day}</Text>)}</View>
+    <View style={styles.calendarHeader}><TouchableOpacity onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}><Ionicons name="chevron-back" size={26} color="#061F68" /></TouchableOpacity><Text style={styles.calendarTitle}>{month.toLocaleDateString(pt ? 'pt-BR' : 'fr-FR', { month: 'long', year: 'numeric' })}</Text><TouchableOpacity onPress={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}><Ionicons name="chevron-forward" size={26} color="#061F68" /></TouchableOpacity></View>
+    <View style={styles.weekRow}>{(pt ? ['S', 'T', 'Q', 'Q', 'S', 'S', 'D'] : ['L', 'M', 'M', 'J', 'V', 'S', 'D']).map((day, index) => <Text key={`${day}-${index}`} style={styles.weekDay}>{day}</Text>)}</View>
     <View style={styles.dayGrid}>{cells.map((day, index) => { if (!day) return <View key={`empty-${index}`} style={styles.dayCell} />; const date = new Date(month.getFullYear(), month.getMonth(), day); const disabled = date < minimum; const selected = date.toDateString() === value.toDateString(); return <TouchableOpacity key={day} style={styles.dayCell} disabled={disabled} onPress={() => onSelect(date)}><View style={[styles.dayCircle, selected && styles.daySelected]}><Text style={[styles.dayText, disabled && styles.dayDisabled, selected && styles.dayTextSelected]}>{day}</Text></View></TouchableOpacity>; })}</View>
-    <TouchableOpacity style={styles.closeCalendar} onPress={onClose}><Text style={styles.closeCalendarText}>Fermer</Text></TouchableOpacity>
+    <TouchableOpacity style={styles.closeCalendar} onPress={onClose}><Text style={styles.closeCalendarText}>{pt ? 'Fechar' : 'Fermer'}</Text></TouchableOpacity>
   </View></View></Modal>;
 }
 

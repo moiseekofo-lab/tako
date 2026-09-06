@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { recordBusinessEvent } from '../services/api';
+import type { Language } from './i18n';
 import { useStore } from './store';
 
 const NAVY = '#061F68';
@@ -34,6 +35,8 @@ const initialReservations: Reservation[] = [
 
 export default function MyReservations() {
   const router = useRouter();
+  const language = useStore((state: any) => state.language) as Language;
+  const pt = language === 'pt';
   const currentUser = useStore((state: any) => state.currentUser);
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -43,13 +46,13 @@ export default function MyReservations() {
   const visible = reservations.filter((item) => item.status === tab);
 
   const openReservation = (item: Reservation) => {
-    Alert.alert('Réservation TaKo', `${item.departureCity} → ${item.arrivalCity}\n${item.day} ${item.month} à ${item.time}\nRéférence : ${item.reference}`);
+    Alert.alert(pt ? 'Reserva TaKo' : 'Réservation TaKo', `${item.departureCity} → ${item.arrivalCity}\n${item.day} ${item.month} ${pt ? 'às' : 'à'} ${item.time}\n${pt ? 'Referência' : 'Référence'} : ${item.reference}`);
   };
 
   const cancelReservation = (item: Reservation) => {
-    Alert.alert('Annuler la réservation ?', `Référence ${item.reference}`, [
-      { text: 'Retour', style: 'cancel' },
-      { text: 'Annuler la réservation', style: 'destructive', onPress: () => {
+    Alert.alert(pt ? 'Cancelar a reserva?' : 'Annuler la réservation ?', `${pt ? 'Referência' : 'Référence'} ${item.reference}`, [
+      { text: pt ? 'Voltar' : 'Retour', style: 'cancel' },
+      { text: pt ? 'Cancelar a reserva' : 'Annuler la réservation', style: 'destructive', onPress: () => {
         setReservations((items) => items.map((current) => current.id === item.id ? { ...current, status: 'cancelled' } : current));
         recordBusinessEvent({ eventType: 'cancellation', userId: currentUser?.id, userName: currentUser?.fullName, details: `${item.reference} · ${item.departureCity} vers ${item.arrivalCity}` }).catch(() => {});
       } },
@@ -60,18 +63,18 @@ export default function MyReservations() {
     <View style={styles.page}>
       <View style={[styles.header, { paddingTop: Math.max(insets.top, 18) + 12 }]}>
         <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="arrow-back" size={26} color={ACTION} /></TouchableOpacity>
-        <Text style={styles.title}>Mes réservations</Text><View style={styles.back} />
+        <Text style={styles.title}>{pt ? 'Minhas reservas' : 'Mes réservations'}</Text><View style={styles.back} />
       </View>
 
       <View style={[styles.tabs, compact && styles.tabsCompact]}>
-        <TabButton label="À venir" active={tab === 'upcoming'} onPress={() => setTab('upcoming')} />
-        <TabButton label="Terminées" active={tab === 'completed'} onPress={() => setTab('completed')} />
-        <TabButton label="Annulées" active={tab === 'cancelled'} onPress={() => setTab('cancelled')} />
+        <TabButton label={pt ? 'Próximas' : 'À venir'} active={tab === 'upcoming'} onPress={() => setTab('upcoming')} />
+        <TabButton label={pt ? 'Concluídas' : 'Terminées'} active={tab === 'completed'} onPress={() => setTab('completed')} />
+        <TabButton label={pt ? 'Canceladas' : 'Annulées'} active={tab === 'cancelled'} onPress={() => setTab('cancelled')} />
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={[styles.scroll, compact && styles.scrollCompact]}>
-        {visible.length ? visible.map((item) => <ReservationCard compact={compact} key={item.id} item={item} onOpen={() => openReservation(item)} onCancel={item.status === 'upcoming' ? () => cancelReservation(item) : undefined} />) : (
-          <View style={styles.empty}><Ionicons name="ticket-outline" size={56} color="#B6C4DB" /><Text style={styles.emptyTitle}>Aucune réservation</Text><Text style={styles.emptyText}>Vos voyages de cette catégorie apparaîtront ici.</Text></View>
+        {visible.length ? visible.map((item) => <ReservationCard pt={pt} compact={compact} key={item.id} item={item} onOpen={() => openReservation(item)} onCancel={item.status === 'upcoming' ? () => cancelReservation(item) : undefined} />) : (
+          <View style={styles.empty}><Ionicons name="ticket-outline" size={56} color="#B6C4DB" /><Text style={styles.emptyTitle}>{pt ? 'Nenhuma reserva' : 'Aucune réservation'}</Text><Text style={styles.emptyText}>{pt ? 'Suas viagens desta categoria aparecerão aqui.' : 'Vos voyages de cette catégorie apparaîtront ici.'}</Text></View>
         )}
       </ScrollView>
     </View>
@@ -82,11 +85,13 @@ function TabButton({ label, active, onPress }: { label: string; active: boolean;
   return <TouchableOpacity style={[styles.tab, active && styles.tabActive]} onPress={onPress}><Text style={[styles.tabText, active && styles.tabTextActive]}>{label}</Text></TouchableOpacity>;
 }
 
-function ReservationCard({ item, onOpen, onCancel, compact }: { item: Reservation; onOpen: () => void; onCancel?: () => void; compact: boolean }) {
+function ReservationCard({ item, onOpen, onCancel, compact, pt }: { item: Reservation; onOpen: () => void; onCancel?: () => void; compact: boolean; pt: boolean }) {
+  const month = pt ? item.month.replace('sept.', 'set.').replace('août', 'ago.') : item.month;
+  const seatClass = pt && item.seatClass === 'Confort' ? 'Conforto' : item.seatClass;
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.86} onPress={onOpen}>
       <View style={[styles.cardMain, compact && styles.cardMainCompact]}>
-        <View style={[styles.dateColumn, compact && styles.dateColumnCompact]}><Text style={styles.date}>{item.day} {item.month}</Text><Text style={styles.time}>{item.time}</Text></View>
+        <View style={[styles.dateColumn, compact && styles.dateColumnCompact]}><Text style={styles.date}>{item.day} {month}</Text><Text style={styles.time}>{item.time}</Text></View>
         <View style={styles.routeLine}><View style={styles.routeCircle} /><View style={styles.routeVertical} /><Ionicons name="location-outline" size={21} color="#6B7280" /></View>
         <View style={styles.routeCopy}>
           <Text style={styles.city}>{item.departureCity}</Text><Text style={[styles.place, compact && styles.placeCompact]}>{item.departurePlace}</Text>
@@ -96,10 +101,10 @@ function ReservationCard({ item, onOpen, onCancel, compact }: { item: Reservatio
         <Ionicons name="chevron-forward" size={26} color={ACTION} />
       </View>
       <View style={styles.cardFooter}>
-        <View><Text style={styles.footerLabel}>Classe</Text><Text style={styles.footerValue}>{item.seatClass}</Text>{item.seat ? <Text style={styles.seat}>{item.seat}</Text> : null}</View>
-        <View style={styles.reference}><Text style={styles.footerLabelStrong}>Réservation :</Text><Text style={styles.reservationNumber}>{item.reference}</Text></View>
+        <View><Text style={styles.footerLabel}>Classe</Text><Text style={styles.footerValue}>{seatClass}</Text>{item.seat ? <Text style={styles.seat}>{pt ? item.seat.replace('Siège', 'Assento') : item.seat}</Text> : null}</View>
+        <View style={styles.reference}><Text style={styles.footerLabelStrong}>{pt ? 'Reserva :' : 'Réservation :'}</Text><Text style={styles.reservationNumber}>{item.reference}</Text></View>
       </View>
-      {onCancel ? <TouchableOpacity style={styles.cancelButton} onPress={onCancel}><Text style={styles.cancelText}>Annuler la réservation</Text></TouchableOpacity> : null}
+      {onCancel ? <TouchableOpacity style={styles.cancelButton} onPress={onCancel}><Text style={styles.cancelText}>{pt ? 'Cancelar a reserva' : 'Annuler la réservation'}</Text></TouchableOpacity> : null}
     </TouchableOpacity>
   );
 }

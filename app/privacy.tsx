@@ -2,6 +2,8 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import type { Language } from './i18n';
+import { useStore } from './store';
 
 type PageMode = 'menu' | 'terms' | 'privacy';
 type LegalSection = {
@@ -285,8 +287,54 @@ const privacySections: LegalSection[] = [
   },
 ];
 
+const LEGAL_PT: Record<string, string> = {
+  'Conditions générales d’utilisation (CGU)': 'Termos Gerais de Uso',
+  'Politique de confidentialité': 'Política de privacidade',
+  'Application TaKo': 'Aplicativo TaKo',
+  'Dernière mise à jour : Mai 2026': 'Última atualização: maio de 2026',
+  'Bienvenue sur TaKo.': 'Bem-vindo ao TaKo.',
+  'Les présentes Conditions Générales d’Utilisation (« CGU ») définissent les règles d’accès et d’utilisation de l’application mobile TaKo, de la plateforme web, des services numériques, des solutions de paiement ainsi que des fonctionnalités associées proposées par TaKo.': 'Estes Termos Gerais de Uso definem as regras de acesso e utilização do aplicativo móvel TaKo, da plataforma web, dos serviços digitais, das soluções de pagamento e das funcionalidades associadas oferecidas pelo TaKo.',
+  'En accédant à l’application TaKo ou en utilisant nos services, l’utilisateur accepte pleinement et sans réserve les présentes conditions.': 'Ao acessar o aplicativo TaKo ou utilizar nossos serviços, o usuário aceita integralmente estes termos.',
+};
+
+function translateLegalPt(value: string) {
+  if (LEGAL_PT[value]) return LEGAL_PT[value];
+  return value
+    .replace('Présentation de TaKo', 'Apresentação do TaKo')
+    .replace('Acceptation des conditions', 'Aceitação dos termos')
+    .replace('Conditions d’accès aux services', 'Condições de acesso aos serviços')
+    .replace('Création de compte utilisateur', 'Criação da conta do usuário')
+    .replace('Services de paiement', 'Serviços de pagamento')
+    .replace('Responsabilité de l’utilisateur', 'Responsabilidade do usuário')
+    .replace('Vérification d’identité', 'Verificação de identidade')
+    .replace('Disponibilité des services', 'Disponibilidade dos serviços')
+    .replace('Protection des données personnelles', 'Proteção de dados pessoais')
+    .replace('Propriété intellectuelle', 'Propriedade intelectual')
+    .replace('Limitation de responsabilité', 'Limitação de responsabilidade')
+    .replace('Suspension et résiliation', 'Suspensão e encerramento')
+    .replace('Services tiers', 'Serviços de terceiros')
+    .replace('Modification des services', 'Alteração dos serviços')
+    .replace('Droit applicable', 'Legislação aplicável')
+    .replace('Acceptation finale', 'Aceitação final')
+    .replace('Données collectées', 'Dados coletados')
+    .replace('Utilisation des données', 'Utilização dos dados')
+    .replace('Base légale du traitement', 'Base legal do tratamento')
+    .replace('Partage des données', 'Compartilhamento de dados')
+    .replace('Sécurité des données', 'Segurança dos dados')
+    .replace('Conservation des données', 'Retenção dos dados')
+    .replace('Droits des utilisateurs', 'Direitos dos usuários')
+    .replace('Prévention de la fraude et conformité', 'Prevenção à fraude e conformidade')
+    .replace('Cookies et technologies similaires', 'Cookies e tecnologias semelhantes')
+    .replace('Transfert international des données', 'Transferência internacional de dados')
+    .replace('Confidentialité des enfants', 'Privacidade das crianças')
+    .replace('Modification de la politique', 'Alteração da política')
+    .replace('Acceptation', 'Aceitação');
+}
+
 export default function Privacy() {
   const router = useRouter();
+  const language = useStore((state: any) => state.language) as Language;
+  const pt = language === 'pt';
   const [mode, setMode] = useState<PageMode>('menu');
   const isMenu = mode === 'menu';
   const activeSections = mode === 'terms' ? termsSections : privacySections;
@@ -307,7 +355,7 @@ export default function Privacy() {
           <Ionicons name="chevron-back" size={34} color="white" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {isMenu ? 'Confidentialité' : mode === 'terms' ? 'Conditions d’utilisation' : 'Politique de confidentialité'}
+          {pt ? (isMenu ? 'Privacidade' : mode === 'terms' ? 'Termos de uso' : 'Política de privacidade') : (isMenu ? 'Confidentialité' : mode === 'terms' ? 'Conditions d’utilisation' : 'Politique de confidentialité')}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -315,13 +363,13 @@ export default function Privacy() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isMenu ? (
           <>
-            <Text style={styles.mainTitle}>Données protégées et confidentielles</Text>
+            <Text style={styles.mainTitle}>{pt ? 'Dados protegidos e confidenciais' : 'Données protégées et confidentielles'}</Text>
 
             <TouchableOpacity style={styles.menuRow} activeOpacity={0.78} onPress={() => setMode('terms')}>
               <MaterialCommunityIcons name="format-list-numbered" size={32} color="#139DFF" />
               <View style={styles.menuTextBox}>
-                <Text style={styles.menuTitle}>Conditions d’utilisation</Text>
-                <Text style={styles.menuSubtitle}>Règles générales d’utilisation</Text>
+                <Text style={styles.menuTitle}>{pt ? 'Termos de uso' : 'Conditions d’utilisation'}</Text>
+                <Text style={styles.menuSubtitle}>{pt ? 'Regras gerais de utilização' : 'Règles générales d’utilisation'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={30} color="#A8A8A8" />
             </TouchableOpacity>
@@ -329,8 +377,8 @@ export default function Privacy() {
             <TouchableOpacity style={styles.menuRow} activeOpacity={0.78} onPress={() => setMode('privacy')}>
               <MaterialCommunityIcons name="shield-key-outline" size={32} color="#139DFF" />
               <View style={styles.menuTextBox}>
-                <Text style={styles.menuTitle}>Politique de confidentialité</Text>
-                <Text style={styles.menuSubtitle}>Données respectées et sécurisées</Text>
+                <Text style={styles.menuTitle}>{pt ? 'Política de privacidade' : 'Politique de confidentialité'}</Text>
+                <Text style={styles.menuSubtitle}>{pt ? 'Dados respeitados e protegidos' : 'Données respectées et sécurisées'}</Text>
               </View>
               <Ionicons name="chevron-forward" size={30} color="#A8A8A8" />
             </TouchableOpacity>
@@ -338,9 +386,11 @@ export default function Privacy() {
         ) : (
           <>
             <Text style={styles.detailIntro}>
-              {mode === 'terms'
+              {pt ? (mode === 'terms'
+                ? 'Estes termos explicam as principais regras para utilizar o TaKo.'
+                : 'Esta política explica como o TaKo protege e utiliza os dados pessoais.') : (mode === 'terms'
                 ? 'Ces conditions expliquent les règles principales pour utiliser TaKo.'
-                : 'Cette politique explique comment TaKo protège et utilise les données personnelles.'}
+                : 'Cette politique explique comment TaKo protège et utilise les données personnelles.')}
             </Text>
 
             {activeSections.map((section) => {
@@ -348,11 +398,11 @@ export default function Privacy() {
 
               return (
               <View key={section.title} style={styles.detailSection}>
-                <Text style={styles.detailTitle}>{section.title}</Text>
+                <Text style={styles.detailTitle}>{pt ? translateLegalPt(section.title) : section.title}</Text>
                 {section.paragraphs.map((paragraph, index) => (
                   <Text key={paragraph} style={styles.detailText}>
                     {sectionNumber ? `${sectionNumber}.${index + 1}. ` : ''}
-                    {paragraph}
+                    {pt ? translateLegalPt(paragraph) : paragraph}
                   </Text>
                 ))}
               </View>
@@ -360,7 +410,7 @@ export default function Privacy() {
             })}
 
             <Text style={styles.footerText}>
-              Pour toute question ou demande liée à votre compte, contactez le centre d’appel TaKo.
+              {pt ? 'Para qualquer dúvida ou solicitação relacionada à sua conta, entre em contato com a central de atendimento TaKo.' : 'Pour toute question ou demande liée à votre compte, contactez le centre d’appel TaKo.'}
             </Text>
           </>
         )}

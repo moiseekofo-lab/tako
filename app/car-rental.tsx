@@ -8,6 +8,35 @@ import { useStore } from './store';
 
 const NAVY = '#061F68';
 const BLUE = '#0877EA';
+const CAR_RENTAL_PT: Record<string, string> = {
+  'Louer une voiture': 'Alugar um carro', 'Où allez-vous ?': 'Para onde você vai?',
+  'Lieu de prise en charge': 'Local de retirada', 'Lieu de retour': 'Local de devolução',
+  'Dates et heures': 'Datas e horários', 'Date de prise en charge': 'Data de retirada',
+  'Date de retour': 'Data de devolução', 'Heure de prise en charge': 'Horário de retirada',
+  'Heure de retour': 'Horário de devolução', 'Choisissez votre véhicule': 'Escolha seu veículo',
+  'Économique': 'Econômico', '5 places • 2 bagages': '5 lugares • 2 bagagens',
+  '5 places • 3 bagages': '5 lugares • 3 bagagens', '18 places • 10 bagages': '18 lugares • 10 bagagens',
+  'Luxe': 'Luxo', 'à partir de': 'a partir de', 'Options (facultatif)': 'Opções (opcional)',
+  'Assurance tous risques': 'Seguro completo', 'Protégez-vous durant votre trajet': 'Proteja-se durante a viagem',
+  'Avec chauffeur': 'Com motorista', 'Un chauffeur professionnel à votre disposition': 'Um motorista profissional à sua disposição',
+  'Wi-Fi à bord': 'Wi-Fi a bordo', 'Restez connecté pendant le trajet': 'Fique conectado durante a viagem',
+  'Récapitulatif de votre réservation': 'Resumo da sua reserva', 'Prise en charge': 'Retirada',
+  'Retour': 'Devolução', 'Du': 'De', 'Au': 'Até', 'Durée': 'Duração', 'Véhicule': 'Veículo',
+  'Options': 'Opções', 'Aucune': 'Nenhuma', 'Prix total estimé': 'Preço total estimado',
+  'Détail du prix': 'Detalhes do preço', 'Informations du client': 'Informações do cliente',
+  'Nom complet': 'Nome completo', 'Moyen de paiement': 'Forma de pagamento',
+  'Choisissez votre moyen de paiement': 'Escolha sua forma de pagamento',
+  'Payer avec votre compte M-Pesa': 'Pagar com sua conta M-Pesa',
+  'Payer avec votre compte Orange Money': 'Pagar com sua conta Orange Money',
+  'Payer avec votre compte Airtel Money': 'Pagar com sua conta Airtel Money',
+  'Numéro Mobile Money': 'Número do Mobile Money',
+  'Entrez votre numéro pour recevoir la demande de paiement': 'Informe seu número para receber a solicitação de pagamento',
+  'Montant à payer': 'Valor a pagar', 'Montant total': 'Valor total',
+  'Paiement 100% sécurisé': 'Pagamento 100% seguro', 'Continuer': 'Continuar',
+  'Confirmer la réservation': 'Confirmar a reserva', 'Choisissez l’heure': 'Escolha o horário',
+  'Créneaux de 30 minutes': 'Intervalos de 30 minutos', 'Heure': 'Hora', 'Minute': 'Minuto',
+  'Annuler': 'Cancelar', 'Confirmer': 'Confirmar', 'Fermer': 'Fechar',
+};
 
 const interFamily = (style: unknown) => {
   const weight = String(StyleSheet.flatten(style as any)?.fontWeight ?? '400');
@@ -18,7 +47,9 @@ const interFamily = (style: unknown) => {
 };
 
 function Text(props: ComponentProps<typeof RNText>) {
-  return <RNText {...props} style={[{ fontFamily: interFamily(props.style) }, props.style]} />;
+  const language = useStore((state: any) => state.language);
+  const children = language === 'pt' && typeof props.children === 'string' ? (CAR_RENTAL_PT[props.children] ?? props.children) : props.children;
+  return <RNText {...props} style={[{ fontFamily: interFamily(props.style) }, props.style]}>{children}</RNText>;
 }
 
 function TextInput(props: ComponentProps<typeof RNTextInput>) {
@@ -56,6 +87,8 @@ export default function CarRental() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const user = useStore((state: any) => state.currentUser);
+  const language = useStore((state: any) => state.language);
+  const pt = language === 'pt';
   const [step, setStep] = useState<Step>(1);
   const [pickup, setPickup] = useState('Kinshasa, Gombe');
   const [destination, setDestination] = useState('Kinshasa, Gombe');
@@ -73,7 +106,7 @@ export default function CarRental() {
   const chosenExtras = extras.filter((item) => selectedExtras.includes(item.key));
   const durationHours = Math.max(1, Math.ceil((withTime(returnDate, returnTime).getTime() - withTime(pickupDate, pickupTime).getTime()) / 3600000));
   const rentalDays = Math.max(1, Math.ceil(durationHours / 24));
-  const durationText = durationHours % 24 === 0 ? `${durationHours / 24} jour${durationHours > 24 ? 's' : ''}` : `${Math.floor(durationHours / 24)} j ${durationHours % 24} h`;
+  const durationText = durationHours % 24 === 0 ? `${durationHours / 24} ${pt ? `dia${durationHours > 24 ? 's' : ''}` : `jour${durationHours > 24 ? 's' : ''}`}` : `${Math.floor(durationHours / 24)} d ${durationHours % 24} h`;
   const total = useMemo(() => vehicle.price * rentalDays + chosenExtras.reduce((sum, item) => sum + item.price, 0), [vehicle.price, rentalDays, chosenExtras]);
   const toggle = (key: string) => setSelectedExtras((list) => list.includes(key) ? list.filter((item) => item !== key) : [...list, key]);
   const cycle = (value: string, setter: (next: string) => void) => setter(value === 'Kinshasa, Gombe' ? 'Aéroport de N’Djili' : 'Kinshasa, Gombe');
@@ -145,12 +178,12 @@ export default function CarRental() {
       </ScrollView>
       <TouchableOpacity style={styles.button} onPress={() => {
         if (step < 4) return setStep((step + 1) as Step);
-        if (mobileNumber.replace(/\s/g, '').length < 9) return Alert.alert('Numéro incorrect', 'Entrez un numéro Mobile Money valide.');
+        if (mobileNumber.replace(/\s/g, '').length < 9) return Alert.alert(pt ? 'Número incorreto' : 'Numéro incorrect', pt ? 'Informe um número de Mobile Money válido.' : 'Entrez un numéro Mobile Money valide.');
         recordBusinessEvent({ eventType: 'car_rental', userId: user?.id, userName: user?.fullName, details: `${total.toLocaleString('fr-FR')} USD · ${vehicle.model} · ${pickup} vers ${destination} · ${paymentMethods.find((item) => item.key === paymentMethod)?.label}` }).catch(() => {});
-        Alert.alert('Paiement envoyé', `Validez la demande ${paymentMethods.find((item) => item.key === paymentMethod)?.label} sur votre téléphone.`, [{ text: 'OK', onPress: () => router.replace('/my-reservations') }]);
+        Alert.alert(pt ? 'Pagamento enviado' : 'Paiement envoyé', pt ? `Confirme a solicitação ${paymentMethods.find((item) => item.key === paymentMethod)?.label} no seu telefone.` : `Validez la demande ${paymentMethods.find((item) => item.key === paymentMethod)?.label} sur votre téléphone.`, [{ text: 'OK', onPress: () => router.replace('/my-reservations') }]);
       }}>
         {step === 4 && <Ionicons name="lock-closed-outline" size={20} color="white" />}
-        <Text style={styles.buttonText}>{step === 4 ? `Payer ${total.toLocaleString('fr-FR')} USD` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
+        <Text style={styles.buttonText}>{step === 4 ? `${pt ? 'Pagar' : 'Payer'} ${total.toLocaleString(pt ? 'pt-BR' : 'fr-FR')} USD` : step === 3 ? 'Confirmer la réservation' : 'Continuer'}</Text>
       </TouchableOpacity>
       <CalendarModal visible={calendarTarget !== null} value={calendarTarget === 'return' ? returnDate : pickupDate} minimumDate={calendarTarget === 'return' ? new Date(pickupDate.getFullYear(), pickupDate.getMonth(), pickupDate.getDate() + 1) : new Date()} onSelect={chooseDate} onClose={() => setCalendarTarget(null)} />
       <TimeModal visible={timeTarget !== null} value={timeTarget === 'return' ? returnTime : pickupTime} onSelect={(value) => { if (timeTarget === 'return') setReturnTime(value); else setPickupTime(value); setTimeTarget(null); }} onClose={() => setTimeTarget(null)} />

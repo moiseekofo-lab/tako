@@ -43,6 +43,7 @@ export default function Recharge() {
   const currentUser = useStore((state: any) => state.currentUser);
   const isAuthenticated = useStore((state: any) => state.isAuthenticated);
   const text = translations[language];
+  const pt = language === 'pt';
 
   useEffect(() => {
     if (!hasPrefilledWallet.current && currentUser?.phone) {
@@ -74,7 +75,7 @@ export default function Recharge() {
     }
 
     if (!cleanWalletId) {
-      Alert.alert(text.error, 'Ajoutez le numéro mobile money à recharger.');
+      Alert.alert(text.error, pt ? 'Informe o número do Mobile Money para recarregar.' : 'Ajoutez le numéro mobile money à recharger.');
       return;
     }
 
@@ -91,14 +92,14 @@ export default function Recharge() {
 
       if (result?.recharge) {
         addNotification({
-          title: 'Recharge demandée',
-          message: `Confirmez la demande ${provider} sur votre téléphone.`,
+          title: pt ? 'Recarga solicitada' : 'Recharge demandée',
+          message: pt ? `Confirme a solicitação ${provider} no seu telefone.` : `Confirmez la demande ${provider} sur votre téléphone.`,
           amount: value,
           type: 'recharge',
         });
         setAmount('');
         setWalletId('');
-        Alert.alert('Recharge envoyée', `Confirmez la demande ${provider} sur votre téléphone.`, [
+        Alert.alert(pt ? 'Recarga enviada' : 'Recharge envoyée', pt ? `Confirme a solicitação ${provider} no seu telefone.` : `Confirmez la demande ${provider} sur votre téléphone.`, [
           {
             text: 'OK',
             onPress: () =>
@@ -131,7 +132,7 @@ export default function Recharge() {
         },
       ]);
     } catch (error) {
-      Alert.alert(text.error, error instanceof Error ? error.message : 'Recharge impossible pour le moment.');
+      Alert.alert(text.error, error instanceof Error ? error.message : pt ? 'Não foi possível realizar a recarga agora.' : 'Recharge impossible pour le moment.');
     } finally {
       setLoadingProvider(null);
     }
@@ -170,7 +171,7 @@ export default function Recharge() {
               paddingBottom: 12 + insets.bottom,
             },
           ]}>
-          <Text style={styles.fieldLabel}>Montant à recharger</Text>
+          <Text style={styles.fieldLabel}>{pt ? 'Valor da recarga' : 'Montant à recharger'}</Text>
           <View style={styles.inputBox}>
             <View style={styles.currencyBox}>
               <Text style={styles.currency}>FC</Text>
@@ -188,11 +189,11 @@ export default function Recharge() {
             />
           </View>
 
-          <Text style={styles.fieldLabel}>Numéro Mobile Money</Text>
+          <Text style={styles.fieldLabel}>{pt ? 'Número do Mobile Money' : 'Numéro Mobile Money'}</Text>
           <View style={styles.inputBox}>
             <MaterialCommunityIcons name="cellphone" size={24} color="#061F68" />
             <TextInput
-              placeholder="Numéro mobile money"
+              placeholder={pt ? 'Número do Mobile Money' : 'Numéro mobile money'}
               placeholderTextColor="#87909F"
               keyboardType="phone-pad"
               value={walletId}
@@ -203,7 +204,7 @@ export default function Recharge() {
             <Ionicons name="person-outline" size={25} color="#061F68" />
           </View>
 
-          <Text style={styles.fieldLabel}>Choisissez le service de paiement</Text>
+          <Text style={styles.fieldLabel}>{pt ? 'Escolha o serviço de pagamento' : 'Choisissez le service de paiement'}</Text>
           <View style={styles.providerList}>
             {providers.map((provider) => (
               <TouchableOpacity
@@ -228,11 +229,11 @@ export default function Recharge() {
             activeOpacity={0.88}
             disabled={Boolean(loadingProvider)}
             onPress={() => handleRecharge(selectedProvider)}>
-            {loadingProvider ? <ActivityIndicator color="white" /> : <Text style={styles.continueText}>Continuer</Text>}
+            {loadingProvider ? <ActivityIndicator color="white" /> : <Text style={styles.continueText}>{pt ? 'Continuar' : 'Continuer'}</Text>}
           </TouchableOpacity>
 
           <View style={styles.agentSection}>
-            <Text style={styles.orText}>OU</Text>
+            <Text style={styles.orText}>{pt ? 'OU' : 'OU'}</Text>
             <View style={styles.agentCard}>
               <TouchableOpacity style={styles.agentTopRow} activeOpacity={0.88} onPress={handleInternalRecharge}>
                 <View style={styles.internalIcon}>
@@ -240,14 +241,14 @@ export default function Recharge() {
                   <MaterialCommunityIcons name="qrcode" size={18} color="#061F68" />
                 </View>
                 <View style={styles.internalTextBox}>
-                  <Text style={styles.internalTitle}>Recharger auprès d’un agent</Text>
-                  <Text style={styles.internalHint}>Générez votre QR code et présentez-le à un agent TaKo.</Text>
+                  <Text style={styles.internalTitle}>{pt ? 'Recarregar com um agente' : 'Recharger auprès d’un agent'}</Text>
+                  <Text style={styles.internalHint}>{pt ? 'Gere seu código QR e apresente-o a um agente TaKo.' : 'Générez votre QR code et présentez-le à un agent TaKo.'}</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={28} color="#061F68" />
               </TouchableOpacity>
               <TouchableOpacity style={styles.qrButton} activeOpacity={0.88} onPress={handleInternalRecharge}>
                 <MaterialCommunityIcons name="qrcode" size={25} color="#0877EA" />
-                <Text style={styles.qrButtonText}>Afficher mon QR code</Text>
+                <Text style={styles.qrButtonText}>{pt ? 'Exibir meu código QR' : 'Afficher mon QR code'}</Text>
               </TouchableOpacity>
             </View>
           </View>
