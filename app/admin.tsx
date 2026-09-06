@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Image, Modal, Platform, RefreshControl, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { AdminNewsManager } from '../components/admin-news-manager';
@@ -718,6 +718,7 @@ export default function Admin() {
   const [navAtBottom, setNavAtBottom] = useState(false);
   const [navViewportHeight, setNavViewportHeight] = useState(0);
   const [navContentHeight, setNavContentHeight] = useState(0);
+  const navScrollRef = useRef<ScrollView>(null);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isServerNotificationsOpen, setIsServerNotificationsOpen] = useState(false);
   const [serverEvents, setServerEvents] = useState<any[]>([]);
@@ -1712,6 +1713,7 @@ export default function Admin() {
           </View>
 
           <ScrollView
+            ref={navScrollRef}
             style={!isNarrow ? styles.navScroller : undefined}
             contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}
             showsVerticalScrollIndicator={false}
@@ -1735,9 +1737,14 @@ export default function Admin() {
           </ScrollView>
 
           {!isNarrow && navContentHeight > navViewportHeight + 8 ? (
-            <View pointerEvents="none" style={styles.navScrollIndicator}>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={navAtBottom ? 'Remonter le menu' : 'Voir la suite du menu'}
+              activeOpacity={0.75}
+              onPress={() => navAtBottom ? navScrollRef.current?.scrollTo({ y: 0, animated: true }) : navScrollRef.current?.scrollToEnd({ animated: true })}
+              style={styles.navScrollIndicator}>
               <Ionicons name={navAtBottom ? 'chevron-up' : 'chevron-down'} size={19} color="white" />
-            </View>
+            </TouchableOpacity>
           ) : null}
 
         </View>
