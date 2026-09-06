@@ -1,8 +1,14 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons as RawIonicons } from '@expo/vector-icons';
 import { useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text as RNText, TouchableOpacity, View } from 'react-native';
+import { AdminActionMenu } from './admin-action-menu';
 
 const NAVY = '#061F68'; const BLUE = '#1268E8'; const GREEN = '#079455'; const RED = '#E5484D';
+function Text(props: any) { return <RNText {...props} style={[props.style, props.children === 'Actions' && { textAlign: 'center' }]} />; }
+function Ionicons(props: any) {
+  if (props.name === 'eye-outline') return <AdminActionMenu actions={[{ label: 'Voir les détails', icon: 'eye-outline', onPress: () => Alert.alert('Transaction', 'Consultez les informations détaillées de cette transaction.') }, { label: 'Exporter', icon: 'download-outline', onPress: () => Alert.alert('Export', 'Transaction prête à être exportée.') }]} />;
+  return <RawIonicons {...props} />;
+}
 const movements = [
   ['05/09/2026 09:14', 'Entrée', 'Recharge client (M-Pesa)', 'M-Pesa', '+120 000', 'Validé', 'TXN892341'],
   ['05/09/2026 08:52', 'Sortie', 'Versement chauffeur Jean Mukendi', 'Vers chauffeur', '-95 000', 'Validé', 'TRF778210'],
