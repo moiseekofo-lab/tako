@@ -210,7 +210,7 @@ const styles = StyleSheet.create({
   tableRow: { minHeight: 76, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#EEF2F6', paddingHorizontal: 11 },
   tableHeader: { minHeight: 42, backgroundColor: '#FAFBFD' },
   th: { color: BLUE, fontSize: 12, fontWeight: '700' },
-  newsColumn: { width: 310 }, categoryColumn: { width: 125 }, statusColumn: { width: 115 }, periodColumn: { width: 190 }, authorColumn: { width: 145 }, actionColumn: { width: 105 },
+  newsColumn: { width: 310 }, categoryColumn: { width: 125 }, statusColumn: { width: 115 }, periodColumn: { width: 190 }, authorColumn: { width: 145 }, actionColumn: { width: 105, textAlign: 'center', alignItems: 'center', justifyContent: 'center' },
   newsCell: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   thumbnail: { width: 88, height: 58, borderRadius: 7, backgroundColor: '#EAF1FB' },
   newsText: { width: 195 },
