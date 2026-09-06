@@ -11,6 +11,7 @@ import { AdminTicketing } from '../components/admin-ticketing';
 import { AdminRecharges } from '../components/admin-recharges';
 import { AdminPayouts } from '../components/admin-payouts';
 import { AdminTreasury } from '../components/admin-treasury';
+import { AdminActionMenu } from '../components/admin-action-menu';
 import { AdminTransactions } from '../components/admin-transactions';
 import {
   activatePrepaidCard,
@@ -2243,7 +2244,7 @@ function NfcCardsScreen({
       <View style={styles.directoryTableScroller}>
         <View style={[styles.clientTable, { minWidth: 1390 }]}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
-            {['N° carte', 'UID (identifiant NFC)', 'Client', 'Solde disponible', 'Statut', 'Date d’activation', 'Dernière utilisation', 'Actions'].map((header) => <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
+            {['N° carte', 'UID (identifiant NFC)', 'Client', 'Solde disponible', 'Statut', 'Date d’activation', 'Dernière utilisation', 'Actions'].map((header) => <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText, header === 'Actions' && styles.actionHeaderText]}>{header}</Text>)}
           </View>
           {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : cards.length ? cards.map((card: any) => (
             <View key={card.cardId} style={styles.clientTableRow}>
@@ -2254,7 +2255,7 @@ function NfcCardsScreen({
               <View style={styles.clientTableCell}><Text style={card.blocked ? styles.statusBlocked : styles.statusActive}>● {card.blocked ? 'Bloquée' : 'Active'}</Text></View>
               <Text style={styles.clientTableCellText}>{formatDate(card.activatedAt)}</Text>
               <Text style={styles.clientTableCellText}>{card.lastUsedAt ? formatDate(card.lastUsedAt) : 'Jamais utilisée'}</Text>
-              <View style={[styles.clientTableCell, styles.clientActions]}><TouchableOpacity style={styles.clientActionButton} onPress={() => viewCard(card)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity><TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => toggleCard(card)}><Ionicons name={card.blocked ? 'lock-open-outline' : 'lock-closed-outline'} size={19} color={card.blocked ? '#0A9D50' : '#DC2626'} /></TouchableOpacity></View>
+              <View style={[styles.clientTableCell, styles.clientActions]}><AdminActionMenu actions={[{label:'Voir la carte',icon:'eye-outline',onPress:()=>viewCard(card)},{label:card.blocked?'Débloquer la carte':'Bloquer la carte',icon:card.blocked?'lock-open-outline':'lock-closed-outline',onPress:()=>toggleCard(card),disabled:actionLoading}]} /></View>
             </View>
           )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucune carte NFC trouvée.</Text></View>}
         </View>
@@ -2360,7 +2361,7 @@ function ClientDirectoryScreen({
         <View style={styles.clientTable}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
             {['Client', 'Téléphone', 'E-mail', 'Solde (CDF)', 'Carte NFC', 'Statut', 'Inscription', 'Dernière connexion', 'Actions'].map((header) => (
-              <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText]}>{header}</Text>
+              <Text key={header} style={[styles.clientTableCell, styles.clientTableHeaderText, header === 'Actions' && styles.actionHeaderText]}>{header}</Text>
             ))}
           </View>
           {loading ? (
@@ -2382,10 +2383,7 @@ function ClientDirectoryScreen({
               <Text style={styles.clientTableCellText}>{formatDate(client.createdAt)}</Text>
               <Text style={styles.clientTableCellText}>{client.lastLoginAt ? formatDate(client.lastLoginAt) : 'Non disponible'}</Text>
               <View style={[styles.clientTableCell, styles.clientActions]}>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewClient(client)} accessibilityLabel={`Voir ${client.fullName}`}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editClient(client)} accessibilityLabel={`Modifier ${client.fullName}`}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => manageCard(client)} accessibilityLabel={`Gérer la carte de ${client.fullName}`}><Ionicons name="card-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading || client.status === 'closed'} onPress={() => closeClient(client)} accessibilityLabel={`Fermer le compte de ${client.fullName}`}><Ionicons name="trash-outline" size={19} color={client.status === 'closed' ? '#CBD5E1' : '#DC2626'} /></TouchableOpacity>
+                <AdminActionMenu label={`Actions pour ${client.fullName}`} actions={[{label:'Voir le client',icon:'eye-outline',onPress:()=>viewClient(client)},{label:'Modifier',icon:'create-outline',onPress:()=>editClient(client)},{label:'Gérer la carte NFC',icon:'card-outline',onPress:()=>manageCard(client)},{label:'Fermer le compte',icon:'trash-outline',danger:true,onPress:()=>closeClient(client),disabled:client.status==='closed'}]} />
               </View>
             </View>
           )) : (
@@ -2483,7 +2481,7 @@ function DriverDirectoryScreen({
       <View style={styles.directoryTableScroller}>
         <View style={styles.driverTable}>
           <View style={[styles.clientTableRow, styles.clientTableHeader]}>
-            {['Chauffeur', 'Téléphone', 'Véhicule', 'Plaque', 'Ligne / Zone', 'Solde disponible', 'Total gagné', 'Statut', 'Validation', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}
+            {['Chauffeur', 'Téléphone', 'Véhicule', 'Plaque', 'Ligne / Zone', 'Solde disponible', 'Total gagné', 'Statut', 'Validation', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText, header === 'Actions' && styles.actionHeaderText]}>{header}</Text>)}
           </View>
           {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : drivers.length ? drivers.map((driver: any) => (
             <View key={driver.id} style={styles.clientTableRow}>
@@ -2497,10 +2495,7 @@ function DriverDirectoryScreen({
               <View style={styles.driverTableCell}><Text style={statusStyle(driver.status)}>{statusLabel(driver.status)}</Text></View>
               <View style={styles.driverTableCell}><Text style={driver.status === 'active' ? styles.statusActive : driver.status === 'refused' ? styles.statusBlocked : styles.statusInactive}>{driver.status === 'active' ? 'Validé' : driver.status === 'refused' ? 'Refusé' : 'En vérification'}</Text></View>
               <View style={[styles.driverTableCell, styles.clientActions]}>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewDriver(driver)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editDriver(driver)}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewDriver(driver)}><Ionicons name="wallet-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-                <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeDriver(driver)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
+                <AdminActionMenu label={`Actions pour ${driver.fullName}`} actions={[{label:'Voir le chauffeur',icon:'eye-outline',onPress:()=>viewDriver(driver)},{label:'Modifier',icon:'create-outline',onPress:()=>editDriver(driver)},{label:'Voir le portefeuille',icon:'wallet-outline',onPress:()=>viewDriver(driver)},{label:'Fermer le compte',icon:'trash-outline',danger:true,onPress:()=>closeDriver(driver)}]} />
               </View>
             </View>
           )) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun chauffeur trouvé.</Text></View>}
@@ -2606,7 +2601,7 @@ function AgentDirectoryScreen({
         <TouchableOpacity style={styles.filterChip} onPress={reset}><Text style={styles.filterChipText}>Réinitialiser</Text></TouchableOpacity>
       </View>
       <View style={styles.directoryTableScroller}><View style={styles.agentTable}>
-        <View style={[styles.clientTableRow, styles.clientTableHeader]}>{['Agent', 'Téléphone', 'E-mail', 'Zone d’affectation', 'Responsable', 'Rôle', 'Statut', 'Date de création', 'Dernière connexion', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText]}>{header}</Text>)}</View>
+        <View style={[styles.clientTableRow, styles.clientTableHeader]}>{['Agent', 'Téléphone', 'E-mail', 'Zone d’affectation', 'Responsable', 'Rôle', 'Statut', 'Date de création', 'Dernière connexion', 'Actions'].map((header) => <Text key={header} style={[styles.driverTableCell, styles.clientTableHeaderText, header === 'Actions' && styles.actionHeaderText]}>{header}</Text>)}</View>
         {loading ? <View style={styles.clientTableLoading}><ActivityIndicator color={TAKO_BLUE} /></View> : agents.length ? agents.map((agent: any) => <View key={agent.id} style={styles.clientTableRow}>
           <View style={styles.driverTableCell}><Text style={styles.clientName}>{agent.fullName}</Text><Text style={styles.clientSubtext}>{agent.id}</Text></View>
           <Text style={styles.driverTableCell}>{agent.phone || 'Non disponible'}</Text><Text style={styles.driverTableCell}>{agent.email || 'Non disponible'}</Text>
@@ -2615,11 +2610,7 @@ function AgentDirectoryScreen({
           <View style={styles.driverTableCell}><Text style={statusStyle(agent.status)}>{statusLabel(agent.status)}</Text></View>
           <Text style={styles.driverTableCell}>{formatDate(agent.createdAt)}</Text><Text style={styles.driverTableCell}>{agent.lastLoginAt ? formatDate(agent.lastLoginAt) : 'Non disponible'}</Text>
           <View style={[styles.driverTableCell, styles.clientActions]}>
-            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="eye-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => editAgent(agent)}><Ionicons name="create-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading || agent.status !== 'active'} onPress={() => creditAgent(agent)} accessibilityLabel={`Créditer ${agent.fullName}`}><Ionicons name="cash-outline" size={19} color={agent.status === 'active' ? '#087B35' : '#CBD5E1'} /></TouchableOpacity>
-            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => viewAgent(agent)}><Ionicons name="lock-closed-outline" size={19} color={TAKO_BLUE} /></TouchableOpacity>
-            <TouchableOpacity style={styles.clientActionButton} disabled={actionLoading} onPress={() => closeAgent(agent)}><Ionicons name="trash-outline" size={19} color="#DC2626" /></TouchableOpacity>
+            <AdminActionMenu label={`Actions pour ${agent.fullName}`} actions={[{label:'Voir l’agent',icon:'eye-outline',onPress:()=>viewAgent(agent)},{label:'Modifier',icon:'create-outline',onPress:()=>editAgent(agent)},{label:'Créditer le compte',icon:'cash-outline',onPress:()=>creditAgent(agent),disabled:agent.status!=='active'},{label:'Sécurité du compte',icon:'lock-closed-outline',onPress:()=>viewAgent(agent)},{label:'Fermer le compte',icon:'trash-outline',danger:true,onPress:()=>closeAgent(agent)}]} />
           </View>
         </View>) : <View style={styles.clientTableLoading}><Text style={styles.cardText}>Aucun agent trouvé.</Text></View>}
       </View></View>
@@ -4313,7 +4304,11 @@ const styles = StyleSheet.create({
   clientActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
+  },
+  actionHeaderText: {
+    textAlign: 'center',
   },
   clientActionButton: {
     width: 30,
