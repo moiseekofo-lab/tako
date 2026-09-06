@@ -15,6 +15,7 @@ import { AdminActionMenu } from '../components/admin-action-menu';
 import { AdminTransactions } from '../components/admin-transactions';
 import { AdminNotifications } from '../components/admin-notifications';
 import { AdminReports } from '../components/admin-reports';
+import { AdminSettings } from '../components/admin-settings';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2105,25 +2106,7 @@ export default function Admin() {
 
           {activeSection === 'transactions' ? <AdminTransactions /> : null}
 
-          {activeSection === 'settings' ? (
-            <View style={[styles.grid, isNarrow && styles.mobileGrid]}>
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Sécurité</Text>
-                <ChecklistItem label="Web non public pour les clients" done />
-                <ChecklistItem label="Accès administrateur par email fixe" done />
-                <ChecklistItem label="ID client permanent non modifiable" done />
-                <ChecklistItem label="Recherche client par ID" done />
-              </View>
-
-              <View style={styles.card}>
-                <Text style={styles.cardTitle}>Services paiement</Text>
-                <ChecklistItem label="QR code transport" done />
-                <ChecklistItem label="Carte NFC client" done />
-                <ChecklistItem label="M-Pesa, Airtel Money, Orange Money" done />
-                <ChecklistItem label="Notifications transaction" done />
-              </View>
-            </View>
-          ) : null}
+          {activeSection === 'settings' ? <AdminSettings /> : null}
 
           {activeSection === 'news' ? <AdminNewsManager /> : null}
 
