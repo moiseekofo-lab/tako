@@ -715,6 +715,9 @@ export default function Admin() {
   const balance = useStore((state: any) => state.balance);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [navAtBottom, setNavAtBottom] = useState(false);
+  const [navViewportHeight, setNavViewportHeight] = useState(0);
+  const [navContentHeight, setNavContentHeight] = useState(0);
   const [isAdminMenuOpen, setIsAdminMenuOpen] = useState(false);
   const [isServerNotificationsOpen, setIsServerNotificationsOpen] = useState(false);
   const [serverEvents, setServerEvents] = useState<any[]>([]);
@@ -1711,7 +1714,14 @@ export default function Admin() {
           <ScrollView
             style={!isNarrow ? styles.navScroller : undefined}
             contentContainerStyle={[styles.navList, isNarrow && styles.mobileNavList]}
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            scrollEventThrottle={16}
+            onLayout={(event) => setNavViewportHeight(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_width, height) => setNavContentHeight(height)}
+            onScroll={(event) => {
+              const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+              setNavAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 8);
+            }}>
             {navItems.map((item) => (
               <TouchableOpacity
                 key={item.key}
@@ -1723,6 +1733,12 @@ export default function Admin() {
               </TouchableOpacity>
             ))}
           </ScrollView>
+
+          {!isNarrow && navContentHeight > navViewportHeight + 8 ? (
+            <View pointerEvents="none" style={styles.navScrollIndicator}>
+              <Ionicons name={navAtBottom ? 'chevron-up' : 'chevron-down'} size={19} color="white" />
+            </View>
+          ) : null}
 
         </View>
 
@@ -3493,6 +3509,14 @@ const styles = StyleSheet.create({
   },
   navScroller: {
     flex: 1,
+  },
+  navScrollIndicator: {
+    height: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.11)',
+    borderRadius: 8,
+    marginTop: 5,
   },
   mobileNavList: {
     flexDirection: 'row',
