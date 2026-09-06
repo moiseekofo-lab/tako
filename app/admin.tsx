@@ -1736,12 +1736,17 @@ export default function Admin() {
             ))}
           </ScrollView>
 
-          {!isNarrow && navContentHeight > navViewportHeight + 8 ? (
+          {!isNarrow ? (
             <TouchableOpacity
               accessibilityRole="button"
               accessibilityLabel={navAtBottom ? 'Remonter le menu' : 'Voir la suite du menu'}
               activeOpacity={0.75}
-              onPress={() => navAtBottom ? navScrollRef.current?.scrollTo({ y: 0, animated: true }) : navScrollRef.current?.scrollToEnd({ animated: true })}
+              onPress={() => {
+                const measuredBottom = navContentHeight - navViewportHeight;
+                const targetY = navAtBottom ? 0 : (measuredBottom > 0 ? measuredBottom : 10000);
+                navScrollRef.current?.scrollTo({ y: targetY, animated: true });
+                setNavAtBottom(!navAtBottom);
+              }}
               style={styles.navScrollIndicator}>
               <Ionicons name={navAtBottom ? 'chevron-up' : 'chevron-down'} size={19} color="white" />
             </TouchableOpacity>
