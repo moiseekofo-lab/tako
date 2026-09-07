@@ -32,6 +32,7 @@ export default function DriverDashboard() {
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const clearSession = useStore((state: any) => state.clearSession);
   const [sessionReady, setSessionReady] = useState(Platform.OS !== 'web');
+  const [portalReady, setPortalReady] = useState(Platform.OS !== 'web');
   const [activePage, setActivePage] = useState<'dashboard' | 'profile'>('dashboard');
   const contentScrollRef = useRef<ScrollView>(null);
   const [now, setNow] = useState(() => new Date());
@@ -51,6 +52,15 @@ export default function DriverDashboard() {
   useEffect(() => {
     const clock = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(clock);
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+    if (window.parent === window) {
+      window.location.replace('https://www.takotransport.com/connexion');
+      return;
+    }
+    setPortalReady(true);
   }, []);
 
   useEffect(() => {
@@ -106,7 +116,7 @@ export default function DriverDashboard() {
     router.replace('/driver-login' as any);
   };
 
-  if (!sessionReady) {
+  if (!portalReady || !sessionReady) {
     return <View style={styles.sessionLoading}><ActivityIndicator size="large" color="#1264ed" /></View>;
   }
 
