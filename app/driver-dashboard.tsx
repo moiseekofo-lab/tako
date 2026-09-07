@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
+import { DriverProfile } from '../components/driver-profile';
 import { useStore } from './store';
 
 const money = (value: number) => `${Math.round(value).toLocaleString('fr-FR')} CDF`;
@@ -31,6 +32,7 @@ export default function DriverDashboard() {
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const clearSession = useStore((state: any) => state.clearSession);
   const [sessionReady, setSessionReady] = useState(Platform.OS !== 'web');
+  const [activePage, setActivePage] = useState<'dashboard' | 'profile'>('dashboard');
   const [now, setNow] = useState(() => new Date());
   const firstName = String(currentUser?.fullName || 'Chauffeur TaKo').split(/\s+/)[0];
   const tripCount = trips.length;
@@ -110,8 +112,9 @@ export default function DriverDashboard() {
   return <View style={styles.page}>
     <View style={styles.sidebar}>
       <View style={styles.logo}><TakoLogo color="#ffffff" /><Text style={styles.logoSubtitle}>Centre de contrôle chauffeur</Text></View>
-      <View style={styles.menu}>{menu.map(([label, icon], index) => <TouchableOpacity key={label} style={[styles.menuItem, index === 0 && styles.menuActive]} onPress={() => {
-        if (label === 'Mon profil') router.push('/my-data' as any);
+      <View style={styles.menu}>{menu.map(([label, icon]) => <TouchableOpacity key={label} style={[styles.menuItem, ((activePage === 'dashboard' && label === 'Tableau de bord') || (activePage === 'profile' && label === 'Mon profil')) && styles.menuActive]} onPress={() => {
+        if (label === 'Tableau de bord') setActivePage('dashboard');
+        if (label === 'Mon profil') setActivePage('profile');
         if (label === 'Mes transactions' || label === 'Historique des courses') router.push('/history' as any);
         if (label === 'Notifications') router.push('/notifications' as any);
       }}><Ionicons name={icon as any} size={21} color="#fff" /><Text style={styles.menuText}>{label}</Text>{label === 'Notifications' && notifications.length > 0 ? <Text style={styles.badge}>{notifications.length}</Text> : null}</TouchableOpacity>)}</View>
@@ -122,6 +125,7 @@ export default function DriverDashboard() {
     <View style={styles.main}>
       <View style={styles.header}><View><Text style={styles.welcome}>Bienvenue, {firstName} 👋</Text><Text style={styles.subtitle}>Centre de contrôle chauffeur</Text></View><View style={styles.headerRight}><View style={styles.status}><Text style={styles.statusLabel}>Statut du compte</Text><Text style={styles.statusPill}>Actif</Text></View><View style={styles.bell}><Ionicons name="notifications-outline" size={24} color="#07143f" />{notifications.length > 0 && <Text style={styles.bellBadge}>{notifications.length}</Text>}</View><View style={styles.avatar}><Ionicons name="person" size={24} color="#135fe8" /></View><View><Text style={styles.userName}>{currentUser.fullName}</Text><Text style={styles.userRole}>Chauffeur</Text></View></View></View>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {activePage === 'profile' ? <DriverProfile user={currentUser} driverTripInfo={driverTripInfo} onEdit={() => router.push('/my-data' as any)} /> : <>
         <View style={styles.metrics}>
           <View style={styles.balanceCard}><View style={styles.metricIconLight}><Ionicons name="wallet" size={25} color="#fff" /></View><View><Text style={styles.balanceLabel}>Solde disponible</Text><Text style={styles.balanceValue}>{money(balance)}</Text><TouchableOpacity style={styles.withdraw}><Text style={styles.withdrawText}>Retirer de l’argent</Text><Ionicons name="arrow-forward" size={18} color="#fff" /></TouchableOpacity></View></View>
           <Panel style={styles.metric}><View style={[styles.metricIcon,{backgroundColor:'#dff8e9'}]}><MaterialCommunityIcons name="chart-line" size={26} color="#12a85b" /></View><View style={styles.metricContent}><Text style={styles.metricLabel}>Gains du jour</Text><Text style={styles.metricValue}>{money(todayGains)}</Text><Text style={styles.positive}>Aujourd’hui</Text></View></Panel>
@@ -146,6 +150,7 @@ export default function DriverDashboard() {
             <Panel><Text style={styles.panelTitle}>Actions rapides</Text><View style={styles.quickGrid}>{[["Scanner QR",'qr-code-outline','/scan'],['Montant du transport','cash-outline','/home'],['Mes courses','time-outline','/history'],["Retirer de l’argent",'wallet-outline','/home']].map(([label,icon,route]) => <TouchableOpacity key={label} style={styles.quick} onPress={() => router.push(route as any)}><View style={styles.quickIcon}><Ionicons name={icon as any} size={25} color="#135fe8" /></View><Text style={styles.quickText}>{label}</Text></TouchableOpacity>)}</View></Panel>
           </View>
         </View>
+        </>}
       </ScrollView>
     </View>
   </View>;
