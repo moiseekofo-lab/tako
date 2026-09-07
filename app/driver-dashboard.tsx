@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ReactNode, useEffect, useMemo, useState } from 'react';
+import { ReactNode, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native';
 import { TakoLogo } from '../components/tako-logo';
 import { DriverProfile } from '../components/driver-profile';
@@ -33,6 +33,7 @@ export default function DriverDashboard() {
   const clearSession = useStore((state: any) => state.clearSession);
   const [sessionReady, setSessionReady] = useState(Platform.OS !== 'web');
   const [activePage, setActivePage] = useState<'dashboard' | 'profile'>('dashboard');
+  const contentScrollRef = useRef<ScrollView>(null);
   const [now, setNow] = useState(() => new Date());
   const firstName = String(currentUser?.fullName || 'Chauffeur TaKo').split(/\s+/)[0];
   const tripCount = trips.length;
@@ -51,6 +52,10 @@ export default function DriverDashboard() {
     const clock = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(clock);
   }, []);
+
+  useEffect(() => {
+    contentScrollRef.current?.scrollTo({ y: 0, animated: false });
+  }, [activePage]);
 
   useEffect(() => {
     if (Platform.OS !== 'web') return;
@@ -124,7 +129,7 @@ export default function DriverDashboard() {
 
     <View style={styles.main}>
       <View style={styles.header}><View><Text style={styles.welcome}>Bienvenue, {firstName} 👋</Text><Text style={styles.subtitle}>Centre de contrôle chauffeur</Text></View><View style={styles.headerRight}><View style={styles.status}><Text style={styles.statusLabel}>Statut du compte</Text><Text style={styles.statusPill}>Actif</Text></View><View style={styles.bell}><Ionicons name="notifications-outline" size={24} color="#07143f" />{notifications.length > 0 && <Text style={styles.bellBadge}>{notifications.length}</Text>}</View><View style={styles.avatar}><Ionicons name="person" size={24} color="#135fe8" /></View><View><Text style={styles.userName}>{currentUser.fullName}</Text><Text style={styles.userRole}>Chauffeur</Text></View></View></View>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView ref={contentScrollRef} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {activePage === 'profile' ? <DriverProfile user={currentUser} driverTripInfo={driverTripInfo} onEdit={() => router.push('/my-data' as any)} /> : <>
         <View style={styles.metrics}>
           <View style={styles.balanceCard}><View style={styles.metricIconLight}><Ionicons name="wallet" size={25} color="#fff" /></View><View><Text style={styles.balanceLabel}>Solde disponible</Text><Text style={styles.balanceValue}>{money(balance)}</Text><TouchableOpacity style={styles.withdraw}><Text style={styles.withdrawText}>Retirer de l’argent</Text><Ionicons name="arrow-forward" size={18} color="#fff" /></TouchableOpacity></View></View>
