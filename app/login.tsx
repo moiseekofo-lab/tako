@@ -583,8 +583,8 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
 
           <View style={[styles.driverWebCard, isNarrowWeb && styles.driverWebCardNarrow]}>
             <View style={styles.driverWebUserIcon}><Ionicons name="person" size={32} color="#0B70E8" /></View>
-            <Text style={styles.driverWebTitle}>Connexion chauffeur</Text>
-            <Text style={styles.driverWebSubtitle}>Connectez-vous à votre compte chauffeur</Text>
+            <Text style={styles.driverWebTitle}>Connexion Partenaire</Text>
+            <Text style={styles.driverWebSubtitle}>Connectez-vous à votre compte partenaire</Text>
 
             <Text style={styles.driverWebLabel}>Email</Text>
             <View style={styles.driverWebField}>
@@ -788,9 +788,9 @@ export default function Login({ chauffeurOnlyOverride = false }: { chauffeurOnly
             {authMode === 'login' ? (
               <>
                 <Text style={[styles.greeting, isWeb && styles.webGreeting]}>
-                  {isWeb ? (chauffeurOnly ? 'Connexion chauffeur' : 'Bonjour, cher administrateur') : `${greeting}, ${displayName}`}
+                  {isWeb ? (chauffeurOnly ? 'Connexion Partenaire' : 'Bonjour, cher administrateur') : `${greeting}, ${displayName}`}
                 </Text>
-                <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{chauffeurOnly ? 'Connectez-vous à votre compte chauffeur' : text.loginTitle}</Text>
+                <Text style={[styles.loginTitle, isWeb && styles.webLoginTitle]}>{chauffeurOnly ? 'Connectez-vous à votre compte partenaire' : text.loginTitle}</Text>
 
                 <View style={styles.fieldWrap}>
                   <TextInput
