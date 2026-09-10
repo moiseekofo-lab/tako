@@ -18,6 +18,7 @@ import { AdminReports } from '../components/admin-reports';
 import { AdminSettings } from '../components/admin-settings';
 import { AdminActivityLog } from '../components/admin-activity-log';
 import { AdminCarRentals } from '../components/admin-car-rentals';
+import { AdminReconciliation } from '../components/admin-reconciliation';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2157,6 +2158,8 @@ export default function Admin() {
 
           {activeSection === 'claims' ? <AdminCarRentals /> : null}
 
+          {activeSection === 'reconciliation' ? <AdminReconciliation /> : null}
+
           {activeSection === 'nfcCards' ? (
             <>
               <NfcCardsScreen
@@ -2205,7 +2208,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && activeSection !== 'audit' && activeSection !== 'claims' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && activeSection !== 'audit' && activeSection !== 'claims' && activeSection !== 'reconciliation' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
       </View>
