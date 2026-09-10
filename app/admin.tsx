@@ -17,6 +17,7 @@ import { AdminNotifications } from '../components/admin-notifications';
 import { AdminReports } from '../components/admin-reports';
 import { AdminSettings } from '../components/admin-settings';
 import { AdminActivityLog } from '../components/admin-activity-log';
+import { AdminCarRentals } from '../components/admin-car-rentals';
 import {
   activatePrepaidCard,
   approveUser,
@@ -584,7 +585,7 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
   { key: 'payouts', label: 'Versements', icon: 'cash-outline' },
   { key: 'treasury', label: 'Trésorerie', icon: 'wallet-outline' },
   { key: 'reconciliation', label: 'Rapprochement', icon: 'git-compare-outline' },
-  { key: 'claims', label: 'Réclamations', icon: 'chatbox-ellipses-outline' },
+  { key: 'claims', label: 'Location de voitures', icon: 'car-sport-outline' },
   { key: 'ticketing', label: 'Billetterie', icon: 'ticket-outline' },
   { key: 'news', label: 'Actualités', icon: 'megaphone-outline' },
   { key: 'notifications', label: 'Notifications', icon: 'notifications-outline' },
@@ -600,14 +601,14 @@ const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, stri
     dashboard: 'Dashboard', profile: 'My profile', clients: 'Clients', drivers: 'Drivers', agents: 'Agents',
     nfcCards: 'NFC cards', transactions: 'Transactions', recharges: 'Top-ups',
     payouts: 'Payouts', treasury: 'Treasury', reconciliation: 'Reconciliation',
-    claims: 'Claims', ticketing: 'Ticketing', news: 'News', notifications: 'Notifications', reports: 'Reports',
+    claims: 'Car rentals', ticketing: 'Ticketing', news: 'News', notifications: 'Notifications', reports: 'Reports',
     roles: 'Administrators and roles', audit: 'Activity log', settings: 'Settings',
   },
   pt: {
     dashboard: 'Painel', profile: 'Meu perfil', clients: 'Clientes', drivers: 'Motoristas', agents: 'Agentes',
     nfcCards: 'Cartões NFC', transactions: 'Transações', recharges: 'Recargas',
     payouts: 'Pagamentos', treasury: 'Tesouraria', reconciliation: 'Reconciliação',
-    claims: 'Reclamações', ticketing: 'Bilheteira', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
+    claims: 'Aluguel de carros', ticketing: 'Bilheteira', news: 'Notícias', notifications: 'Notificações', reports: 'Relatórios',
     roles: 'Administradores e funções', audit: 'Registo de atividades', settings: 'Definições',
   },
 };
@@ -2154,6 +2155,8 @@ export default function Admin() {
 
           {activeSection === 'audit' ? <AdminActivityLog /> : null}
 
+          {activeSection === 'claims' ? <AdminCarRentals /> : null}
+
           {activeSection === 'nfcCards' ? (
             <>
               <NfcCardsScreen
@@ -2202,7 +2205,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && activeSection !== 'audit' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && activeSection !== 'audit' && activeSection !== 'claims' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
       </View>
