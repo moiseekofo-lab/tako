@@ -1914,7 +1914,6 @@ export default function Admin() {
                 setCardFilter={(value) => { setClientCardFilter(value); setClientPage(1); }}
                 page={clientPage}
                 setPage={setClientPage}
-                addClient={() => router.push('/register' as any)}
                 viewClient={(client) => openClientProfile(client.id, 'view')}
                 editClient={(client) => openClientProfile(client.id, 'edit')}
                 manageCard={(client) => {
@@ -2019,7 +2018,6 @@ export default function Admin() {
                 setZone={(value) => { setDriverZoneFilter(value); setDriverPage(1); }}
                 page={driverPage}
                 setPage={setDriverPage}
-                addDriver={() => router.push('/register' as any)}
                 viewDriver={(driver) => { setSelectedDriver(driver); setDriverPanelMode('view'); }}
                 editDriver={(driver) => { setSelectedDriver({ ...driver }); setDriverPanelMode('edit'); }}
                 closeDriver={setDriverDeleteCandidate}
@@ -2083,7 +2081,6 @@ export default function Admin() {
                 setManager={(value) => { setAgentManagerFilter(value); setAgentPage(1); }}
                 page={agentPage}
                 setPage={setAgentPage}
-                addAgent={() => router.push('/register' as any)}
                 viewAgent={(agent) => { setSelectedAgent(agent); setAgentPanelMode('view'); }}
                 editAgent={(agent) => { setSelectedAgent({ ...agent }); setAgentPanelMode('edit'); }}
                 creditAgent={(agent) => { setAgentCreditCandidate(agent); setAgentCreditAmount(''); }}
@@ -2293,7 +2290,6 @@ function ClientDirectoryScreen({
   setCardFilter,
   page,
   setPage,
-  addClient,
   viewClient,
   editClient,
   manageCard,
@@ -2310,7 +2306,6 @@ function ClientDirectoryScreen({
   setCardFilter: (value: '' | 'with' | 'without') => void;
   page: number;
   setPage: (value: number) => void;
-  addClient: () => void;
   viewClient: (client: any) => void;
   editClient: (client: any) => void;
   manageCard: (client: any) => void;
@@ -2324,13 +2319,6 @@ function ClientDirectoryScreen({
 
   return (
     <View style={styles.clientDirectory}>
-      <View style={styles.referenceHeader}>
-        <TouchableOpacity style={[styles.referencePrimary, { marginLeft: 'auto' }]} onPress={addClient}>
-          <Ionicons name="add-outline" size={18} color="white" />
-          <Text style={styles.referencePrimaryText}>Ajouter un client</Text>
-        </TouchableOpacity>
-      </View>
-
       <View style={styles.clientStats}>
         <ClientStat icon="people-outline" label="Total clients" value={Number(stats.total || 0)} tone="blue" />
         <ClientStat icon="checkmark-circle-outline" label="Clients actifs" value={Number(stats.active || 0)} tone="green" total={Number(stats.total || 0)} />
@@ -2438,11 +2426,11 @@ function ClientStat({ icon, label, value, tone, total }: { icon: keyof typeof Io
 
 function DriverDirectoryScreen({
   directory, loading, search, setSearch, status, setStatus, zone, setZone, page, setPage,
-  addDriver, viewDriver, editDriver, closeDriver, actionLoading,
+  viewDriver, editDriver, closeDriver, actionLoading,
 }: {
   directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
   status: string; setStatus: (value: string) => void; zone: string; setZone: (value: string) => void;
-  page: number; setPage: (value: number) => void; addDriver: () => void;
+  page: number; setPage: (value: number) => void;
   viewDriver: (driver: any) => void; editDriver: (driver: any) => void;
   closeDriver: (driver: any) => void; actionLoading: boolean;
 }) {
@@ -2475,7 +2463,6 @@ function DriverDirectoryScreen({
       <View style={styles.referenceHeader}>
         <View style={[styles.driverDetailActions, { marginLeft: 'auto' }]}>
           <TouchableOpacity style={styles.secondaryAction} onPress={exportDrivers}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.referencePrimary} onPress={addDriver}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un chauffeur</Text></TouchableOpacity>
         </View>
       </View>
       <View style={styles.clientStats}>
@@ -2566,12 +2553,12 @@ function DriverDetails({ driver, editing, setDriver, loading, save, changeStatus
 
 function AgentDirectoryScreen({
   directory, loading, search, setSearch, status, setStatus, zone, setZone, agentRole, setAgentRole,
-  manager, setManager, page, setPage, addAgent, viewAgent, editAgent, creditAgent, closeAgent, actionLoading,
+  manager, setManager, page, setPage, viewAgent, editAgent, creditAgent, closeAgent, actionLoading,
 }: {
   directory: any; loading: boolean; search: string; setSearch: (value: string) => void;
   status: string; setStatus: (value: string) => void; zone: string; setZone: (value: string) => void;
   agentRole: string; setAgentRole: (value: string) => void; manager: string; setManager: (value: string) => void;
-  page: number; setPage: (value: number) => void; addAgent: () => void;
+  page: number; setPage: (value: number) => void;
   viewAgent: (agent: any) => void; editAgent: (agent: any) => void; creditAgent: (agent: any) => void; closeAgent: (agent: any) => void; actionLoading: boolean;
 }) {
   const stats = directory?.stats || {};
@@ -2597,7 +2584,6 @@ function AgentDirectoryScreen({
       <View style={styles.referenceHeader}>
         <View style={[styles.driverDetailActions, { marginLeft: 'auto' }]}>
           <TouchableOpacity style={styles.secondaryAction} onPress={exportAgents}><Ionicons name="download-outline" size={18} color={TAKO_BLUE} /><Text style={styles.secondaryActionText}>Exporter</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.referencePrimary} onPress={addAgent}><Ionicons name="add-outline" size={18} color="white" /><Text style={styles.referencePrimaryText}>Ajouter un agent</Text></TouchableOpacity>
         </View>
       </View>
       <View style={styles.clientStats}>
