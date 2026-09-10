@@ -26,9 +26,9 @@ export function AdminTransactions({ onOpenReport }: { onOpenReport?: () => void 
   }), [data.transactions, method, search, status, tab]);
   const stats = data.stats || {};
   const tabs: [Tab, string][] = [['all', 'Toutes les transactions'], ['payment', 'Paiements'], ['recharge', 'Recharges'], ['payout', 'Versements'], ['refund', 'Remboursements']];
-  const exportTransactions = () => {
+  const downloadTransactions = (items: any[], filename: string) => {
     const headers = ['Référence', 'Type', 'Utilisateur', 'Téléphone / ID', 'Méthode', 'Montant (FC)', 'Statut', 'Date et heure'];
-    const csvRows = rows.map((item: any) => [item.id, typeLabel(item.type), item.userName, item.phone || item.clientId || item.driverId || '', methodLabel(item.method), Number(item.amount || 0), item.status === 'accepted' ? 'Réussie' : item.status === 'pending' ? 'En attente' : 'Échouée', new Date(item.createdAt).toLocaleString('fr-FR')]);
+    const csvRows = items.map((item: any) => [item.id, typeLabel(item.type), item.userName, item.phone || item.clientId || item.driverId || '', methodLabel(item.method), Number(item.amount || 0), item.status === 'accepted' ? 'Réussie' : item.status === 'pending' ? 'En attente' : 'Échouée', new Date(item.createdAt).toLocaleString('fr-FR')]);
     const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
     const csv = [headers, ...csvRows].map((line) => line.map(escape).join(';')).join('\n');
     if (typeof document === 'undefined') {
@@ -39,11 +39,16 @@ export function AdminTransactions({ onOpenReport }: { onOpenReport?: () => void 
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `transactions-tako-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
     URL.revokeObjectURL(url);
+  };
+  const exportTransactions = () => downloadTransactions(rows, `transactions-tako-${new Date().toISOString().slice(0, 10)}.csv`);
+  const exportTransaction = (item: any) => {
+    const reference = String(item.id || 'transaction').replace(/[^a-zA-Z0-9_-]/g, '-');
+    downloadTransactions([item], `${reference}.csv`);
   };
   const openReport = () => onOpenReport ? onOpenReport() : Alert.alert('Rapport des transactions', 'Le rapport utilise les transactions affichées sur cette page.');
   return <View style={styles.page}>
@@ -65,7 +70,7 @@ export function AdminTransactions({ onOpenReport }: { onOpenReport?: () => void 
       <View style={styles.tabs}>{tabs.map(([key, label]) => <TouchableOpacity key={key} onPress={() => setTab(key)} style={[styles.tab, tab === key && styles.tabActive]}><Text style={[styles.tabText, tab === key && styles.tabTextActive]}>{label}</Text></TouchableOpacity>)}</View>
       <View style={[styles.row, styles.header]}>{['Référence', 'Type', 'Client / Chauffeur', 'Méthode', 'Montant', 'Statut', 'Date et heure', 'Actions'].map((title) => <Text key={title} style={[styles.th, title === 'Actions' && { textAlign: 'center' }]}>{title}</Text>)}</View>
       {loading ? <ActivityIndicator color={BLUE} style={{ margin: 35 }} /> : rows.length ? rows.map((item: any) => <View key={item.id} style={styles.row}>
-        <Text numberOfLines={1} style={styles.cell}>{item.id}</Text><View style={styles.cellBox}><Text style={styles.strong}>{typeLabel(item.type)}</Text><Text style={styles.muted}>{item.route || 'Opération TaKo'}</Text></View><View style={styles.cellBox}><Text style={styles.strong}>{item.userName}</Text><Text style={styles.muted}>{item.phone || item.clientId || item.driverId}</Text></View><Text style={styles.cell}>{methodLabel(item.method)}</Text><Text style={[styles.cell, item.type === 'recharge' ? styles.credit : styles.debit]}>{item.type === 'recharge' ? '+' : '-'} {Number(item.amount).toLocaleString('fr-FR')} FC</Text><View style={styles.cellBox}><Text style={item.status === 'accepted' ? styles.success : item.status === 'pending' ? styles.pending : styles.failed}>● {item.status === 'accepted' ? 'Réussie' : item.status === 'pending' ? 'En attente' : 'Échouée'}</Text></View><Text style={styles.cell}>{new Date(item.createdAt).toLocaleString('fr-FR')}</Text><View style={styles.cellBox}><AdminActionMenu actions={[{label:'Voir les détails',icon:'eye-outline',onPress:()=>Alert.alert('Transaction',`${item.id}\n${item.userName}\n${Number(item.amount).toLocaleString('fr-FR')} FC`)},{label:'Exporter',icon:'download-outline',onPress:()=>Alert.alert('Export','Transaction prête à être exportée.')}]} /></View>
+        <Text numberOfLines={1} style={styles.cell}>{item.id}</Text><View style={styles.cellBox}><Text style={styles.strong}>{typeLabel(item.type)}</Text><Text style={styles.muted}>{item.route || 'Opération TaKo'}</Text></View><View style={styles.cellBox}><Text style={styles.strong}>{item.userName}</Text><Text style={styles.muted}>{item.phone || item.clientId || item.driverId}</Text></View><Text style={styles.cell}>{methodLabel(item.method)}</Text><Text style={[styles.cell, item.type === 'recharge' ? styles.credit : styles.debit]}>{item.type === 'recharge' ? '+' : '-'} {Number(item.amount).toLocaleString('fr-FR')} FC</Text><View style={styles.cellBox}><Text style={item.status === 'accepted' ? styles.success : item.status === 'pending' ? styles.pending : styles.failed}>● {item.status === 'accepted' ? 'Réussie' : item.status === 'pending' ? 'En attente' : 'Échouée'}</Text></View><Text style={styles.cell}>{new Date(item.createdAt).toLocaleString('fr-FR')}</Text><View style={styles.cellBox}><AdminActionMenu actions={[{label:'Voir les détails',icon:'eye-outline',onPress:()=>Alert.alert('Transaction',`${item.id}\n${item.userName}\n${Number(item.amount).toLocaleString('fr-FR')} FC`)},{label:'Exporter',icon:'download-outline',onPress:()=>exportTransaction(item)}]} /></View>
       </View>) : <View style={styles.empty}><Ionicons name="receipt-outline" size={34} color="#98A2B3" /><Text style={styles.muted}>Aucune transaction trouvée.</Text></View>}
     </View>
   </View>;
