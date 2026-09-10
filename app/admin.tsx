@@ -2132,7 +2132,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection === 'transactions' ? <AdminTransactions /> : null}
+          {activeSection === 'transactions' ? <AdminTransactions onOpenReport={() => setActiveSection('reports')} /> : null}
 
           {activeSection === 'settings' ? <AdminSettings /> : null}
 

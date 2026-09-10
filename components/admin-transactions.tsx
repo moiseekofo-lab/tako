@@ -11,7 +11,7 @@ const GREEN = '#079455';
 const SESSION_KEY = 'tako:adminSession';
 type Tab = 'all' | 'payment' | 'recharge' | 'payout' | 'refund';
 
-export function AdminTransactions() {
+export function AdminTransactions({ onOpenReport }: { onOpenReport?: () => void }) {
   const [data, setData] = useState<any>({ transactions: [], stats: {} });
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -26,8 +26,28 @@ export function AdminTransactions() {
   }), [data.transactions, method, search, status, tab]);
   const stats = data.stats || {};
   const tabs: [Tab, string][] = [['all', 'Toutes les transactions'], ['payment', 'Paiements'], ['recharge', 'Recharges'], ['payout', 'Versements'], ['refund', 'Remboursements']];
+  const exportTransactions = () => {
+    const headers = ['Référence', 'Type', 'Utilisateur', 'Téléphone / ID', 'Méthode', 'Montant (FC)', 'Statut', 'Date et heure'];
+    const csvRows = rows.map((item: any) => [item.id, typeLabel(item.type), item.userName, item.phone || item.clientId || item.driverId || '', methodLabel(item.method), Number(item.amount || 0), item.status === 'accepted' ? 'Réussie' : item.status === 'pending' ? 'En attente' : 'Échouée', new Date(item.createdAt).toLocaleString('fr-FR')]);
+    const escape = (value: unknown) => `"${String(value ?? '').replace(/"/g, '""')}"`;
+    const csv = [headers, ...csvRows].map((line) => line.map(escape).join(';')).join('\n');
+    if (typeof document === 'undefined') {
+      Alert.alert('Export indisponible', 'L’export CSV est disponible depuis l’administration Web.');
+      return;
+    }
+    const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transactions-tako-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  };
+  const openReport = () => onOpenReport ? onOpenReport() : Alert.alert('Rapport des transactions', 'Le rapport utilise les transactions affichées sur cette page.');
   return <View style={styles.page}>
-    <View style={styles.actions}><TouchableOpacity style={styles.secondary} onPress={() => Alert.alert('Exporter', 'L’export des transactions sera téléchargé depuis cette page.')}><Ionicons name="download-outline" size={18} color={NAVY} /><Text style={styles.secondaryText}>Exporter</Text></TouchableOpacity><TouchableOpacity style={styles.primary} onPress={() => Alert.alert('Rapport des transactions', 'Le rapport utilise les transactions affichées sur cette page.')}><Ionicons name="bar-chart-outline" size={18} color="white" /><Text style={styles.primaryText}>Rapport des transactions</Text></TouchableOpacity></View>
+    <View style={styles.actions}><TouchableOpacity style={styles.secondary} onPress={exportTransactions}><Ionicons name="download-outline" size={18} color={NAVY} /><Text style={styles.secondaryText}>Exporter</Text></TouchableOpacity><TouchableOpacity style={styles.primary} onPress={openReport}><Ionicons name="bar-chart-outline" size={18} color="white" /><Text style={styles.primaryText}>Rapport des transactions</Text></TouchableOpacity></View>
     <View style={styles.metrics}>
       <Metric icon="swap-horizontal-outline" label="Total transactions" value={stats.total} color={BLUE} />
       <Metric icon="arrow-down-outline" label="Paiements" value={stats.payments} color={GREEN} />
