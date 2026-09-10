@@ -16,6 +16,7 @@ import { AdminTransactions } from '../components/admin-transactions';
 import { AdminNotifications } from '../components/admin-notifications';
 import { AdminReports } from '../components/admin-reports';
 import { AdminSettings } from '../components/admin-settings';
+import { AdminActivityLog } from '../components/admin-activity-log';
 import {
   activatePrepaidCard,
   approveUser,
@@ -2151,6 +2152,8 @@ export default function Admin() {
 
           {activeSection === 'reports' ? <AdminReports /> : null}
 
+          {activeSection === 'audit' ? <AdminActivityLog /> : null}
+
           {activeSection === 'nfcCards' ? (
             <>
               <NfcCardsScreen
@@ -2199,7 +2202,7 @@ export default function Admin() {
             </>
           ) : null}
 
-          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
+          {activeSection !== 'nfcCards' && activeSection !== 'roles' && activeSection !== 'recharges' && activeSection !== 'payouts' && activeSection !== 'treasury' && activeSection !== 'notifications' && activeSection !== 'reports' && activeSection !== 'audit' && moduleContent[activeSection] ? <AdminModuleSection module={moduleContent[activeSection]!} dashboard={dashboardData} /> : null}
         </ScrollView>
       </View>
       </View>
