@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { registerAccount, requestVerificationCode, verifyVerificationCode } from '../services/api';
 import { useStore } from './store';
 
@@ -421,10 +422,11 @@ export default function Register() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={0}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <KeyboardAvoidingView
+        style={styles.screen}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}>
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
@@ -608,7 +610,8 @@ export default function Register() {
           <Text style={styles.secureText}>Vos données sont sécurisées et confidentielles</Text>
         </View>}
       </ScrollView>
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -723,9 +726,9 @@ const styles = StyleSheet.create({
   welcomeTitleRow: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 18 },
   welcomeTitleText: { color: NAVY, fontSize: 24, lineHeight: 34, fontWeight: '900' },
   logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 31, lineHeight: 38, fontWeight: 'normal', letterSpacing: 0.4 },
-  subtitle: { color: MUTED, fontSize: 16, lineHeight: 23, fontWeight: '500', marginBottom: 25 },
+  subtitle: { color: MUTED, fontSize: 16, lineHeight: 23, fontWeight: '500', marginBottom: 18 },
   label: { color: NAVY, fontSize: 16, fontWeight: '800', marginBottom: 9 },
-  methodButton: { alignSelf: 'flex-start', minHeight: 43, borderWidth: 1.3, borderColor: BLUE, borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: -30, marginBottom: 28 },
+  methodButton: { alignSelf: 'flex-start', minHeight: 43, borderWidth: 1.3, borderColor: BLUE, borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: 0, marginBottom: 24 },
   methodButtonText: { color: BLUE, fontSize: 14, fontWeight: '800' },
   phoneField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
   countryPickerButton: { minWidth: 72, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
