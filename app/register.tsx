@@ -260,6 +260,17 @@ function isValidBirthDate(value: string) {
   return date.getDate() === day && date.getMonth() === month - 1 && date.getFullYear() === year && year >= maxYear - 100 && year <= maxYear;
 }
 
+function birthDateToDate(value: string) {
+  const match = /^(\d{2})\s*\/\s*(\d{2})\s*\/\s*(\d{4})$/.exec(value.trim());
+  if (!match) return null;
+  const date = new Date(Number(match[3]), Number(match[2]) - 1, Number(match[1]));
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function dateToBirthDate(date: Date) {
+  return `${String(date.getDate()).padStart(2, '0')} / ${String(date.getMonth() + 1).padStart(2, '0')} / ${date.getFullYear()}`;
+}
+
 export default function Register() {
   const router = useRouter();
   const setCurrentUser = useStore((state: any) => state.setCurrentUser);
@@ -273,6 +284,11 @@ export default function Register() {
   const [verificationCode, setVerificationCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [birthDate, setBirthDate] = useState('');
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const date = new Date();
+    return new Date(date.getFullYear() - 18, date.getMonth(), 1);
+  });
   const [role, setRole] = useState<Role>('passager');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -355,6 +371,12 @@ export default function Register() {
       return;
     }
     setStep(4);
+  };
+
+  const openBirthDateCalendar = () => {
+    const selected = birthDateToDate(birthDate);
+    if (selected && isValidBirthDate(birthDate)) setCalendarMonth(new Date(selected.getFullYear(), selected.getMonth(), 1));
+    setCalendarOpen(true);
   };
 
   const createAccount = async () => {
@@ -506,6 +528,8 @@ export default function Register() {
               keyboardType="number-pad"
               maxLength={14}
               trailing="chevron-down"
+              trailingLabel="Ouvrir le calendrier"
+              onTrailingPress={openBirthDateCalendar}
             />
             <Text style={styles.label}>Je suis</Text>
             <View style={styles.rolesRow}>
@@ -567,10 +591,22 @@ export default function Register() {
           </View>
         </Modal>
 
-        <View style={styles.secureFooter}>
+        <BirthDateCalendar
+          visible={calendarOpen}
+          month={calendarMonth}
+          value={birthDate}
+          onMonthChange={setCalendarMonth}
+          onClose={() => setCalendarOpen(false)}
+          onSelect={(date) => {
+            setBirthDate(dateToBirthDate(date));
+            setCalendarOpen(false);
+          }}
+        />
+
+        {step <= 2 && <View style={styles.secureFooter}>
           <Ionicons name="lock-closed-outline" size={19} color="#85899A" />
           <Text style={styles.secureText}>Vos données sont sécurisées et confidentielles</Text>
-        </View>
+        </View>}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -592,10 +628,46 @@ function InputField(props: any) {
   return (
     <View style={styles.inputField}>
       <Ionicons name={props.icon} size={29} color={BLUE} />
-      <TextInput {...props} icon={undefined} trailing={undefined} style={styles.textInput} placeholderTextColor="#8D91A3" />
-      {props.trailing && <Ionicons name={props.trailing} size={25} color={BLUE} />}
+      <TextInput {...props} icon={undefined} trailing={undefined} trailingLabel={undefined} onTrailingPress={undefined} style={styles.textInput} placeholderTextColor="#8D91A3" />
+      {props.trailing && <Pressable accessibilityRole="button" accessibilityLabel={props.trailingLabel} onPress={props.onTrailingPress} hitSlop={12} style={styles.trailingButton}><Ionicons name={props.trailing} size={23} color={BLUE} /></Pressable>}
     </View>
   );
+}
+
+function BirthDateCalendar({ visible, month, value, onMonthChange, onClose, onSelect }: any) {
+  const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+  const selected = birthDateToDate(value);
+  const firstDay = new Date(month.getFullYear(), month.getMonth(), 1);
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
+  const cells = Array.from({ length: 42 }, (_, index) => {
+    const day = index - startOffset + 1;
+    return day > 0 && day <= daysInMonth ? day : null;
+  });
+  const maximumDate = new Date();
+  maximumDate.setFullYear(maximumDate.getFullYear() - 12);
+  const minimumDate = new Date(maximumDate.getFullYear() - 100, maximumDate.getMonth(), maximumDate.getDate());
+
+  return <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Pressable style={styles.calendarBackdrop} onPress={onClose}>
+      <Pressable style={styles.calendarCard} onPress={(event) => event.stopPropagation()}>
+        <View style={styles.calendarHeader}>
+          <View style={styles.calendarControls}><TouchableOpacity accessibilityLabel="Année précédente" onPress={() => onMonthChange(new Date(month.getFullYear() - 1, month.getMonth(), 1))} style={styles.calendarArrow}><Ionicons name="play-back-outline" size={19} color={BLUE} /></TouchableOpacity><TouchableOpacity accessibilityLabel="Mois précédent" onPress={() => onMonthChange(new Date(month.getFullYear(), month.getMonth() - 1, 1))} style={styles.calendarArrow}><Ionicons name="chevron-back" size={22} color={BLUE} /></TouchableOpacity></View>
+          <Text style={styles.calendarTitle}>{monthNames[month.getMonth()]} {month.getFullYear()}</Text>
+          <View style={styles.calendarControls}><TouchableOpacity accessibilityLabel="Mois suivant" onPress={() => onMonthChange(new Date(month.getFullYear(), month.getMonth() + 1, 1))} style={styles.calendarArrow}><Ionicons name="chevron-forward" size={22} color={BLUE} /></TouchableOpacity><TouchableOpacity accessibilityLabel="Année suivante" onPress={() => onMonthChange(new Date(month.getFullYear() + 1, month.getMonth(), 1))} style={styles.calendarArrow}><Ionicons name="play-forward-outline" size={19} color={BLUE} /></TouchableOpacity></View>
+        </View>
+        <View style={styles.calendarGrid}>{['L', 'M', 'M', 'J', 'V', 'S', 'D'].map((day, index) => <Text key={`${day}-${index}`} style={styles.calendarWeekday}>{day}</Text>)}</View>
+        <View style={styles.calendarGrid}>{cells.map((day, index) => {
+          if (!day) return <View key={index} style={styles.calendarCell} />;
+          const date = new Date(month.getFullYear(), month.getMonth(), day);
+          const disabled = date > maximumDate || date < minimumDate;
+          const isSelected = selected?.getFullYear() === date.getFullYear() && selected?.getMonth() === date.getMonth() && selected?.getDate() === day;
+          return <TouchableOpacity key={index} disabled={disabled} onPress={() => onSelect(date)} style={[styles.calendarCell, isSelected && styles.calendarCellSelected]}><Text style={[styles.calendarDay, disabled && styles.calendarDayDisabled, isSelected && styles.calendarDaySelected]}>{day}</Text></TouchableOpacity>;
+        })}</View>
+        <TouchableOpacity onPress={onClose} style={styles.calendarClose}><Text style={styles.calendarCloseText}>Annuler</Text></TouchableOpacity>
+      </Pressable>
+    </Pressable>
+  </Modal>;
 }
 
 function PasswordField({ value, onChangeText, visible, onToggle, placeholder }: any) {
@@ -630,9 +702,9 @@ function Rule({ ok, icon, badge, text }: { ok: boolean; icon?: any; badge?: stri
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: 'white' },
-  container: { flexGrow: 1, width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: 26, paddingTop: Platform.OS === 'web' ? 26 : 48, paddingBottom: 32, backgroundColor: 'white' },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 100 },
-  backButton: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  container: { flexGrow: 1, width: '100%', maxWidth: 760, alignSelf: 'center', paddingHorizontal: 22, paddingTop: Platform.OS === 'web' ? 18 : 28, paddingBottom: 22, backgroundColor: 'white' },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', minHeight: 60 },
+  backButton: { width: 42, height: 42, alignItems: 'center', justifyContent: 'center' },
   logoWrap: { transform: [{ scale: 1.25 }] },
   progress: { marginTop: 24, marginBottom: 72 },
   progressTop: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24 },
@@ -647,12 +719,12 @@ const styles = StyleSheet.create({
   stepLabel: { width: '25%', textAlign: 'center', color: MUTED, fontSize: 15, lineHeight: 20, fontWeight: '500' },
   stepLabelActive: { color: BLUE, fontWeight: '800' },
   content: { flex: 1 },
-  title: { color: NAVY, fontSize: 34, lineHeight: 42, fontWeight: '900', marginBottom: 18 },
+  title: { color: NAVY, fontSize: 28, lineHeight: 34, fontWeight: '900', marginBottom: 10 },
   welcomeTitleRow: { minHeight: 42, flexDirection: 'row', alignItems: 'center', gap: 7, marginBottom: 18 },
   welcomeTitleText: { color: NAVY, fontSize: 24, lineHeight: 34, fontWeight: '900' },
   logoWord: { color: NAVY, fontFamily: 'Alkatra', fontSize: 31, lineHeight: 38, fontWeight: 'normal', letterSpacing: 0.4 },
-  subtitle: { color: MUTED, fontSize: 19, lineHeight: 29, fontWeight: '500', marginBottom: 52 },
-  label: { color: NAVY, fontSize: 17, fontWeight: '800', marginBottom: 14 },
+  subtitle: { color: MUTED, fontSize: 16, lineHeight: 23, fontWeight: '500', marginBottom: 25 },
+  label: { color: NAVY, fontSize: 16, fontWeight: '800', marginBottom: 9 },
   methodButton: { alignSelf: 'flex-start', minHeight: 43, borderWidth: 1.3, borderColor: BLUE, borderRadius: 11, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 9, marginTop: -30, marginBottom: 28 },
   methodButtonText: { color: BLUE, fontSize: 14, fontWeight: '800' },
   phoneField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14 },
@@ -661,13 +733,13 @@ const styles = StyleSheet.create({
   divider: { width: 1, height: 43, backgroundColor: '#E0E2E9', marginHorizontal: 10 },
   countryCode: { color: NAVY, fontSize: 18, fontWeight: '800' },
   phoneInput: { flex: 1, minWidth: 0, color: NAVY, fontSize: 17, fontWeight: '600', paddingVertical: 18 },
-  infoBox: { marginTop: 36, borderRadius: 13, backgroundColor: LIGHT_BLUE, paddingHorizontal: 20, paddingVertical: 21, flexDirection: 'row', alignItems: 'center', gap: 17 },
-  infoIcon: { width: 43, height: 43, borderRadius: 22, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
-  infoLetter: { color: 'white', fontSize: 26, fontWeight: '800' },
-  infoText: { flex: 1, color: NAVY, fontSize: 16, lineHeight: 23, fontWeight: '600' },
-  primaryButton: { minHeight: 70, borderRadius: 13, backgroundColor: BLUE, marginTop: 54, paddingHorizontal: 28, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  infoBox: { marginTop: 20, borderRadius: 12, backgroundColor: LIGHT_BLUE, paddingHorizontal: 15, paddingVertical: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  infoIcon: { width: 36, height: 36, borderRadius: 18, backgroundColor: BLUE, alignItems: 'center', justifyContent: 'center' },
+  infoLetter: { color: 'white', fontSize: 21, fontWeight: '800' },
+  infoText: { flex: 1, color: NAVY, fontSize: 14, lineHeight: 20, fontWeight: '600' },
+  primaryButton: { minHeight: 58, borderRadius: 12, backgroundColor: BLUE, marginTop: 24, paddingHorizontal: 20, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   primaryDisabled: { opacity: 0.45 },
-  primaryText: { flex: 1, color: 'white', fontSize: 21, fontWeight: '800', textAlign: 'center', paddingLeft: 28 },
+  primaryText: { flex: 1, color: 'white', fontSize: 18, fontWeight: '800', textAlign: 'center', paddingLeft: 26 },
   countryModalBackdrop: { flex: 1, backgroundColor: 'rgba(7, 20, 60, 0.35)', justifyContent: 'flex-end' },
   countrySheet: { maxHeight: '78%', backgroundColor: 'white', borderTopLeftRadius: 26, borderTopRightRadius: 26, paddingHorizontal: 18, paddingTop: 18, paddingBottom: 28 },
   countrySheetHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12, borderBottomWidth: 1, borderBottomColor: '#ECEEF4' },
@@ -677,7 +749,7 @@ const styles = StyleSheet.create({
   countryRowFlag: { width: 42, fontSize: 25 },
   countryRowName: { flex: 1, color: NAVY, fontSize: 15, fontWeight: '700' },
   countryRowCode: { color: BLUE, fontSize: 14, fontWeight: '900' },
-  secureFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, marginTop: 30 },
+  secureFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 18 },
   secureText: { color: '#85899A', fontSize: 14, fontWeight: '500' },
   phonePreview: { color: NAVY, fontSize: 18, fontWeight: '800', marginTop: -34, marginBottom: 16 },
   otpInstruction: { color: MUTED, fontSize: 17, marginBottom: 32 },
@@ -695,23 +767,39 @@ const styles = StyleSheet.create({
   resendText: { color: MUTED, fontSize: 12.5, lineHeight: 18 },
   resendLink: { color: BLUE, fontSize: 15, fontWeight: '800' },
   disabledLink: { color: '#AFB2C0' },
-  inputField: { minHeight: 74, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, flexDirection: 'row', alignItems: 'center', gap: 15, paddingHorizontal: 20, marginBottom: 28 },
-  textInput: { flex: 1, color: NAVY, fontSize: 17, fontWeight: '600', paddingVertical: 18 },
-  rolesRow: { flexDirection: 'row', gap: 10, marginBottom: 6 },
-  roleCard: { flex: 1, minHeight: 92, borderWidth: 1.4, borderColor: BORDER, borderRadius: 14, padding: 12, alignItems: 'center', justifyContent: 'center' },
+  inputField: { minHeight: 58, borderWidth: 1.4, borderColor: BORDER, borderRadius: 13, flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: 16, marginBottom: 18 },
+  textInput: { flex: 1, minWidth: 0, color: NAVY, fontSize: 15, fontWeight: '600', paddingVertical: 12 },
+  trailingButton: { width: 38, height: 38, alignItems: 'center', justifyContent: 'center' },
+  rolesRow: { flexDirection: 'row', gap: 8, marginBottom: 2 },
+  roleCard: { flex: 1, minWidth: 0, minHeight: 80, borderWidth: 1.4, borderColor: BORDER, borderRadius: 13, paddingHorizontal: 6, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
   roleCardSelected: { borderWidth: 2, borderColor: BLUE, backgroundColor: '#F6F8FF' },
-  roleRadio: { position: 'absolute', right: 9, top: 9, width: 20, height: 20, borderRadius: 10, borderWidth: 1.4, borderColor: '#CFD2DD', alignItems: 'center', justifyContent: 'center' },
+  roleRadio: { position: 'absolute', right: 6, top: 6, width: 18, height: 18, borderRadius: 9, borderWidth: 1.4, borderColor: '#CFD2DD', alignItems: 'center', justifyContent: 'center' },
   roleRadioInner: { width: 11, height: 11, borderRadius: 6, backgroundColor: BLUE },
-  roleCopy: { alignItems: 'center', marginTop: 5 },
-  roleTitle: { color: NAVY, fontSize: 14, fontWeight: '800', textAlign: 'center' },
+  roleCopy: { alignItems: 'center', marginTop: 2, minWidth: 0 },
+  roleTitle: { color: NAVY, fontSize: 13, fontWeight: '800', textAlign: 'center' },
   roleTitleSelected: { color: BLUE },
-  roleSubtitle: { color: MUTED, fontSize: 10.5, lineHeight: 15, textAlign: 'center', marginTop: 2 },
-  rules: { marginTop: -10, marginBottom: 28, paddingHorizontal: 14, gap: 15 },
+  roleSubtitle: { color: MUTED, fontSize: 9.5, lineHeight: 13, textAlign: 'center', marginTop: 1 },
+  rules: { marginTop: -5, marginBottom: 18, paddingHorizontal: 8, gap: 10 },
   ruleRow: { flexDirection: 'row', alignItems: 'center' },
   ruleDot: { width: 18, height: 18, borderRadius: 9, borderWidth: 1.4, borderColor: '#AEB2C1', alignItems: 'center', justifyContent: 'center', marginRight: 15 },
   ruleDotOk: { backgroundColor: '#10A85A', borderColor: '#10A85A' },
   ruleBadge: { width: 34, alignItems: 'flex-start' },
   ruleBadgeText: { color: BLUE, fontSize: 14, fontWeight: '900' },
-  ruleText: { flex: 1, color: MUTED, fontSize: 14.5, lineHeight: 20 },
+  ruleText: { flex: 1, color: MUTED, fontSize: 13.5, lineHeight: 18 },
   ruleTextOk: { color: '#18864E' },
+  calendarBackdrop: { flex: 1, backgroundColor: 'rgba(7, 20, 60, 0.42)', alignItems: 'center', justifyContent: 'center', padding: 22 },
+  calendarCard: { width: '100%', maxWidth: 390, borderRadius: 18, backgroundColor: 'white', padding: 17 },
+  calendarHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 },
+  calendarControls: { flexDirection: 'row' },
+  calendarArrow: { width: 32, height: 40, alignItems: 'center', justifyContent: 'center' },
+  calendarTitle: { color: NAVY, fontSize: 17, fontWeight: '900' },
+  calendarGrid: { flexDirection: 'row', flexWrap: 'wrap' },
+  calendarWeekday: { width: '14.285%', color: MUTED, fontSize: 12, fontWeight: '800', textAlign: 'center', paddingVertical: 7 },
+  calendarCell: { width: '14.285%', aspectRatio: 1.15, alignItems: 'center', justifyContent: 'center', borderRadius: 20 },
+  calendarCellSelected: { backgroundColor: BLUE },
+  calendarDay: { color: NAVY, fontSize: 14, fontWeight: '600' },
+  calendarDayDisabled: { color: '#C9CCD7' },
+  calendarDaySelected: { color: 'white', fontWeight: '900' },
+  calendarClose: { alignSelf: 'flex-end', paddingHorizontal: 12, paddingVertical: 9, marginTop: 5 },
+  calendarCloseText: { color: BLUE, fontSize: 14, fontWeight: '800' },
 });
