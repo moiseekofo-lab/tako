@@ -153,26 +153,30 @@ function isInfobipWhatsAppEnabled() {
   );
 }
 
-function formatSmsPhone(contact) {
+function formatE164Phone(contact) {
   const value = String(contact || '').trim().replace(/[\s()-]/g, '');
+  const international = value.startsWith('00')
+    ? `+${value.slice(2)}`
+    : value.startsWith('+')
+      ? value
+      : /^[1-9]\d+$/.test(value)
+        ? `+${value}`
+        : value;
 
-  if (value.startsWith('+')) {
-    return value;
+  if (!/^\+[1-9]\d{7,14}$/.test(international)) {
+    const error = new Error(
+      'Numéro invalide. Sélectionnez le pays et saisissez un numéro au format international.',
+    );
+    error.statusCode = 400;
+    throw error;
   }
 
-  if (value.startsWith('00')) {
-    return `+${value.slice(2)}`;
-  }
+  return international;
+}
 
-  if (value.startsWith('243')) {
-    return `+${value}`;
-  }
-
-  if (value.startsWith('0')) {
-    return `+243${value.slice(1)}`;
-  }
-
-  return `+${value}`;
+function normalizeVerificationContact(value = '') {
+  const contact = normalizeContact(value);
+  return isPhoneContact(contact) ? formatE164Phone(contact) : contact;
 }
 
 async function sendInfobipOtpSms(contact, code) {
@@ -190,7 +194,7 @@ async function sendInfobipOtpSms(contact, code) {
       messages: [
         {
           sender: infobipSmsSender,
-          destinations: [{ to: formatSmsPhone(contact) }],
+          destinations: [{ to: formatE164Phone(contact) }],
           content: {
             text: `Votre code de confirmation TaKo est ${code}. Il expire dans 10 minutes.`,
           },
@@ -205,7 +209,7 @@ async function sendInfobipOtpSms(contact, code) {
       status: response.status,
       statusText: response.statusText,
       error: result,
-      destination: formatSmsPhone(contact),
+      destination: formatE164Phone(contact),
       sender: infobipSmsSender,
       baseUrl,
     });
@@ -226,7 +230,7 @@ async function sendInfobipOtpWhatsAppFirst(contact, code) {
   const baseUrl = /^https?:\/\//i.test(infobipBaseUrl)
     ? infobipBaseUrl
     : `https://${infobipBaseUrl}`;
-  const destination = formatSmsPhone(contact).replace(/^\+/, '');
+  const destination = formatE164Phone(contact).replace(/^\+/, '');
   const smsText = `Votre code de confirmation TaKo est ${code}. Il expire dans 10 minutes.`;
 
   const response = await fetch(`${baseUrl}/whatsapp/1/message/template`, {
@@ -959,7 +963,13 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/auth/request-code') {
     const body = await readJson(request);
-    const contact = normalizeContact(body.contact);
+    let contact;
+    try {
+      contact = normalizeVerificationContact(body.contact);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { ok: false, error: error.message });
+      return;
+    }
     const purpose = String(body.purpose || 'register');
 
     if (!contact) {
@@ -1053,7 +1063,13 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/auth/verify-code') {
     const body = await readJson(request);
-    const contact = normalizeContact(body.contact);
+    let contact;
+    try {
+      contact = normalizeVerificationContact(body.contact);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { ok: false, error: error.message });
+      return;
+    }
     const purpose = String(body.purpose || 'register');
 
     if (!contact || !body.code) {
@@ -1179,7 +1195,13 @@ async function handleRequest(request, response) {
 
   if (request.method === 'POST' && url.pathname === '/auth/register') {
     const body = await readJson(request);
-    const contact = normalizeContact(body.contact);
+    let contact;
+    try {
+      contact = normalizeVerificationContact(body.contact);
+    } catch (error) {
+      sendJson(response, error.statusCode || 400, { ok: false, error: error.message });
+      return;
+    }
     const fullName = String(body.fullName || '').trim();
     const birthDate = String(body.birthDate || '').trim();
     const password = String(body.password || '');

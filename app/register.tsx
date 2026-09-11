@@ -233,8 +233,20 @@ const COUNTRIES: Country[] = [
   { name: 'Zimbabwe', flag: '🇿🇼', dialCode: '+263', minDigits: 9, maxDigits: 9 },
 ];
 
+function normalizeNationalPhoneInput(value: string, country: Country) {
+  let digits = value.replace(/\D/g, '');
+  const dialCodeDigits = country.dialCode.replace(/\D/g, '');
+
+  if (digits.startsWith('00')) digits = digits.slice(2);
+  if (digits.startsWith(dialCodeDigits) && digits.length > country.maxDigits) {
+    digits = digits.slice(dialCodeDigits.length);
+  }
+
+  return digits.replace(/^0+/, '').slice(0, country.maxDigits);
+}
+
 function normalizePhone(value: string, country: Country) {
-  const nationalNumber = value.replace(/\D/g, '').replace(/^0+/, '').slice(0, country.maxDigits);
+  const nationalNumber = normalizeNationalPhoneInput(value, country);
   return `${country.dialCode}${nationalNumber}`;
 }
 
@@ -462,7 +474,7 @@ export default function Register() {
               <TextInput
                 style={styles.phoneInput}
                 value={displayPhone(phoneInput, selectedCountry)}
-                onChangeText={(value) => setPhoneInput(value.replace(/\D/g, '').slice(0, selectedCountry.maxDigits))}
+                onChangeText={(value) => setPhoneInput(normalizeNationalPhoneInput(value, selectedCountry))}
                 placeholder="Entrez votre numéro"
                 placeholderTextColor="#9296A8"
                 keyboardType="phone-pad"
@@ -579,7 +591,7 @@ export default function Register() {
                     activeOpacity={0.8}
                     onPress={() => {
                       setSelectedCountry(country);
-                      setPhoneInput((value) => value.replace(/\D/g, '').slice(0, country.maxDigits));
+                      if (country.name !== selectedCountry.name) setPhoneInput('');
                       setCountryPickerOpen(false);
                     }}
                   >
