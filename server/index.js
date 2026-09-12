@@ -625,6 +625,24 @@ async function initDatabase() {
     );
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS rental_vehicles (
+      id TEXT PRIMARY KEY,
+      brand TEXT NOT NULL,
+      model TEXT NOT NULL,
+      plate TEXT NOT NULL UNIQUE,
+      category TEXT NOT NULL,
+      agency TEXT NOT NULL DEFAULT '',
+      daily_price NUMERIC NOT NULL DEFAULT 0,
+      seats INTEGER NOT NULL DEFAULT 5,
+      luggage INTEGER NOT NULL DEFAULT 2,
+      image_url TEXT NOT NULL DEFAULT '',
+      availability TEXT NOT NULL DEFAULT 'Disponible',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS cancellation_requests (
       id TEXT PRIMARY KEY,
       booking_reference TEXT NOT NULL,
@@ -3096,6 +3114,33 @@ async function handleRequest(request, response) {
       COALESCE(ROUND(AVG(CASE WHEN capacity > 0 THEN occupied * 100.0 / capacity END)), 0) AS occupancy
       FROM travel_schedules WHERE status <> 'cancelled';`);
     sendJson(response, 200, { ok: true, schedules: rows.rows, stats: stats.rows[0] }); return;
+  }
+
+  if (request.method === 'GET' && url.pathname === '/rental-vehicles') {
+    const result = await query(`SELECT id,brand,model,plate,category,agency,daily_price AS "dailyPrice",seats,luggage,
+      image_url AS "imageUrl",availability,status FROM rental_vehicles WHERE status='active' ORDER BY created_at DESC;`);
+    sendJson(response, 200, { ok: true, vehicles: result.rows }); return;
+  }
+  if (request.method === 'POST' && url.pathname === '/admin/rental-vehicles/list') {
+    const body=await readJson(request);if(!verifyAdminSessionToken(body.sessionToken)){sendJson(response,401,{ok:false,error:'Session administrateur expirée'});return;}
+    const result=await query(`SELECT id,brand,model,plate,category,agency,daily_price AS "dailyPrice",seats,luggage,
+      image_url AS "imageUrl",availability,status FROM rental_vehicles ORDER BY created_at DESC;`);
+    sendJson(response,200,{ok:true,vehicles:result.rows});return;
+  }
+  if (request.method === 'POST' && url.pathname === '/admin/rental-vehicles/save') {
+    const body=await readJson(request);if(!verifyAdminSessionToken(body.sessionToken)){sendJson(response,401,{ok:false,error:'Session administrateur expirée'});return;}
+    const id=String(body.id||`CAR-${Date.now()}-${crypto.randomBytes(3).toString('hex')}`).trim();
+    const brand=String(body.brand||'').trim(),model=String(body.model||'').trim(),plate=String(body.plate||'').trim().toUpperCase();
+    const category=String(body.category||'').trim(),agency=String(body.agency||'').trim(),imageUrl=String(body.imageUrl||'').trim();
+    const dailyPrice=Number(body.dailyPrice),seats=Number(body.seats),luggage=Number(body.luggage);
+    const categories=['Économique','SUV','Minibus','Luxe'];
+    if(!brand||!model||!plate||!categories.includes(category)||!Number.isFinite(dailyPrice)||dailyPrice<=0||!Number.isInteger(seats)||seats<=0||!Number.isInteger(luggage)||luggage<0){sendJson(response,400,{ok:false,error:'Marque, modèle, plaque, catégorie, tarif, places et bagages valides sont obligatoires.'});return;}
+    try { const result=await query(`INSERT INTO rental_vehicles(id,brand,model,plate,category,agency,daily_price,seats,luggage,image_url)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT(id) DO UPDATE SET brand=$2,model=$3,plate=$4,category=$5,agency=$6,daily_price=$7,seats=$8,luggage=$9,image_url=$10,updated_at=NOW()
+      RETURNING id,brand,model,plate,category,agency,daily_price AS "dailyPrice",seats,luggage,image_url AS "imageUrl",availability,status;`,[id,brand,model,plate,category,agency,dailyPrice,seats,luggage,imageUrl]);
+      await createAdminActivity({eventType:'rental_vehicle',title:body.id?'Véhicule de location modifié':'Nouveau véhicule de location',message:`${brand} ${model} · ${category} · ${plate}.`,userId:id,userName:`${brand} ${model}`});
+      sendJson(response,body.id?200:201,{ok:true,vehicle:result.rows[0]});return;
+    } catch(error){if(error?.code==='23505'){sendJson(response,409,{ok:false,error:'Cette plaque d’immatriculation existe déjà.'});return;}throw error;}
   }
 
   if (request.method === 'POST' && url.pathname === '/admin/schedules/save') {

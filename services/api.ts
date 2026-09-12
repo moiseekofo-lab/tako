@@ -17,6 +17,13 @@ export type NewsItem = {
   updatedAt?: string;
 };
 
+export type RentalVehicle = {
+  id: string; brand: string; model: string; plate: string;
+  category: 'Économique' | 'SUV' | 'Minibus' | 'Luxe'; agency: string;
+  dailyPrice: number; seats: number; luggage: number; imageUrl?: string;
+  availability: string; status: string;
+};
+
 async function requestJson(path: string, options: RequestInit = {}) {
   if (!API_URL) {
     throw new Error('Serveur API non configuré. Vérifiez EXPO_PUBLIC_API_URL.');
@@ -388,6 +395,18 @@ export function getAdminTransactions(sessionToken: string) {
 
 export function getPartnerAgencies(sessionToken: string) {
   return postJson('/admin/partner-agencies/list', { sessionToken });
+}
+
+export function getRentalVehicles() {
+  return requestJson('/rental-vehicles');
+}
+
+export function getAdminRentalVehicles(sessionToken: string) {
+  return postJson('/admin/rental-vehicles/list', { sessionToken });
+}
+
+export function saveAdminRentalVehicle(sessionToken: string, vehicle: Omit<RentalVehicle, 'id' | 'availability' | 'status'> & { id?: string }) {
+  return postJson('/admin/rental-vehicles/save', { sessionToken, ...vehicle });
 }
 
 export function savePartnerAgency(sessionToken: string, agency: {

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useEffect, useMemo, useState, type ComponentProps } from 'react';
 import { Alert, Image, Modal, ScrollView, StyleSheet, Text as RNText, TextInput as RNTextInput, TouchableOpacity, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { recordBusinessEvent } from '../services/api';
+import { getRentalVehicles, recordBusinessEvent } from '../services/api';
 import { useStore } from './store';
 
 const NAVY = '#061F68';
@@ -55,12 +55,17 @@ function Text(props: ComponentProps<typeof RNText>) {
 function TextInput(props: ComponentProps<typeof RNTextInput>) {
   return <RNTextInput {...props} style={[{ fontFamily: interFamily(props.style) }, props.style]} />;
 }
-const vehicles = [
+const defaultVehicles = [
   { key: 'economy', label: 'Économique', model: 'Suzuki Swift', details: '5 places • 2 bagages', image: require('../assets/images/car-suzuki-swift-v3.png'), price: 40 },
   { key: 'suv', label: 'SUV', model: 'Nissan Qashqai', details: '5 places • 3 bagages', image: require('../assets/images/car-nissan-qashqai-v3.png'), price: 70 },
   { key: 'minibus', label: 'Minibus', model: 'Toyota Coaster', details: '18 places • 10 bagages', image: require('../assets/images/car-minibus-v3.png'), price: 120 },
   { key: 'luxury', label: 'Luxe', model: 'Mercedes Classe E', details: '5 places • 3 bagages', image: require('../assets/images/car-luxury-v3.png'), price: 150 },
 ] as const;
+type AppRentalVehicle={key:string;label:string;model:string;details:string;image:any;price:number};
+const categoryImages:Record<string,any>={
+  'Économique':require('../assets/images/car-suzuki-swift-v3.png'),SUV:require('../assets/images/car-nissan-qashqai-v3.png'),
+  Minibus:require('../assets/images/car-minibus-v3.png'),Luxe:require('../assets/images/car-luxury-v3.png'),
+};
 const extras = [
   { key: 'insurance', title: 'Assurance tous risques', subtitle: 'Protégez-vous durant votre trajet', icon: 'shield-check-outline', price: 10 },
   { key: 'driver', title: 'Avec chauffeur', subtitle: 'Un chauffeur professionnel à votre disposition', icon: 'account-outline', price: 20 },
@@ -98,11 +103,13 @@ export default function CarRental() {
   const [timeTarget, setTimeTarget] = useState<TimeTarget | null>(null);
   const [pickupTime, setPickupTime] = useState(currentHalfHour);
   const [returnTime, setReturnTime] = useState(currentHalfHour);
-  const [vehicleKey, setVehicleKey] = useState<(typeof vehicles)[number]['key']>('economy');
+  const [vehicles,setVehicles]=useState<AppRentalVehicle[]>([...defaultVehicles]);
+  const [vehicleKey, setVehicleKey] = useState('economy');
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<(typeof paymentMethods)[number]['key']>('mpesa');
   const [mobileNumber, setMobileNumber] = useState(String(user?.phone || '').replace(/^\+243/, ''));
   const vehicle = vehicles.find((item) => item.key === vehicleKey) ?? vehicles[0];
+  useEffect(()=>{getRentalVehicles().then(result=>{if(!result?.vehicles?.length)return;const remote:AppRentalVehicle[]=result.vehicles.map((item:any)=>({key:item.id,label:item.category,model:`${item.brand} ${item.model}`,details:`${item.seats} places • ${item.luggage} bagages`,image:item.imageUrl?{uri:item.imageUrl}:categoryImages[item.category]||categoryImages['Économique'],price:Number(item.dailyPrice)}));setVehicles([...remote,...defaultVehicles]);setVehicleKey(remote[0].key)}).catch(()=>{})},[]);
   const chosenExtras = extras.filter((item) => selectedExtras.includes(item.key));
   const durationHours = Math.max(1, Math.ceil((withTime(returnDate, returnTime).getTime() - withTime(pickupDate, pickupTime).getTime()) / 3600000));
   const rentalDays = Math.max(1, Math.ceil(durationHours / 24));
