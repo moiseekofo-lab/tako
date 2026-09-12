@@ -596,6 +596,14 @@ const navItems: Array<{ key: AdminSection; label: string; icon: keyof typeof Ion
   { key: 'settings', label: 'Paramètres', icon: 'settings-outline' },
 ];
 
+const carRentalSubItems = [
+  { label: 'Réservations', tab: 'Réservations' },
+  { label: 'Agences', tab: 'Agences' },
+  { label: 'Catégories', tab: 'Catégories' },
+  { label: 'Disponibilités', tab: 'Disponibilités' },
+  { label: 'Rapports', tab: 'Rapports' },
+];
+
 const adminNavTranslations: Record<'fr' | 'en' | 'pt', Record<AdminSection, string>> = {
   fr: { ...Object.fromEntries(navItems.map((item) => [item.key, item.label])), profile: 'Mon profil' } as Record<AdminSection, string>,
   en: {
@@ -718,6 +726,7 @@ export default function Admin() {
   const balance = useStore((state: any) => state.balance);
   const driverTripInfo = useStore((state: any) => state.driverTripInfo);
   const [activeSection, setActiveSection] = useState<AdminSection>('dashboard');
+  const [carRentalTab, setCarRentalTab] = useState('Véhicules');
   const [navAtBottom, setNavAtBottom] = useState(false);
   const [navViewportHeight, setNavViewportHeight] = useState(0);
   const [navContentHeight, setNavContentHeight] = useState(0);
@@ -1728,14 +1737,32 @@ export default function Admin() {
               setNavAtBottom(contentOffset.y + layoutMeasurement.height >= contentSize.height - 8);
             }}>
             {navItems.map((item) => (
-              <TouchableOpacity
-                key={item.key}
-                style={[styles.navItem, isNarrow && styles.mobileNavItem, activeSection === item.key && styles.navItemActive]}
-                activeOpacity={0.82}
-                onPress={() => setActiveSection(item.key)}>
-                <Ionicons name={item.icon} size={22} color={activeSection === item.key ? TAKO_BLUE : 'white'} />
-                <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{adminNavTranslations[language][item.key]}</Text>
-              </TouchableOpacity>
+              <View key={item.key} style={item.key === 'claims' ? styles.navGroup : undefined}>
+                <TouchableOpacity
+                  style={[styles.navItem, isNarrow && styles.mobileNavItem, activeSection === item.key && styles.navItemActive]}
+                  activeOpacity={0.82}
+                  onPress={() => {
+                    setActiveSection(item.key);
+                    if (item.key === 'claims') setCarRentalTab('Véhicules');
+                  }}>
+                  <Ionicons name={item.icon} size={22} color={activeSection === item.key ? TAKO_BLUE : 'white'} />
+                  <Text style={[styles.navText, activeSection === item.key && styles.navTextActive]}>{adminNavTranslations[language][item.key]}</Text>
+                  {item.key === 'claims' ? <Ionicons name={activeSection === 'claims' ? 'chevron-up' : 'chevron-down'} size={15} color={activeSection === 'claims' ? TAKO_BLUE : 'white'} style={styles.navChevron} /> : null}
+                </TouchableOpacity>
+                {item.key === 'claims' && activeSection === 'claims' ? (
+                  <View style={[styles.carRentalSubmenu, isNarrow && styles.mobileCarRentalSubmenu]}>
+                    {carRentalSubItems.map((subItem) => (
+                      <TouchableOpacity
+                        key={subItem.tab}
+                        style={[styles.carRentalSubitem, carRentalTab === subItem.tab && styles.carRentalSubitemActive]}
+                        onPress={() => setCarRentalTab(subItem.tab)}>
+                        <View style={[styles.carRentalSubdot, carRentalTab === subItem.tab && styles.carRentalSubdotActive]} />
+                        <Text style={[styles.carRentalSubtext, carRentalTab === subItem.tab && styles.carRentalSubtextActive]}>{subItem.label}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+              </View>
             ))}
           </ScrollView>
 
@@ -2156,7 +2183,7 @@ export default function Admin() {
 
           {activeSection === 'audit' ? <AdminActivityLog /> : null}
 
-          {activeSection === 'claims' ? <AdminCarRentals /> : null}
+          {activeSection === 'claims' ? <AdminCarRentals key={carRentalTab} initialTab={carRentalTab} /> : null}
 
           {activeSection === 'reconciliation' ? <AdminReconciliation /> : null}
 
@@ -3546,6 +3573,55 @@ const styles = StyleSheet.create({
   },
   navItemActive: {
     backgroundColor: 'white',
+  },
+  navGroup: {
+    width: '100%',
+  },
+  navChevron: {
+    marginLeft: 'auto',
+  },
+  carRentalSubmenu: {
+    paddingLeft: 31,
+    paddingTop: 4,
+    paddingBottom: 5,
+    gap: 2,
+  },
+  mobileCarRentalSubmenu: {
+    paddingLeft: 12,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 5,
+  },
+  carRentalSubitem: {
+    minHeight: 27,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderRadius: 6,
+    paddingHorizontal: 9,
+  },
+  carRentalSubitemActive: {
+    backgroundColor: 'rgba(255,255,255,0.14)',
+  },
+  carRentalSubdot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    borderWidth: 1,
+    borderColor: '#BFE4FF',
+  },
+  carRentalSubdotActive: {
+    backgroundColor: 'white',
+    borderColor: 'white',
+  },
+  carRentalSubtext: {
+    color: '#D7ECFF',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  carRentalSubtextActive: {
+    color: 'white',
+    fontWeight: '800',
   },
   navText: {
     color: 'white',

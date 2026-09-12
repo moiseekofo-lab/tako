@@ -95,8 +95,8 @@ function AdminCategories({onTabChange}:{onTabChange:(tab:string)=>void}){
  </View>;
 }
 
-export function AdminCarRentals(){
- const [tab,setTab]=useState('Véhicules'),[search,setSearch]=useState(''),[category,setCategory]=useState('Toutes les catégories'),[agency,setAgency]=useState('Toutes les agences'),[status,setStatus]=useState('Tous les statuts');
+export function AdminCarRentals({initialTab='Véhicules'}:{initialTab?:string}){
+ const [tab,setTab]=useState(initialTab),[search,setSearch]=useState(''),[category,setCategory]=useState('Toutes les catégories'),[agency,setAgency]=useState('Toutes les agences'),[status,setStatus]=useState('Tous les statuts');
  const filtered=useMemo(()=>vehicles.filter(v=>(!search||`${v[0]} ${v[1]} ${v[3]}`.toLowerCase().includes(search.toLowerCase()))&&(category==='Toutes les catégories'||v[2]===category)&&(agency==='Toutes les agences'||v[3]===agency)&&(status==='Tous les statuts'||v[6]===status)),[search,category,agency,status]);
  const cycle=(value:string,values:string[],set:(v:string)=>void)=>set(values[(values.indexOf(value)+1)%values.length]);
  if(tab==='Réservations') return <AdminReservations onTabChange={setTab}/>;
