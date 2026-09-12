@@ -3558,7 +3558,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   navItem: {
-    minHeight: 34,
+    minHeight: 40,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -3593,7 +3593,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   carRentalSubitem: {
-    minHeight: 27,
+    minHeight: 31,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -3616,17 +3616,20 @@ const styles = StyleSheet.create({
   },
   carRentalSubtext: {
     color: '#D7ECFF',
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: 'Inter_500Medium',
+    fontWeight: '500',
   },
   carRentalSubtextActive: {
     color: 'white',
-    fontWeight: '800',
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
   navText: {
     color: 'white',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 14,
+    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '600',
   },
   navTextActive: {
     color: TAKO_BLUE,
