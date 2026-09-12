@@ -22,6 +22,8 @@ export default function TravelBooking() {
   const passengerCount = Math.max(1, Number.parseInt(first(params.passengers, '1'), 10) || 1);
   const [selectedSeats, setSelectedSeats] = useState<string[]>(['2C']);
   const [automatic, setAutomatic] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
   const [passengers, setPassengers] = useState<Passenger[]>(() => Array.from(
     { length: passengerCount },
     () => ({ name: '', phone: '', email: '', identity: '' }),
@@ -41,8 +43,15 @@ export default function TravelBooking() {
   };
   const ready = useMemo(() => passengers.every((item) => item.name.trim() && item.phone.trim()) && selectedSeats.length === passengerCount, [passengers, selectedSeats, passengerCount]);
   const pay = () => ready ? router.push({ pathname: '/travel-payment', params: { price: String(price), passengers: String(passengerCount), total: String(total) } }) : Alert.alert('Informations incomplètes', 'Complétez les passagers et choisissez un siège pour chacun.');
+  const stickyPayment = viewportHeight > 0 && contentHeight + 82 + insets.bottom > viewportHeight;
 
-  return <View style={styles.page}><ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+  const paymentActions = <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+    <View style={styles.protected}><Ionicons name="lock-closed-outline" size={13} color="#667080" /><Text style={styles.protectedText}>Vos données sont protégées</Text></View>
+    <TouchableOpacity style={[styles.payButton, !ready && styles.payDisabled]} onPress={pay}><Ionicons name="lock-closed-outline" size={19} color="#fff" /><Text style={styles.payText}>Procéder au paiement</Text><Ionicons name="chevron-forward" size={21} color="#fff" /></TouchableOpacity>
+  </View>;
+
+  return <View style={styles.page}><ScrollView onLayout={(event) => setViewportHeight(event.nativeEvent.layout.height)} style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
+    <View onLayout={(event) => setContentHeight(event.nativeEvent.layout.height)}>
     <View style={[styles.hero, { paddingTop: insets.top + 10 }]}>
       <TouchableOpacity style={styles.back} onPress={() => router.back()}><Ionicons name="chevron-back" size={25} color="#061F68" /></TouchableOpacity>
       <View style={styles.heroCopy}><Text style={styles.heroTitle}>Détails du voyage</Text><Text style={styles.heroSubtitle}>Vérifiez et réservez votre billet</Text></View>
@@ -79,11 +88,10 @@ export default function TravelBooking() {
       </View>
 
     </View>
-  </ScrollView>
-    <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, 8) }]}>
-      <View style={styles.protected}><Ionicons name="lock-closed-outline" size={13} color="#667080" /><Text style={styles.protectedText}>Vos données sont protégées</Text></View>
-      <TouchableOpacity style={[styles.payButton, !ready && styles.payDisabled]} onPress={pay}><Ionicons name="lock-closed-outline" size={19} color="#fff" /><Text style={styles.payText}>Procéder au paiement</Text><Ionicons name="chevron-forward" size={21} color="#fff" /></TouchableOpacity>
     </View>
+    {!stickyPayment && paymentActions}
+  </ScrollView>
+    {stickyPayment && paymentActions}
   </View>;
 }
 
