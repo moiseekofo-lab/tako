@@ -151,7 +151,7 @@ export default function CarRental() {
               <Text style={styles.vehicleName}>{item.label}</Text><Text style={styles.vehicleModel}>{item.model} <Text style={styles.similar}>ou similaire</Text></Text><Text style={styles.vehicleDetails}>{item.details}</Text><Text style={styles.muted}>à partir de</Text><Text style={styles.priceSmall}>{item.price.toLocaleString('fr-FR')} USD / jour</Text>
             </TouchableOpacity>; })}
           </ScrollView>
-          {!hasLiveVehicles&&<View style={styles.unavailableNotice}><Ionicons name="information-circle-outline" size={20} color="#667085"/><Text style={styles.unavailableText}>Ces véhicules sont des références. Ils seront disponibles après leur ajout par l’administration.</Text></View>}
+          {!hasLiveVehicles&&<View style={styles.unavailableNotice}><Ionicons name="information-circle-outline" size={20} color="#667085"/><Text style={styles.unavailableText}>Indisponible</Text></View>}
           <Text style={styles.section}>Options et services inclus</Text>
           <View style={styles.optionCard}>{extras.map((item) => { const active = selectedExtras.includes(item.key); const included=item.key==='driver'; return <TouchableOpacity key={item.key} disabled={included} style={[styles.option,included&&styles.optionIncluded]} onPress={() => toggle(item.key)}>
             <View style={styles.iconBox}><MaterialCommunityIcons name={item.icon} size={25} color={BLUE} /></View><View style={styles.grow}><Text style={styles.optionTitle}>{item.title}</Text><Text style={styles.muted}>{item.subtitle}</Text></View>{included&&<Text style={styles.includedBadge}>INCLUS</Text>}<View style={[styles.checkbox, active && styles.checkboxActive]}>{active && <Ionicons name="checkmark" size={16} color="white" />}</View>
